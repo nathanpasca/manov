@@ -1,6 +1,6 @@
 import Home from "../Components/Main/Home"
 
-function Homepage() {
+function HomePage() {
   return (
     <>
       <Home />
@@ -8,4 +8,4 @@ function Homepage() {
   )
 }
 
-export default Homepage
+export default HomePage

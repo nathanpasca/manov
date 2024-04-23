@@ -1,19 +1,24 @@
-import './App.css';
+import "./App.css"
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom"
-import Homepage from './Pages/Homepage';
-import NavBar from './Components/Component/NavBar';
+import HomePage from "./Pages/HomePage"
+import NavBar from "./Components/Component/NavBar"
+import { ChakraProvider } from "@chakra-ui/react"
+import RegisterPage from "./Pages/RegisterPage"
 
 function App() {
   return (
-    <div className="App">
-      <NavBar/>
+    <ChakraProvider>
+      <div className='App'>
+        <NavBar />
         <Router>
           <Routes>
-            <Route path='/' element={<Homepage />} />
+            <Route path='/' element={<HomePage />} />
+            <Route path='/register' element={<RegisterPage />} />
           </Routes>
         </Router>
-    </div>
-  );
+      </div>
+    </ChakraProvider>
+  )
 }
 
-export default App;
+export default App
