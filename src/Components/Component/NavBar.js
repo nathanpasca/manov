@@ -82,7 +82,7 @@ function NavBar() {
             </li>
           </ul>
         </div>
-        <div class='navbar-end'>
+        <div class='navbar-end mx-4'>
           <button className='btn btn-square btn-ghost mx-4'>
             <label className='swap swap-rotate w-12 h-12'>
               <input
@@ -97,9 +97,7 @@ function NavBar() {
               <Brightness3Icon alt='manov-dark' className='w-8 h-8 swap-off' />
             </label>
           </button>
-          <div class='form-control'>
-            <input type='text' placeholder='Search' class='input input-bordered w-24 md:w-auto mr-6' />
-          </div>
+          <button className='btn btn-outline'>LOGIN</button>
         </div>
       </div>
     </>
