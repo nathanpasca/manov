@@ -35,7 +35,7 @@ function Login() {
     <section className='bg-base-100 min-h-screen flex items-center justify-center'>
       <div className='bg-base-200 flex rounded-2xl shadow-lg max-w-6xl p-5 items-center'>
         <div className='sm:w-1/2 px-16'>
-          <h2 className='font-bold text-2xl pt-4'>Register</h2>
+          <h2 className='font-bold text-2xl pt-4'>Login</h2>
           <p className='text-sm mt-4'>Lorem ipsum dolor sit amet consectetur adipisicing</p>
 
           <form onSubmit={formik.handleSubmit} className='mt-8'>
