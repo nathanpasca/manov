@@ -1,8 +1,14 @@
 import React from "react"
 import { useFormik } from "formik"
 import * as Yup from "yup"
+import { createUserWithEmailAndPassword } from "firebase/auth"
+import { setDoc, doc, serverTimestamp } from "firebase/firestore"
+import { auth, firestore } from "../../firebase"
+import { useNavigate } from "react-router-dom"
 
 function Register() {
+  const navigate = useNavigate()
+
   const validateSchema = Yup.object().shape({
     username: Yup.string().required("This field is required"),
     email: Yup.string().email("Please enter a valid email").required("This field is required"),
@@ -10,8 +16,7 @@ function Register() {
       .required("This field is required")
       .min(8, "Password must be 8 or more characters")
       .matches(/(?=.*[a-z])(?=.*[A-Z])\w+/, "Password should contain at least one uppercase and lowercase character")
-      .matches(/\d/, "Password should contain at least one number")
-      .matches(/[`!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~]/, "Password should contain at least one special character"),
+      .matches(/\d/, "Password should contain at least one number"),
     confirmPassword: Yup.string().when("password", (password, field) => {
       if (password) {
         return field.required("The passwords do not match").oneOf([Yup.ref("password")], "The passwords do not match")
@@ -27,10 +32,20 @@ function Register() {
       confirmPassword: "",
     },
     validationSchema: validateSchema,
-    onSubmit: (values, { resetForm }) => {
+    onSubmit: async (values, { resetForm }) => {
       // Exclude confirmPassword field from data
-      const { confirmPassword, ...dataToSend } = values
-      console.log(values)
+
+      const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password)
+
+      await setDoc(doc(firestore, "users", userCredential.user.uid), {
+        id: userCredential.user.uid,
+        email: userCredential.user.email,
+        username: values.username,
+        createdAt: serverTimestamp(),
+      })
+
+      navigate("/")
+
       resetForm()
     },
   })
