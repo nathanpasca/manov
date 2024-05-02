@@ -97,7 +97,10 @@ function NavBar() {
               <Brightness3Icon alt='manov-dark' className='w-8 h-8 swap-off' />
             </label>
           </button>
-          <button className='btn btn-outline'>LOGIN</button>
+
+          <button className='btn btn-outline'>
+            <a href='/login'>LOGIN</a>
+          </button>
         </div>
       </div>
     </>
