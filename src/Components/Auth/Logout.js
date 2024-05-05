@@ -5,8 +5,6 @@ import { signOut } from "firebase/auth"
 import { auth } from "../../firebase"
 
 export const Logout = () => {
-  const navigate = useNavigate()
-
   const handleLogout = async () => {
     try {
       // Sign out the user

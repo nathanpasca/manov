@@ -1,10 +1,20 @@
 import Brightness3Icon from "@mui/icons-material/Brightness3"
 import WbSunnyIcon from "@mui/icons-material/WbSunny"
 import { useState, useEffect } from "react"
+import { auth } from "../../firebase"
+import { Logout } from "../Auth/Logout"
+import { Link } from "react-router-dom"
 function NavBar() {
   // use theme from local storage if available or set light theme
   const [theme, setTheme] = useState(localStorage.getItem("theme") ? localStorage.getItem("theme") : "manov-light")
+  const [currentUser, setCurrentUser] = useState(null)
 
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setCurrentUser(user)
+    })
+    return unsubscribe
+  }, [])
   // update state on toggle
   const handleToggle = (e) => {
     if (e.target.checked) {
@@ -39,7 +49,7 @@ function NavBar() {
             </label>
             <ul tabindex='0' class='menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow bg-base-100 rounded-box w-52 '>
               <li>
-                <a>Home</a>
+                <Link to='/'>Home</Link>
               </li>
               <li>
                 <a>Parent</a>
@@ -62,7 +72,9 @@ function NavBar() {
         <div class='navbar-center hidden lg:flex z-10'>
           <ul class='menu menu-horizontal px-1'>
             <li>
-              <a className='text-base'>Home</a>
+              <Link to='/' className='text-base'>
+                Home
+              </Link>
             </li>
             <li tabindex='0'>
               <details>
@@ -97,10 +109,13 @@ function NavBar() {
               <Brightness3Icon alt='manov-dark' className='w-8 h-8 swap-off' />
             </label>
           </button>
-
-          <button className='btn btn-outline'>
-            <a href='/login'>LOGIN</a>
-          </button>
+          {currentUser ? (
+            <Logout />
+          ) : (
+            <button className='btn btn-outline'>
+              <a href='/login'>LOGIN</a>
+            </button>
+          )}
         </div>
       </div>
     </>
