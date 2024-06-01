@@ -89,8 +89,23 @@ function NavBar() {
                 </ul>
               </details>
             </li>
+            <li tabindex='1'>
+              <details>
+                <summary className='text-base'>Novel</summary>
+                <ul class='p-2'>
+                  <li>
+                    <a className='text-base'>Top Rated</a>
+                  </li>
+                  <li>
+                    <a className='text-base'>Popular</a>
+                  </li>
+                </ul>
+              </details>
+            </li>
             <li>
-              <a className='text-base'>Latest</a>
+              <Link to='/create-novel' className='text-base'>
+                Create
+              </Link>
             </li>
           </ul>
         </div>
@@ -113,7 +128,7 @@ function NavBar() {
             <Logout />
           ) : (
             <button className='btn btn-outline'>
-              <a href='/login'>LOGIN</a>
+              <Link to='/login'>LOGIN</Link>
             </button>
           )}
         </div>

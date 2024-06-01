@@ -5,6 +5,7 @@ import NavBar from "./Components/Component/NavBar"
 
 import RegisterPage from "./Pages/RegisterPage"
 import LoginPage from "./Pages/LoginPage"
+import CreateNovelPage from "./Pages/CreateNovelPage"
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
         <Route path='/' element={<HomePage />} />
         <Route path='/register' element={<RegisterPage />} />
         <Route path='/login' element={<LoginPage />} />
+        <Route path='/create-novel' element={<CreateNovelPage />} />
       </Routes>
     </div>
   )
