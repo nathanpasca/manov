@@ -1,25 +1,27 @@
-import React from "react"
+import React, { useState } from "react"
 import { useFormik } from "formik"
 import * as Yup from "yup"
 import { createUserWithEmailAndPassword } from "firebase/auth"
 import { setDoc, doc, serverTimestamp } from "firebase/firestore"
 import { auth, firestore } from "../../firebase"
 import { useNavigate } from "react-router-dom"
+import RegisterSvgUndraw from "../../static/undraw_authentication_re_svpt.svg"
 
 function Register() {
   const navigate = useNavigate()
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const validateSchema = Yup.object().shape({
-    username: Yup.string().required("This field is required"),
-    email: Yup.string().email("Please enter a valid email").required("This field is required"),
+    username: Yup.string().required("Bagian ini wajib diisi"),
+    email: Yup.string().email("Silakan masukkan email yang valid").required("Bagian ini wajib diisi"),
     password: Yup.string()
-      .required("This field is required")
-      .min(8, "Password must be 8 or more characters")
-      .matches(/(?=.*[a-z])(?=.*[A-Z])\w+/, "Password should contain at least one uppercase and lowercase character")
-      .matches(/\d/, "Password should contain at least one number"),
+      .required("Bagian ini wajib diisi")
+      .min(8, "Kata sandi harus terdiri dari 8 karakter atau lebih")
+      .matches(/(?=.*[a-z])(?=.*[A-Z])\w+/, "Kata sandi harus mengandung setidaknya satu huruf besar dan kecil")
+      .matches(/\d/, "Kata sandi harus mengandung setidaknya satu angka"),
     confirmPassword: Yup.string().when("password", (password, field) => {
       if (password) {
-        return field.required("The passwords do not match").oneOf([Yup.ref("password")], "The passwords do not match")
+        return field.required("Kata sandi tidak cocok").oneOf([Yup.ref("password")], "Kata sandi tidak cocok")
       }
     }),
   })
@@ -33,8 +35,9 @@ function Register() {
     },
     validationSchema: validateSchema,
     onSubmit: async (values, { resetForm }) => {
-      // Exclude confirmPassword field from data
+      setIsSubmitting(true)
 
+      // Exclude confirmPassword field from data
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password)
 
       await setDoc(doc(firestore, "users", userCredential.user.uid), {
@@ -45,7 +48,7 @@ function Register() {
       })
 
       navigate("/")
-
+      setIsSubmitting(false)
       resetForm()
     },
   })
@@ -54,8 +57,8 @@ function Register() {
     <section className='bg-base-100 min-h-screen flex items-center justify-center'>
       <div className='bg-base-200 flex rounded-2xl shadow-lg max-w-6xl p-5 items-center'>
         <div className='sm:w-1/2 px-16'>
-          <h2 className='font-bold text-2xl pt-4'>Register</h2>
-          <p className='text-sm mt-4'>Lorem ipsum dolor sit amet consectetur adipisicing</p>
+          <h2 className='font-bold text-2xl pt-4'>Daftar</h2>
+          <p className='text-sm mt-4'>Daftarkan akun untuk memulai</p>
 
           <form onSubmit={formik.handleSubmit} className='mt-8'>
             <input
@@ -95,7 +98,7 @@ function Register() {
               type='password'
               id='password-input'
               name='password'
-              placeholder='Password'
+              placeholder='Kata Sandi'
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
               value={formik.values.password}
@@ -111,7 +114,7 @@ function Register() {
               type='password'
               id='confirmPassword'
               name='confirmPassword'
-              placeholder='Confirm Password'
+              placeholder='Konfirmasi Kata Sandi'
               onChange={formik.handleChange}
               onBlur={formik.handleBlur}
               value={formik.values.confirmPassword}
@@ -126,24 +129,25 @@ function Register() {
             <button
               id='register-button'
               type='submit'
-              className='btn-primary rounded-xl w-full py-2 mt-2 max-w-md hover:scale-105 duration-300'
+              className='btn-primary rounded-xl w-full py-2 mt-2 max-w-md hover:scale-105 duration-300 flex items-center justify-center'
               disabled={formik.isSubmitting}>
-              Register
+              {isSubmitting && <span className='loading loading-spinner mr-2'></span>}
+              {isSubmitting ? "Memuat..." : "Daftar"}
             </button>
           </form>
 
           <div id='error' className='mt-6'></div>
 
           <div className='text-sm flex justify-between mt-3 items-center'>
-            <p>Already have an account?</p>
+            <p>Sudah punya akun?</p>
             <a href='/register' className='py-2 px-5 bg-accent text-white rounded-xl hover:scale-110 duration-300'>
-              Login
+              Masuk
             </a>
           </div>
         </div>
 
-        <div className='sm:block hidden w-1/2'>
-          <img className='rounded-3xl' src='https://i.ibb.co/VxqT4rk/image-login.png' alt='register' />
+        <div className='sm:block hidden w-1/2 h-1/2'>
+          <img className='rounded-3xl w-[500px] h-[500px]' src={RegisterSvgUndraw} alt='register' />
         </div>
       </div>
     </section>
