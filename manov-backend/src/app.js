@@ -46,8 +46,10 @@ const {
   router: directChapterRoutes,
   novelChapterRouter: nestedChapterRoutes,
 } = require('./routes/chapterRoutes');
-const authRoutes = require('./routes/authRoutes'); // <--- Add this line
+const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
+const { novelScopedProgressRouter, userScopedProgressRouter } = require('./routes/readingProgressRoutes');
+
 
 app.use('/api/v1/languages', languageRoutes);
 app.use('/api/v1/authors', authorRoutes);
@@ -60,6 +62,13 @@ app.use('/api/v1/chapters', directChapterRoutes);
 app.use('/api/v1/novels/:novelId/chapters', nestedChapterRoutes);
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', userRoutes);
+// Mount novel-scoped reading progress routes
+// This will handle PUT /api/v1/novels/:novelId/progress and GET /api/v1/novels/:novelId/progress
+app.use('/api/v1/novels/:novelId/progress', novelScopedProgressRouter);
+
+// Mount user-scoped reading progress routes
+// This will handle GET /api/v1/users/me/reading-progress
+app.use('/api/v1/users/me/reading-progress', userScopedProgressRouter);
 
 // Step 8: (Placeholder) Centralized Error Handling Middleware
 // This should be one of the last pieces of middleware you define.
