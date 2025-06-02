@@ -49,8 +49,9 @@ const {
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const { novelScopedProgressRouter, userScopedProgressRouter } = require('./routes/readingProgressRoutes');
-
 const { novelFavoriteRouter, userScopedFavoritesRouter } = require('./routes/userFavoriteRoutes');
+const { novelScopedRatingRouter } = require('./routes/ratingRoutes'); 
+
 
 
 
@@ -80,6 +81,11 @@ app.use('/api/v1/novels/:novelId/favorite', novelFavoriteRouter);
 // Mount user-scoped favorites listing route
 // Handles GET /api/v1/users/me/favorites
 app.use('/api/v1/users/me/favorites', userScopedFavoritesRouter);
+
+// Mount novel-scoped rating routes
+// Handles POST, GET /api/v1/novels/:novelId/ratings
+// Handles GET, DELETE /api/v1/novels/:novelId/ratings/me
+app.use('/api/v1/novels/:novelId/ratings', novelScopedRatingRouter);
 
 // Step 8: (Placeholder) Centralized Error Handling Middleware
 // This should be one of the last pieces of middleware you define.
