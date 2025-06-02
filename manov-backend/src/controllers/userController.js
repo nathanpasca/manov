@@ -2,22 +2,15 @@
 
 const userService = require('../services/userService');
 
-// This function will require authentication middleware in Phase 3
-// to get req.user populated.
 async function getMyProfile(req, res, next) {
   try {
-    // IMPORTANT: In Phase 3, req.user will be populated by Passport middleware.
-    // For now, to test structure, you might temporarily pass a hardcoded ID
-    // or expect an ID in params, but the goal is to use req.user.id.
     if (!req.user || !req.user.id) {
-      // This check will be effective once auth middleware is in place.
       return res.status(401).json({ message: 'Authentication required.' });
     }
     const userId = req.user.id;
     const userProfile = await userService.findUserById(userId);
 
     if (!userProfile) {
-      // Should not happen if req.user.id is valid from a token, but good check.
       return res.status(404).json({ message: 'User profile not found.' });
     }
     res.status(200).json(userProfile);
@@ -26,42 +19,36 @@ async function getMyProfile(req, res, next) {
   }
 }
 
-// This function will also require authentication middleware.
 async function updateMyProfile(req, res, next) {
   try {
-    if (!req.user || !req.user.id) {
-      return res.status(401).json({ message: 'Authentication required.' });
-    }
+    // Authentication checked by requireAuth middleware
+    // Input data is validated by validateUserProfileUpdate middleware
     const userId = req.user.id;
-    const profileData = req.body;
+    const profileData = req.body; // Validator ensures only allowed fields are processed based on rules
+    
+    // The validator already checks if at least one updatable field is provided.
+    // Controller still ensures sensitive fields are not updatable through this route.
+    const allowedUpdates = {};
+    if (profileData.displayName !== undefined) allowedUpdates.displayName = profileData.displayName;
+    if (profileData.avatarUrl !== undefined) allowedUpdates.avatarUrl = profileData.avatarUrl;
+    if (profileData.preferredLanguage !== undefined) allowedUpdates.preferredLanguage = profileData.preferredLanguage;
+    if (profileData.readingPreferences !== undefined) allowedUpdates.readingPreferences = profileData.readingPreferences;
 
-    if (Object.keys(profileData).length === 0) {
-      return res.status(400).json({ message: 'No data provided for update.' });
-    }
-    // Prevent users from updating their role or sensitive fields via this endpoint
-    delete profileData.isAdmin;
-    delete profileData.isActive; // These should be admin actions
-    delete profileData.email; // Email change usually needs verification
-    delete profileData.username; // Username change might be restricted
 
-    const updatedProfile = await userService.updateUserProfile(
-      userId,
-      profileData
-    );
+    const updatedProfile = await userService.updateUserProfile(userId, allowedUpdates);
     res.status(200).json(updatedProfile);
   } catch (error) {
+    // Validator catches input format errors.
+    // Service errors (like user not found) are handled here.
     if (error.message.includes('not found')) {
       return res.status(404).json({ message: error.message });
     }
-    if (error.message.includes('No profile data')) {
-      return res.status(400).json({ message: error.message });
+    if (error.message.includes('No profile data')) { // From service if somehow empty object passed
+        return res.status(400).json({ message: error.message });
     }
     next(error);
   }
 }
-
-// Admin-specific user controllers (listUsers, getUserByIdAdmin, updateUserByAdmin)
-// will be added in Phase 6.
 
 module.exports = {
   getMyProfile,

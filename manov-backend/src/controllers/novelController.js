@@ -1,28 +1,17 @@
 // File: src/controllers/novelController.js
 
-const novelService = require("../services/novelService");
+const novelService = require('../services/novelService');
 
 async function createNovel(req, res, next) {
   try {
-    // Basic validation for essential fields
-    const { title, authorId, originalLanguage } = req.body;
-    if (!title || !authorId || !originalLanguage) {
-      return res.status(400).json({
-        message: "Title, authorId, and originalLanguage are required.",
-      });
-    }
-    // More specific validation (e.g. authorId is number) can be added
-    if (isNaN(parseInt(authorId, 10))) {
-      return res.status(400).json({ message: "Author ID must be a number." });
-    }
-
+    // Input data is already validated by validateNovelCreation middleware
+    // Service layer will handle author existence check and slug generation
     const newNovel = await novelService.createNovel(req.body);
     res.status(201).json(newNovel);
   } catch (error) {
-    if (
-      error.message.includes("required") ||
-      error.message.includes("Author with ID")
-    ) {
+    // Validator should catch most input errors.
+    // Service errors (like Author not found) are handled here.
+    if (error.message.includes('Author with ID')) { // Example of specific service error
       return res.status(400).json({ message: error.message });
     }
     next(error);
@@ -31,44 +20,30 @@ async function createNovel(req, res, next) {
 
 async function getAllNovels(req, res, next) {
   try {
-    // Extract filter, pagination, and sort options from query parameters
-    const {
-      isActive,
-      publicationStatus,
-      originalLanguage,
-      genre,
-      sortBy,
-      sortOrder,
-      page,
-      limit,
-    } = req.query;
+    const { isActive, publicationStatus, originalLanguage, genre, sortBy, sortOrder, page, limit } = req.query;
+    // Basic validation/sanitization for query params can remain or be moved to a validator
     const filters = {};
-    if (isActive !== undefined) filters.isActive = isActive === "true";
-    if (publicationStatus) filters.publicationStatus = publicationStatus;
+    if (isActive !== undefined) filters.isActive = isActive === 'true';
+    if (publicationStatus) filters.publicationStatus = publicationStatus; // Assuming it's a valid enum value
     if (originalLanguage) filters.originalLanguage = originalLanguage;
-    if (genre) filters.genreTags = { has: genre }; // Example for array contains
+    if (genre) filters.genreTags = { has: genre };
 
     const pagination = {};
-    if (page && limit) {
+    if (page && limit && !isNaN(parseInt(page,10)) && !isNaN(parseInt(limit,10))) {
       pagination.take = parseInt(limit, 10);
       pagination.skip = (parseInt(page, 10) - 1) * pagination.take;
-    } else if (limit) {
-      pagination.take = parseInt(limit, 10);
+    } else if (limit && !isNaN(parseInt(limit,10))) {
+        pagination.take = parseInt(limit, 10);
     }
 
     const orderBy = {};
-    if (sortBy && sortOrder) {
-      orderBy[sortBy] = sortOrder.toLowerCase(); // e.g. { "viewCount": "desc" }
+    if (sortBy && sortOrder && ['title', 'updatedAt', 'createdAt', 'viewCount', 'favoriteCount', 'averageRating'].includes(sortBy)) {
+      orderBy[sortBy] = sortOrder.toLowerCase() === 'desc' ? 'desc' : 'asc';
     } else {
-      orderBy.updatedAt = "desc"; // Default sort
+      orderBy.updatedAt = 'desc';
     }
 
-    const novels = await novelService.getAllNovels(
-      filters,
-      pagination,
-      orderBy,
-    );
-    // Could also fetch total count for pagination headers if needed
+    const novels = await novelService.getAllNovels(filters, pagination, orderBy);
     res.status(200).json(novels);
   } catch (error) {
     next(error);
@@ -77,10 +52,11 @@ async function getAllNovels(req, res, next) {
 
 async function getNovelByIdentifier(req, res, next) {
   try {
-    const { identifier } = req.params; // This can be an ID or a slug
+    // Identifier is validated by validateNovelIdentifierParam
+    const { identifier } = req.params;
     const novel = await novelService.getNovelByIdentifier(identifier);
     if (!novel) {
-      return res.status(404).json({ message: "Novel not found." });
+      return res.status(404).json({ message: 'Novel not found.' });
     }
     res.status(200).json(novel);
   } catch (error) {
@@ -90,29 +66,19 @@ async function getNovelByIdentifier(req, res, next) {
 
 async function updateNovel(req, res, next) {
   try {
+    // novelId param and req.body are validated
     const { novelId } = req.params;
     const novelData = req.body;
-
-    if (Object.keys(novelData).length === 0) {
-      return res.status(400).json({ message: "No data provided for update." });
-    }
+    // The validator already checks if body is not empty for PUT (if `validateNovelUpdate` configured so).
 
     const updatedNovel = await novelService.updateNovel(novelId, novelData);
     res.status(200).json(updatedNovel);
   } catch (error) {
-    if (
-      error.message.includes("not found") ||
-      error.message.includes("Invalid novel ID")
-    ) {
+    if (error.message.includes('not found')) {
       return res.status(404).json({ message: error.message });
     }
-    if (error.message.includes("Author with ID")) {
-      // From service check
+    if (error.message.includes('Author with ID') || error.message.includes('Slug generated')) {
       return res.status(400).json({ message: error.message });
-    }
-    if (error.message.includes("Slug generated")) {
-      // From slug conflict during update
-      return res.status(409).json({ message: error.message });
     }
     next(error);
   }
@@ -120,14 +86,12 @@ async function updateNovel(req, res, next) {
 
 async function deleteNovel(req, res, next) {
   try {
+    // novelId param is validated
     const { novelId } = req.params;
     await novelService.deleteNovel(novelId);
     res.status(204).send();
   } catch (error) {
-    if (
-      error.message.includes("not found") ||
-      error.message.includes("Invalid novel ID")
-    ) {
+    if (error.message.includes('not found')) {
       return res.status(404).json({ message: error.message });
     }
     next(error);

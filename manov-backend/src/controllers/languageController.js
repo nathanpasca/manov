@@ -6,11 +6,6 @@ async function createLanguage(req, res, next) {
   try {
     // Basic input validation (more robust validation in Phase 8)
     const { code, name, nativeName } = req.body;
-    if (!code || !name) {
-      // Important: Always validate required inputs
-      return res.status(400).json({ message: "Code and name are required." });
-    }
-
     const languageData = {
       code,
       name,
@@ -20,8 +15,6 @@ async function createLanguage(req, res, next) {
     const newLanguage = await languageService.createLanguage(languageData);
     res.status(201).json(newLanguage);
   } catch (error) {
-    // Pass error to centralized error handler (to be implemented in Phase 8)
-    // For now, a simple error response or specific handling for known errors
     if (error.message.includes("already exists")) {
       return res.status(409).json({ message: error.message }); // 409 Conflict
     }
@@ -56,11 +49,6 @@ async function updateLanguage(req, res, next) {
     const { languageId } = req.params;
     const languageData = req.body;
 
-    // Basic validation: ensure at least one field is being updated
-    if (Object.keys(languageData).length === 0) {
-      return res.status(400).json({ message: "No data provided for update." });
-    }
-
     const updatedLanguage = await languageService.updateLanguage(
       languageId,
       languageData,
@@ -89,10 +77,14 @@ async function deleteLanguage(req, res, next) {
     ) {
       return res.status(404).json({ message: error.message });
     }
-    if (error.message.includes("still in use")) {
-      return res.status(409).json({ message: error.message }); // 409 Conflict
+    if (error.message.includes('not found') || error.message.includes('Invalid language ID')) {
+      return res.status(404).json({ message: error.message });
+    }
+    if (error.message.includes('still in use')) {
+      return res.status(409).json({ message: error.message });
     }
     next(error);
+    
   }
 }
 
