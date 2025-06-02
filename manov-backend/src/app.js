@@ -4,9 +4,10 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const passport = require('passport');
-
 const cors = require('cors');
 const helmet = require('helmet');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./config/swaggerConfig');
 
 // Step 2: Load Environment Variables
 dotenv.config();
@@ -97,6 +98,9 @@ app.use('/api/v1/comments', commentActionRouter);
 app.use('/api/v1/admin', adminRoutes);
 
 app.use('/api/v1/search', searchRoutes);
+
+// --- Swagger API Documentation Route ---
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // --- Centralized Error Handling Middleware ---
 // Important: This MUST be defined AFTER all other app.use() and route calls.
