@@ -20,30 +20,42 @@ async function createNovel(req, res, next) {
 
 async function getAllNovels(req, res, next) {
   try {
-    const { isActive, publicationStatus, originalLanguage, genre, sortBy, sortOrder, page, limit } = req.query;
-    // Basic validation/sanitization for query params can remain or be moved to a validator
+    // lang, page, limit, etc. are validated by middleware in routes
+    const { 
+        isActive, 
+        publicationStatus, 
+        originalLanguage,  // This filters by the Novel.originalLanguage field
+        genre, 
+        sortBy, 
+        sortOrder, 
+        page, 
+        limit, 
+        lang // The desired language for translated content
+    } = req.query;
+    
     const filters = {};
-    if (isActive !== undefined) filters.isActive = isActive === 'true';
-    if (publicationStatus) filters.publicationStatus = publicationStatus; // Assuming it's a valid enum value
+    if (isActive !== undefined) filters.isActive = isActive; // Already boolean due to validator or needs 'true'/'false' string check
+    if (publicationStatus) filters.publicationStatus = publicationStatus;
     if (originalLanguage) filters.originalLanguage = originalLanguage;
     if (genre) filters.genreTags = { has: genre };
 
     const pagination = {};
-    if (page && limit && !isNaN(parseInt(page,10)) && !isNaN(parseInt(limit,10))) {
-      pagination.take = parseInt(limit, 10);
-      pagination.skip = (parseInt(page, 10) - 1) * pagination.take;
-    } else if (limit && !isNaN(parseInt(limit,10))) {
-        pagination.take = parseInt(limit, 10);
+    if (page && limit) { 
+      pagination.take = limit; // Already int from validator
+      pagination.skip = (page - 1) * limit;
+    } else if (limit) {
+        pagination.take = limit; // Already int from validator
     }
 
     const orderBy = {};
     if (sortBy && sortOrder && ['title', 'updatedAt', 'createdAt', 'viewCount', 'favoriteCount', 'averageRating'].includes(sortBy)) {
       orderBy[sortBy] = sortOrder.toLowerCase() === 'desc' ? 'desc' : 'asc';
     } else {
-      orderBy.updatedAt = 'desc';
+      orderBy.updatedAt = 'desc'; // Default sort
     }
 
-    const novels = await novelService.getAllNovels(filters, pagination, orderBy);
+    // Pass the 'lang' query parameter to the service function
+    const novels = await novelService.getAllNovels(filters, pagination, orderBy, lang);
     res.status(200).json(novels);
   } catch (error) {
     next(error);
@@ -52,9 +64,13 @@ async function getAllNovels(req, res, next) {
 
 async function getNovelByIdentifier(req, res, next) {
   try {
-    // Identifier is validated by validateNovelIdentifierParam
+    // identifier is validated by validateNovelIdentifierParam
     const { identifier } = req.params;
-    const novel = await novelService.getNovelByIdentifier(identifier);
+    // lang is validated by validateLangQueryParam
+    const { lang } = req.query; 
+
+    // Pass the 'lang' query parameter to the service function
+    const novel = await novelService.getNovelByIdentifier(identifier, lang);
     if (!novel) {
       return res.status(404).json({ message: 'Novel not found.' });
     }
@@ -69,7 +85,6 @@ async function updateNovel(req, res, next) {
     // novelId param and req.body are validated
     const { novelId } = req.params;
     const novelData = req.body;
-    // The validator already checks if body is not empty for PUT (if `validateNovelUpdate` configured so).
 
     const updatedNovel = await novelService.updateNovel(novelId, novelData);
     res.status(200).json(updatedNovel);
