@@ -50,10 +50,12 @@ const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const { novelScopedProgressRouter, userScopedProgressRouter } = require('./routes/readingProgressRoutes');
 const { novelFavoriteRouter, userScopedFavoritesRouter } = require('./routes/userFavoriteRoutes');
-const { novelScopedRatingRouter } = require('./routes/ratingRoutes'); 
-
-
-
+const { novelScopedRatingRouter } = require('./routes/ratingRoutes');
+const {
+  novelScopedCommentRouter,
+  chapterScopedCommentRouter,
+  commentActionRouter
+} = require('./routes/commentRoutes');
 
 app.use('/api/v1/languages', languageRoutes);
 app.use('/api/v1/authors', authorRoutes);
@@ -61,15 +63,15 @@ app.use('/api/v1/novels', novelRoutes); // Handles /api/v1/novels and /api/v1/no
 
 // Mount routes that operate on chapters directly via their chapterId
 app.use('/api/v1/chapters', directChapterRoutes);
-
 // Mount routes that operate on chapters in context of a novel
 app.use('/api/v1/novels/:novelId/chapters', nestedChapterRoutes);
+
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', userRoutes);
+
 // Mount novel-scoped reading progress routes
 // This will handle PUT /api/v1/novels/:novelId/progress and GET /api/v1/novels/:novelId/progress
 app.use('/api/v1/novels/:novelId/progress', novelScopedProgressRouter);
-
 // Mount user-scoped reading progress routes
 // This will handle GET /api/v1/users/me/reading-progress
 app.use('/api/v1/users/me/reading-progress', userScopedProgressRouter);
@@ -77,8 +79,6 @@ app.use('/api/v1/users/me/reading-progress', userScopedProgressRouter);
 // Mount novel-scoped favorite routes
 // Handles POST & DELETE /api/v1/novels/:novelId/favorite
 app.use('/api/v1/novels/:novelId/favorite', novelFavoriteRouter);
-
-// Mount user-scoped favorites listing route
 // Handles GET /api/v1/users/me/favorites
 app.use('/api/v1/users/me/favorites', userScopedFavoritesRouter);
 
@@ -86,6 +86,11 @@ app.use('/api/v1/users/me/favorites', userScopedFavoritesRouter);
 // Handles POST, GET /api/v1/novels/:novelId/ratings
 // Handles GET, DELETE /api/v1/novels/:novelId/ratings/me
 app.use('/api/v1/novels/:novelId/ratings', novelScopedRatingRouter);
+
+// Comment routes
+app.use('/api/v1/novels/:novelId/comments', novelScopedCommentRouter);
+app.use('/api/v1/chapters/:chapterId/comments', chapterScopedCommentRouter);
+app.use('/api/v1/comments', commentActionRouter);    
 
 // Step 8: (Placeholder) Centralized Error Handling Middleware
 // This should be one of the last pieces of middleware you define.
