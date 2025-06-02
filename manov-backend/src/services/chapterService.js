@@ -1,9 +1,10 @@
 // File: src/services/chapterService.js
 
-const prisma = require("../lib/prisma");
+const prisma = require('../lib/prisma');
 
 /**
  * Creates a new chapter for a novel.
+ * (This function primarily deals with the default language content)
  * @param {number} novelId - The ID of the novel this chapter belongs to.
  * @param {object} chapterData - Data for the new chapter.
  * @returns {Promise<object>} The created chapter object.
@@ -12,36 +13,35 @@ const prisma = require("../lib/prisma");
 async function createChapter(novelId, chapterData) {
   const parentNovelId = parseInt(novelId, 10);
   if (isNaN(parentNovelId)) {
-    throw new Error("Invalid novel ID format.");
+    throw new Error('Invalid novel ID format.');
   }
 
   const {
     chapterNumber,
-    title,
-    content,
+    title, // Default title
+    content, // Default content
     wordCount,
     isPublished,
+    publishedAt: chapterPublishedAtInput, // Renamed to avoid confusion
     translatorNotes,
     originalChapterUrl,
     readingTimeEstimate,
   } = chapterData;
 
   if (chapterNumber === undefined || !content) {
-    throw new Error("Chapter number and content are required.");
+    throw new Error('Chapter number and content are required.');
   }
 
-  // Check if novel exists
   const novel = await prisma.novel.findUnique({ where: { id: parentNovelId } });
   if (!novel) {
     throw new Error(`Novel with ID ${parentNovelId} not found.`);
   }
 
   let publishedAtTimestamp = null;
-  if (isPublished === true && !chapterData.publishedAt) {
-    // if explicitly setting to published now
+  if (isPublished === true && !chapterPublishedAtInput) {
     publishedAtTimestamp = new Date();
-  } else if (chapterData.publishedAt) {
-    publishedAtTimestamp = new Date(chapterData.publishedAt);
+  } else if (chapterPublishedAtInput) {
+    publishedAtTimestamp = new Date(chapterPublishedAtInput);
   }
 
   try {
@@ -56,26 +56,16 @@ async function createChapter(novelId, chapterData) {
         publishedAt: publishedAtTimestamp,
         translatorNotes,
         originalChapterUrl,
-        readingTimeEstimate: readingTimeEstimate
-          ? parseInt(readingTimeEstimate, 10)
-          : null,
+        readingTimeEstimate: readingTimeEstimate ? parseInt(readingTimeEstimate, 10) : null,
       },
       include: {
-        // Optionally include novel basic info
         novel: { select: { id: true, title: true, slug: true } },
       },
     });
     return newChapter;
   } catch (error) {
-    // P2002 for unique constraint violation (novelId, chapterNumber)
-    if (
-      error.code === "P2002" &&
-      error.meta?.target?.includes("novelId") &&
-      error.meta?.target?.includes("chapterNumber")
-    ) {
-      throw new Error(
-        `Chapter number ${chapterNumber} already exists for novel ID ${parentNovelId}.`,
-      );
+    if (error.code === 'P2002' && error.meta?.target?.includes('novelId') && error.meta?.target?.includes('chapterNumber')) {
+      throw new Error(`Chapter number ${chapterNumber} already exists for novel ID ${parentNovelId}.`);
     }
     console.error("Error creating chapter:", error);
     throw error;
@@ -83,86 +73,172 @@ async function createChapter(novelId, chapterData) {
 }
 
 /**
- * Retrieves all chapters for a specific novel.
+ * Retrieves all chapters for a specific novel, optionally applying translations.
  * @param {number} novelId - The ID of the novel.
  * @param {object} [filters={}] - Optional filters (e.g., { isPublished: true })
  * @param {object} [pagination={}] - Optional pagination { skip, take }
  * @param {object} [orderBy={ chapterNumber: 'asc' }] - Optional sorting.
+ * @param {string} [languageCode] - Optional language code for translations.
  * @returns {Promise<Array<object>>} An array of chapter objects.
  */
-async function getChaptersByNovelId(
-  novelId,
-  filters = {},
-  pagination = {},
-  orderBy = { chapterNumber: "asc" },
-) {
+async function getChaptersByNovelId(novelId, filters = {}, pagination = {}, orderBy = { chapterNumber: 'asc' }, languageCode = null) {
   const parentNovelId = parseInt(novelId, 10);
   if (isNaN(parentNovelId)) {
-    throw new Error("Invalid novel ID format.");
+    throw new Error('Invalid novel ID format.');
   }
 
   const { skip, take } = pagination;
   const where = { novelId: parentNovelId, ...filters };
 
-  return prisma.chapter.findMany({
+  const chapters = await prisma.chapter.findMany({
     where,
+    include: {
+      novel: { select: { id: true, title: true, slug: true, originalLanguage: true } },
+      ...(languageCode && {
+        translations: {
+          where: { languageCode: languageCode },
+          select: { title: true, content: true },
+        },
+      }),
+    },
     orderBy,
     ...(take && { take: parseInt(take, 10) }),
     ...(skip && { skip: parseInt(skip, 10) }),
-    // Optionally select fewer fields for list view
-    // select: { id: true, chapterNumber: true, title: true, isPublished: true, publishedAt: true }
+  });
+
+  return chapters.map(chapter => {
+    const { translations, novel, ...chapterBase } = chapter;
+    let servedTitle = chapterBase.title;
+    let servedContent = chapterBase.content;
+    let servedLang = novel.originalLanguage; // Default served language
+
+    if (languageCode && translations && translations.length > 0) {
+      const specificTranslation = translations[0];
+      servedTitle = specificTranslation.title !== null && specificTranslation.title !== undefined ? specificTranslation.title : servedTitle;
+      servedContent = specificTranslation.content;
+      servedLang = languageCode;
+    }
+    // If no specific language requested, or translation not found, servedLang implies the language of the base fields.
+
+    return {
+      ...chapterBase,
+      title: servedTitle,
+      content: servedContent, // This will be the main content field clients consume
+      novel: { id: novel.id, title: novel.title, slug: novel.slug }, // Keep novel info lean
+      servedLanguageCode: servedLang,
+    };
   });
 }
 
 /**
- * Retrieves a specific chapter by its ID.
+ * Retrieves a specific chapter by its ID, applying translation if languageCode is provided.
  * @param {number} id - The ID of the chapter.
+ * @param {string} [languageCode] - Optional language code for translation.
  * @returns {Promise<object|null>} The chapter object if found, otherwise null.
  */
-async function getChapterById(id) {
+async function getChapterById(id, languageCode = null) {
   const chapterId = parseInt(id, 10);
   if (isNaN(chapterId)) {
     return null;
   }
-  return prisma.chapter.findUnique({
+
+  const chapterBase = await prisma.chapter.findUnique({
     where: { id: chapterId },
     include: {
-      // Optionally include novel basic info
-      novel: { select: { id: true, title: true, slug: true } },
+      novel: { select: { id: true, title: true, slug: true, originalLanguage: true } },
     },
   });
+
+  if (!chapterBase) return null;
+
+  let finalTitle = chapterBase.title;
+  let finalContent = chapterBase.content;
+  let servedLanguageCode = chapterBase.novel.originalLanguage; // Default
+
+  if (languageCode) {
+    const translation = await prisma.chapterTranslation.findUnique({
+      where: {
+        chapterId_languageCode: {
+          chapterId: chapterBase.id,
+          languageCode: languageCode,
+        },
+      },
+    });
+    if (translation) {
+      finalTitle = translation.title !== null && translation.title !== undefined ? translation.title : finalTitle;
+      finalContent = translation.content;
+      servedLanguageCode = languageCode;
+    }
+  }
+
+  return {
+    ...chapterBase,
+    title: finalTitle,
+    content: finalContent,
+    servedLanguageCode,
+  };
 }
 
 /**
- * Retrieves a specific chapter by novel ID and chapter number.
+ * Retrieves a specific chapter by novel ID and chapter number, applying translation.
  * @param {number} novelId - The ID of the novel.
- * @param {number|string} chapterNumber - The chapter number (can be float like 1.5).
+ * @param {number|string} chapterNumber - The chapter number.
+ * @param {string} [languageCode] - Optional language code for translation.
  * @returns {Promise<object|null>} The chapter object if found, otherwise null.
  */
-async function getChapterByNovelAndNumber(novelId, chapterNumber) {
-  const parentNovelId = parseInt(novelId, 10);
-  const chapNum = parseFloat(chapterNumber);
+async function getChapterByNovelAndNumber(novelId, chapterNumber, languageCode = null) {
+    const parentNovelId = parseInt(novelId, 10);
+    const chapNum = parseFloat(chapterNumber);
 
-  if (isNaN(parentNovelId) || isNaN(chapNum)) {
-    throw new Error("Invalid novel ID or chapter number format.");
-  }
+    if (isNaN(parentNovelId) || isNaN(chapNum)) {
+        throw new Error('Invalid novel ID or chapter number format.');
+    }
 
-  return prisma.chapter.findUnique({
-    where: {
-      novelId_chapterNumber: {
-        // This refers to the @@unique([novelId, chapterNumber]) constraint
-        novelId: parentNovelId,
-        chapterNumber: chapNum,
-      },
-    },
-    include: {
-      novel: { select: { id: true, title: true, slug: true } },
-    },
-  });
+    const chapterBase = await prisma.chapter.findUnique({
+        where: {
+            novelId_chapterNumber: {
+                novelId: parentNovelId,
+                chapterNumber: chapNum,
+            },
+        },
+        include: {
+            novel: { select: { id: true, title: true, slug: true, originalLanguage: true } }
+        }
+    });
+
+    if (!chapterBase) return null;
+
+    let finalTitle = chapterBase.title;
+    let finalContent = chapterBase.content;
+    let servedLanguageCode = chapterBase.novel.originalLanguage;
+
+    if (languageCode) {
+        const translation = await prisma.chapterTranslation.findUnique({
+            where: {
+                chapterId_languageCode: {
+                    chapterId: chapterBase.id,
+                    languageCode: languageCode,
+                },
+            },
+        });
+        if (translation) {
+            finalTitle = translation.title !== null && translation.title !== undefined ? translation.title : finalTitle;
+            finalContent = translation.content;
+            servedLanguageCode = languageCode;
+        }
+    }
+    return {
+        ...chapterBase,
+        title: finalTitle,
+        content: finalContent,
+        servedLanguageCode,
+    };
 }
+
 
 /**
  * Updates an existing chapter.
+ * (This function primarily deals with the default language content)
  * @param {number} id - The ID of the chapter to update.
  * @param {object} chapterData - The data to update.
  * @returns {Promise<object>} The updated chapter object.
@@ -171,53 +247,41 @@ async function getChapterByNovelAndNumber(novelId, chapterNumber) {
 async function updateChapter(id, chapterData) {
   const chapterId = parseInt(id, 10);
   if (isNaN(chapterId)) {
-    throw new Error("Invalid chapter ID format.");
+    throw new Error('Invalid chapter ID format.');
   }
 
   const {
-    chapterNumber,
-    title,
-    content,
-    wordCount,
-    isPublished,
-    publishedAt, // User might send this explicitly
-    translatorNotes,
-    originalChapterUrl,
-    readingTimeEstimate,
-    novelId, // Prevent changing novelId for now, could be a separate "move chapter" feature
+    chapterNumber, title, content, wordCount, isPublished,
+    publishedAt: chapterPublishedAtInput, // Renamed
+    translatorNotes, originalChapterUrl, readingTimeEstimate,
+    // novelId should not be updatable here to prevent moving chapters between novels easily
   } = chapterData;
 
   const dataToUpdate = {};
-  if (chapterNumber !== undefined)
-    dataToUpdate.chapterNumber = parseFloat(chapterNumber);
+  // Selectively add fields to dataToUpdate if they are provided in chapterData
+  if (chapterNumber !== undefined) dataToUpdate.chapterNumber = parseFloat(chapterNumber);
   if (title !== undefined) dataToUpdate.title = title;
   if (content !== undefined) dataToUpdate.content = content;
-  if (wordCount !== undefined)
-    dataToUpdate.wordCount = wordCount ? parseInt(wordCount, 10) : null;
-  if (translatorNotes !== undefined)
-    dataToUpdate.translatorNotes = translatorNotes;
-  if (originalChapterUrl !== undefined)
-    dataToUpdate.originalChapterUrl = originalChapterUrl;
-  if (readingTimeEstimate !== undefined)
-    dataToUpdate.readingTimeEstimate = readingTimeEstimate
-      ? parseInt(readingTimeEstimate, 10)
-      : null;
+  if (wordCount !== undefined) dataToUpdate.wordCount = wordCount ? parseInt(wordCount, 10) : null;
+  if (translatorNotes !== undefined) dataToUpdate.translatorNotes = translatorNotes;
+  if (originalChapterUrl !== undefined) dataToUpdate.originalChapterUrl = originalChapterUrl;
+  if (readingTimeEstimate !== undefined) dataToUpdate.readingTimeEstimate = readingTimeEstimate ? parseInt(readingTimeEstimate, 10) : null;
 
   if (isPublished !== undefined) {
     dataToUpdate.isPublished = isPublished;
-    if (isPublished === true && !publishedAt) {
-      // If setting to published and no specific publishedAt is given
+    if (isPublished === true && !chapterPublishedAtInput && dataToUpdate.publishedAt === undefined) { // only default if not provided
       dataToUpdate.publishedAt = new Date();
     } else if (isPublished === false) {
-      // If unpublishing
-      dataToUpdate.publishedAt = null; // Or keep old date? Business logic decision. Here we nullify.
+      dataToUpdate.publishedAt = null;
     }
   }
-  if (publishedAt) {
-    // If user sends a specific publishedAt
-    dataToUpdate.publishedAt = new Date(publishedAt);
-    dataToUpdate.isPublished = true; // Implicitly, if it has a published date, it's published
+  if (chapterPublishedAtInput) { // If user sends a specific publishedAt
+    dataToUpdate.publishedAt = new Date(chapterPublishedAtInput);
+    if (dataToUpdate.isPublished === undefined) { // If isPublished wasn't set, but publishedAt is, then it's published
+        dataToUpdate.isPublished = true;
+    }
   }
+
 
   try {
     return await prisma.chapter.update({
@@ -226,23 +290,12 @@ async function updateChapter(id, chapterData) {
       include: { novel: { select: { id: true, title: true, slug: true } } },
     });
   } catch (error) {
-    if (error.code === "P2025") {
-      // Record to update not found
+    if (error.code === 'P2025') {
       throw new Error(`Chapter with ID ${chapterId} not found.`);
     }
-    // P2002 for unique constraint violation (novelId, chapterNumber)
-    if (
-      error.code === "P2002" &&
-      error.meta?.target?.includes("novelId") &&
-      error.meta?.target?.includes("chapterNumber")
-    ) {
-      const currentChapter = await prisma.chapter.findUnique({
-        where: { id: chapterId },
-        select: { novelId: true },
-      });
-      throw new Error(
-        `Chapter number ${dataToUpdate.chapterNumber || "given"} already exists for novel ID ${currentChapter?.novelId || "unknown"}.`,
-      );
+    if (error.code === 'P2002' && error.meta?.target?.includes('novelId') && error.meta?.target?.includes('chapterNumber')) {
+        const currentChapter = await prisma.chapter.findUnique({where: {id: chapterId}, select: {novelId: true}});
+        throw new Error(`Chapter number ${dataToUpdate.chapterNumber || 'given'} already exists for novel ID ${currentChapter?.novelId || 'unknown'}.`);
     }
     console.error("Error updating chapter:", error);
     throw error;
@@ -258,18 +311,16 @@ async function updateChapter(id, chapterData) {
 async function deleteChapter(id) {
   const chapterId = parseInt(id, 10);
   if (isNaN(chapterId)) {
-    throw new Error("Invalid chapter ID format.");
+    throw new Error('Invalid chapter ID format.');
   }
   try {
     return await prisma.chapter.delete({
       where: { id: chapterId },
     });
   } catch (error) {
-    if (error.code === "P2025") {
-      // Record to delete not found
+    if (error.code === 'P2025') {
       throw new Error(`Chapter with ID ${chapterId} not found.`);
     }
-    // Other potential errors (e.g., P2003 if chapter has foreign key constraints that are Restrict)
     console.error("Error deleting chapter:", error);
     throw error;
   }
