@@ -168,10 +168,123 @@ async function updateUserProfile(userId, profileData) {
   }
 }
 
+// --- NEW Admin-Specific Functions ---
+
+/**
+ * (Admin) Retrieves all users with pagination and filtering.
+ * @param {object} [filters={}] - Optional filters (e.g., { isActive: true, isAdmin: false }).
+ * @param {object} [pagination={}] - Optional pagination { skip, take }.
+ * @param {object} [orderBy={ createdAt: 'desc' }] - Optional sorting.
+ * @returns {Promise<Array<object>>} An array of user objects (excluding passwords).
+ */
+async function getAllUsersAdmin(filters = {}, pagination = {}, orderBy = { createdAt: 'desc' }) {
+  const { skip, take } = pagination;
+  return prisma.user.findMany({
+    where: filters,
+    select: { // Select fields appropriate for an admin listing
+      id: true,
+      username: true,
+      email: true,
+      displayName: true,
+      isActive: true,
+      isAdmin: true,
+      createdAt: true,
+      lastLoginAt: true,
+    },
+    orderBy,
+    ...(take && { take: parseInt(take, 10) }),
+    ...(skip && { skip: parseInt(skip, 10) }),
+  });
+}
+
+/**
+ * (Admin) Updates a user's details by an administrator.
+ * Allows updating fields like isActive, isAdmin, displayName, email.
+ * Does NOT allow updating password directly here (should use a separate reset flow).
+ * @param {string} userId - The ID of the user to update.
+ * @param {object} updateData - Data to update (e.g., { isActive, isAdmin, displayName, email }).
+ * @returns {Promise<object>} The updated user object (excluding password).
+ * @throws {Error} If user not found, or email/username conflict.
+ */
+async function updateUserByAdmin(userId, updateData) {
+  const { displayName, email, isActive, isAdmin, preferredLanguage, avatarUrl } = updateData;
+
+  // Construct data object with only provided fields
+  const dataToUpdate = {};
+  if (displayName !== undefined) dataToUpdate.displayName = displayName;
+  if (email !== undefined) dataToUpdate.email = email; // Admin changing email needs consideration for verification flow
+  if (isActive !== undefined) dataToUpdate.isActive = isActive;
+  if (isAdmin !== undefined) dataToUpdate.isAdmin = isAdmin;
+  if (preferredLanguage !== undefined) dataToUpdate.preferredLanguage = preferredLanguage;
+  if (avatarUrl !== undefined) dataToUpdate.avatarUrl = avatarUrl;
+  // Password should not be updated directly here.
+
+  if (Object.keys(dataToUpdate).length === 0) {
+    throw new Error('No data provided for update.');
+  }
+
+  try {
+    return await prisma.user.update({
+      where: { id: userId },
+      data: dataToUpdate,
+      select: { // Return relevant admin view fields
+        id: true, username: true, email: true, displayName: true, avatarUrl: true,
+        preferredLanguage: true, isActive: true, isAdmin: true, updatedAt: true,
+      },
+    });
+  } catch (error) {
+    if (error.code === 'P2025') { // Record to update not found
+      throw new Error(`User with ID ${userId} not found.`);
+    }
+    if (error.code === 'P2002') { // Unique constraint violation
+      if (error.meta?.target?.includes('username') && dataToUpdate.username) {
+        throw new Error(`Username '${dataToUpdate.username}' is already taken.`);
+      }
+      if (error.meta?.target?.includes('email') && dataToUpdate.email) {
+        throw new Error(`Email '${dataToUpdate.email}' is already registered.`);
+      }
+    }
+    console.error("Error updating user by admin:", error);
+    throw error;
+  }
+}
+
+/**
+ * (Admin) Deletes a user (soft delete by setting isActive=false is preferred).
+ * For hard delete, ensure cascading or cleanup is handled.
+ * @param {string} userId - The ID of the user to "delete".
+ * @returns {Promise<object>} The updated user object (if soft delete) or deleted object.
+ */
+async function deleteUserByAdmin(userId) {
+  // For this example, we'll implement a soft delete by setting isActive to false.
+  // If you want a hard delete, use prisma.user.delete()
+  // and ensure you understand cascading implications.
+  try {
+    const user = await prisma.user.update({
+      where: { id: userId },
+      data: { isActive: false },
+      select: {
+        id: true, username: true, email: true, isActive: true, isAdmin: true,
+      },
+    });
+    // If user was not found, prisma.user.update will throw P2025
+    return user;
+  } catch (error) {
+    if (error.code === 'P2025') {
+      throw new Error(`User with ID ${userId} not found.`);
+    }
+    console.error("Error deactivating user by admin:", error);
+    throw error;
+  }
+}
+
+
 module.exports = {
   createUser,
   findUserById,
   findUserByUsernameOrEmailWithPassword,
   updateUserProfile,
-  // We will add admin-specific functions like getAllUsers, updateUserByAdmin here in Phase 6
+  getAllUsersAdmin,
+  updateUserByAdmin,
+  deleteUserByAdmin,
 };
