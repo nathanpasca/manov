@@ -57,6 +57,7 @@ const {
   commentActionRouter
 } = require('./routes/commentRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const searchRoutes = require('./routes/searchRoutes');
 
 app.use('/api/v1/languages', languageRoutes);
 app.use('/api/v1/authors', authorRoutes);
@@ -94,6 +95,8 @@ app.use('/api/v1/chapters/:chapterId/comments', chapterScopedCommentRouter);
 app.use('/api/v1/comments', commentActionRouter);
 
 app.use('/api/v1/admin', adminRoutes);
+
+app.use('/api/v1/search', searchRoutes);
 
 // --- Centralized Error Handling Middleware ---
 // Important: This MUST be defined AFTER all other app.use() and route calls.
