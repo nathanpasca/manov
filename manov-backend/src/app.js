@@ -92,31 +92,47 @@ app.use('/api/v1/novels/:novelId/comments', novelScopedCommentRouter);
 app.use('/api/v1/chapters/:chapterId/comments', chapterScopedCommentRouter);
 app.use('/api/v1/comments', commentActionRouter);    
 
-// Step 8: (Placeholder) Centralized Error Handling Middleware
-// This should be one of the last pieces of middleware you define.
-// It will catch errors passed by next(err) from your route handlers.
-// For example:
-// app.use((err, req, res, next) => {
-//   console.error(err.stack); // Log error stack for debugging
-//   const statusCode = err.statusCode || 500;
-//   const message = err.message || 'Internal Server Error';
-//   res.status(statusCode).json({
-//     status: 'error',
-//     statusCode,
-//     message,
-//     // Optionally include stack in development
-//     ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
-//   });
-// });
+// --- Centralized Error Handling Middleware ---
+// Important: This MUST be defined AFTER all other app.use() and route calls.
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
+  console.error('--- UNHANDLED ERROR ---');
+  console.error(err.name); // e.g., 'Error', 'TypeError', 'CustomError'
+  console.error(err.message);
+  console.error(err.stack); // Log the full error stack for debugging on the server
 
-// Step 9: Define Port and Start Server
-const PORT = process.env.PORT || 3001; // Use port from .env or default to 3001
+  // If the error object has a specific statusCode (e.g., from a custom error or a library like http-errors), use it.
+  // Otherwise, default to 500 Internal Server Error.
+  const statusCode = err.statusCode || 500;
+  let message = err.message || 'An unexpected error occurred on the server.';
+
+  // For client-facing errors, you might not want to expose internal error messages in production.
+  // Only expose specific messages for known client errors (4xx range).
+  // For 500 errors in production, a generic message is often better.
+  if (statusCode === 500 && process.env.NODE_ENV === 'production') {
+    message = 'Internal Server Error. Please try again later.';
+  }
+
+  res.status(statusCode).json({
+    status: 'error',
+    statusCode,
+    message,
+    // Optionally, include the error stack in development for easier debugging from client-side too
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+    // You might also want to include err.name or other properties
+    ...(process.env.NODE_ENV === 'development' && err.details && { details: err.details }), // For express-validator like errors if not handled before
+  });
+});
+
+
+// --- Define Port and Start Server ---
+const PORT = process.env.PORT || 3001;
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Health check available at http://localhost:${PORT}/health`);
-  // Ensure your .env file has a PORT variable if you want to use something else.
 });
+
 
 // Step 10: (Optional) Export the app for testing purposes
 // This allows testing frameworks like Supertest to use your app instance.
