@@ -11,10 +11,12 @@ const truncateText = (text, length = 100) => {
 }
 
 export function NovelCard({ novel }) {
-  // Determine which title to display based on servedLanguageCode and originalLanguage
-  // novel.titleTranslated holds the served title, novel.title is the original.
-  // novel.servedLanguageCode indicates the language of titleTranslated and synopsis.
   const displayTitle = novel.titleTranslated || novel.title
+
+  // Convert averageRating to a number before using toFixed
+  const numericAverageRating =
+    novel.averageRating !== null && novel.averageRating !== undefined ? parseFloat(novel.averageRating) : null
+  const isValidRating = numericAverageRating !== null && !isNaN(numericAverageRating)
 
   return (
     <Card className='flex flex-col h-full overflow-hidden hover:shadow-lg transition-shadow duration-200'>
@@ -43,10 +45,12 @@ export function NovelCard({ novel }) {
             </Link>
           </p>
         )}
-        {novel.averageRating && (
+        {/* Updated line that caused the error */}
+        {isValidRating && (
           <div className='flex items-center text-sm text-muted-foreground mt-1'>
             <Star className='w-4 h-4 mr-1 fill-yellow-400 text-yellow-500' />
-            {novel.averageRating.toFixed(1)}
+            {numericAverageRating.toFixed(1)}
+            {/* Optionally show max rating: e.g., / 5 */}
           </div>
         )}
       </CardHeader>

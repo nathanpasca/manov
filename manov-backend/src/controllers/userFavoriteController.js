@@ -19,8 +19,9 @@ async function addNovelToFavorites(req, res, next) {
       return res.status(409).json({ message: error.message });
     }
     // Validator catches invalid Novel ID format before it hits the service if param is not int
-    if (error.message.includes('Invalid Novel ID format')) { // From service, defensive
-        return res.status(400).json({message: error.message});
+    if (error.message.includes('Invalid Novel ID format')) {
+      // From service, defensive
+      return res.status(400).json({ message: error.message });
     }
     next(error);
   }
@@ -36,7 +37,10 @@ async function removeNovelFromFavorites(req, res, next) {
     res.status(204).send();
   } catch (error) {
     // Service errors like "not found in your favorites"
-    if (error.message.includes('not found in your favorites') || error.message.includes('Invalid Novel ID')) {
+    if (
+      error.message.includes('not found in your favorites') ||
+      error.message.includes('Invalid Novel ID')
+    ) {
       return res.status(404).json({ message: error.message });
     }
     next(error);
@@ -54,10 +58,13 @@ async function listUserFavorites(req, res, next) {
       pagination.take = limit; // Already an int from validator
       pagination.skip = (page - 1) * limit;
     } else if (limit) {
-        pagination.take = limit;
+      pagination.take = limit;
     }
 
-    const favorites = await userFavoriteService.getAllFavoritesForUser(userId, pagination);
+    const favorites = await userFavoriteService.getAllFavoritesForUser(
+      userId,
+      pagination
+    );
     res.status(200).json(favorites);
   } catch (error) {
     next(error);

@@ -16,6 +16,7 @@ import { MainLayout } from "./layouts/MainLayout"
 import { HomePage } from "./pages/HomePage"
 import { UserReadingProgressPage } from "./pages/user/UserReadingProgressPage"
 import { ChapterReadingPage } from "./pages/chapters/ChapterReadingPage"
+import { UserFavoritesPage } from "./pages/user/UserFavoritesPage"
 
 function App() {
   return (
@@ -35,6 +36,15 @@ function App() {
               element={
                 <ProtectedRoute>
                   <UserReadingProgressPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path='/users/me/favorites'
+              element={
+                <ProtectedRoute>
+                  <UserFavoritesPage />
                 </ProtectedRoute>
               }
             />

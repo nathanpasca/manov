@@ -73,3 +73,89 @@ export const fetchAllUserReadingProgress = async (params = {}) => {
   const { data } = await apiClient.get("/users/me/reading-progress", { params })
   return data // Expects array of progress entries, or object with { results: [], totalCount: X }
 }
+
+// --- Favorites ---
+export const addNovelToFavorites = async (novelId) => {
+  const { data } = await apiClient.post(`/novels/${novelId}/favorite`)
+  return data // Backend returns the created UserFavorite object
+}
+
+export const removeNovelFromFavorites = async (novelId) => {
+  // Backend returns 204 No Content on success
+  await apiClient.delete(`/novels/${novelId}/favorite`)
+}
+
+export const fetchUserFavorites = async (params = {}) => {
+  // Params: page, limit
+  const { data } = await apiClient.get("/users/me/favorites", { params })
+  // Backend userFavoriteService.getAllFavoritesForUser includes novel details
+  return data // Expects { results: [], totalCount: X, ... } or array
+}
+
+// --- Ratings & Reviews ---
+export const upsertNovelRating = async (novelId, ratingData) => {
+  // ratingData: { rating: number, reviewText?: string }
+  const { data } = await apiClient.post(`/novels/${novelId}/ratings`, ratingData)
+  // Backend ratingService.upsertRating includes user details
+  return data
+}
+
+export const fetchNovelRatings = async (novelId, params = {}) => {
+  // Params: page, limit
+  const { data } = await apiClient.get(`/novels/${novelId}/ratings`, { params })
+  // Backend ratingService.getRatingsForNovel includes user details
+  return data // Expects { results: [], totalCount: X, ... } or array
+}
+
+export const fetchUserRatingForNovel = async (novelId) => {
+  const { data } = await apiClient.get(`/novels/${novelId}/ratings/me`)
+  return data // Rating object or null
+}
+
+export const deleteUserRatingForNovel = async (novelId) => {
+  // Backend returns 204 No Content on success
+  await apiClient.delete(`/novels/${novelId}/ratings/me`)
+}
+
+// --- Comments ---
+export const postNovelComment = async (novelId, commentData) => {
+  // commentData: { content: string }
+  const { data } = await apiClient.post(`/novels/${novelId}/comments`, commentData)
+  return data // Backend commentService.createComment includes user details
+}
+
+export const postChapterComment = async (chapterId, commentData) => {
+  // commentData: { content: string }
+  const { data } = await apiClient.post(`/chapters/${chapterId}/comments`, commentData)
+  return data
+}
+
+export const postReplyToComment = async (parentCommentId, commentData) => {
+  // commentData: { content: string }
+  const { data } = await apiClient.post(`/comments/${parentCommentId}/replies`, commentData)
+  return data
+}
+
+export const fetchNovelComments = async (novelId, params = {}) => {
+  // Params: page, limit, sortBy, sortOrder
+  const { data } = await apiClient.get(`/novels/${novelId}/comments`, { params })
+  // Backend commentService.getCommentsForNovel includes user details and replies
+  return data // Expects { results: [], totalCount: X, ... } or array
+}
+
+export const fetchChapterComments = async (chapterId, params = {}) => {
+  // Params: page, limit, sortBy, sortOrder
+  const { data } = await apiClient.get(`/chapters/${chapterId}/comments`, { params })
+  return data
+}
+
+export const updateCommentById = async (commentId, commentData) => {
+  // commentData: { content: string }
+  const { data } = await apiClient.put(`/comments/${commentId}`, commentData)
+  return data
+}
+
+export const deleteCommentById = async (commentId) => {
+  // Backend returns 204 No Content on success
+  await apiClient.delete(`/comments/${commentId}`)
+}
