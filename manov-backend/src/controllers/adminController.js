@@ -1,6 +1,7 @@
 // File: src/controllers/adminController.js
 
 const userService = require('../services/userService');
+const prisma = require('../lib/prisma');
 
 /**
  * (Admin) Lists all users with pagination and filtering.
@@ -115,21 +116,17 @@ async function deleteUserByAdmin(req, res, next) {
 
     // Ensure admin cannot deactivate themselves via this endpoint - crucial check!
     if (req.user && req.user.id === userId) {
-      return res
-        .status(403)
-        .json({
-          message:
-            'Administrators cannot deactivate their own account through this endpoint.',
-        });
+      return res.status(403).json({
+        message:
+          'Administrators cannot deactivate their own account through this endpoint.',
+      });
     }
 
     const result = await userService.deleteUserByAdmin(userId); // This currently soft deletes
-    res
-      .status(200)
-      .json({
-        message: `User with ID ${userId} has been deactivated.`,
-        user: result,
-      });
+    res.status(200).json({
+      message: `User with ID ${userId} has been deactivated.`,
+      user: result,
+    });
     // If it were a hard delete, res.status(204).send(); would be more appropriate.
   } catch (error) {
     if (error.message.includes('not found')) {

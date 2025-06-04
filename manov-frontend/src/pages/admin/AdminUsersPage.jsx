@@ -1,11 +1,13 @@
 import React, { useState, useMemo, useEffect } from "react"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
-import { adminFetchUsers, adminUpdateUser, adminDeactivateUser, adminFetchUserDetails } from "@/services/adminService"
+import { adminFetchUsers, adminUpdateUser, adminDeactivateUser } from "@/services/adminService"
 import { LoadingSpinner } from "@/components/LoadingSpinner"
 import { ErrorMessage } from "@/components/ErrorMessage"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Checkbox } from "@/components/ui/checkbox" // For isActive/isAdmin filters
+import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,36 +27,36 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { UserEditDialog } from "@/components/admin/UserEditDialog" // We will create this next
+import { UserEditDialog } from "@/components/admin/UserEditDialog"
 import { toast } from "sonner"
 import { useSearchParams } from "react-router-dom"
 import {
-  ColumnDef,
+  // REMOVE ColumnDef from here:
+  // ColumnDef,
   flexRender,
   getCoreRowModel,
   getSortedRowModel,
-  getPaginationRowModel, // Required for client-side pagination OR for controlling server-side state
+  getPaginationRowModel,
   useReactTable,
-  SortingState,
-  PaginationState,
+  // SortingState, // Keep if you are explicitly typing state, remove if not
+  // PaginationState, // Keep if you are explicitly typing state, remove if not
 } from "@tanstack/react-table"
+import { CaretSortIcon, DotsHorizontalIcon } from "@radix-ui/react-icons"
 
-const DEFAULT_PAGE_INDEX = 0 // TanStack Table uses 0-based index
+const DEFAULT_PAGE_INDEX = 0
 const DEFAULT_PAGE_SIZE = 10
 
 export function AdminUsersPage() {
   const queryClient = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
 
-  // Editing and Deactivation State
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [editingUser, setEditingUser] = useState(null) // User object for editing
+  const [editingUser, setEditingUser] = useState(null)
   const [isDeactivateAlertOpen, setIsDeactivateAlertOpen] = useState(false)
   const [userToDeactivate, setUserToDeactivate] = useState(null)
 
-  // Server-side pagination, sorting, and filtering state
   const [{ pageIndex, pageSize }, setPagination] = useState(() => ({
-    pageIndex: parseInt(searchParams.get("page") || (DEFAULT_PAGE_INDEX + 1).toString()) - 1, // Convert to 0-based
+    pageIndex: parseInt(searchParams.get("page") || (DEFAULT_PAGE_INDEX + 1).toString()) - 1,
     pageSize: parseInt(searchParams.get("limit") || DEFAULT_PAGE_SIZE.toString()),
   }))
   const [sorting, setSorting] = useState(() => {
@@ -63,15 +65,14 @@ export function AdminUsersPage() {
     return sortBy && sortOrder ? [{ id: sortBy, desc: sortOrder === "desc" }] : []
   })
   const [filters, setFilters] = useState({
-    username: searchParams.get("username") || "", // Example: client-side or server-side username filter
-    email: searchParams.get("email") || "", // Example: client-side or server-side email filter
+    username: searchParams.get("username") || "",
+    email: searchParams.get("email") || "",
     isActive:
       searchParams.get("isActive") === "true" ? true : searchParams.get("isActive") === "false" ? false : undefined,
     isAdmin:
       searchParams.get("isAdmin") === "true" ? true : searchParams.get("isAdmin") === "false" ? false : undefined,
   })
 
-  // Debounce for text input filters
   const [debouncedUsername, setDebouncedUsername] = useState(filters.username)
   const [debouncedEmail, setDebouncedEmail] = useState(filters.email)
 
@@ -79,6 +80,7 @@ export function AdminUsersPage() {
     const handler = setTimeout(() => setDebouncedUsername(filters.username), 500)
     return () => clearTimeout(handler)
   }, [filters.username])
+
   useEffect(() => {
     const handler = setTimeout(() => setDebouncedEmail(filters.email), 500)
     return () => clearTimeout(handler)
@@ -86,21 +88,20 @@ export function AdminUsersPage() {
 
   const queryParams = useMemo(() => {
     const params = {
-      page: pageIndex + 1, // API uses 1-based page
+      page: pageIndex + 1,
       limit: pageSize,
     }
     if (sorting.length > 0) {
       params.sortBy = sorting[0].id
       params.sortOrder = sorting[0].desc ? "desc" : "asc"
     }
-    if (debouncedUsername) params.username = debouncedUsername // Assuming backend supports 'username' filter
-    if (debouncedEmail) params.email = debouncedEmail // Assuming backend supports 'email' filter
+    if (debouncedUsername) params.username = debouncedUsername
+    if (debouncedEmail) params.email = debouncedEmail
     if (filters.isActive !== undefined) params.isActive = filters.isActive
     if (filters.isAdmin !== undefined) params.isAdmin = filters.isAdmin
     return params
   }, [pageIndex, pageSize, sorting, debouncedUsername, debouncedEmail, filters.isActive, filters.isAdmin])
 
-  // Fetch users data
   const {
     data: usersResponse,
     isLoading,
@@ -113,7 +114,6 @@ export function AdminUsersPage() {
     keepPreviousData: true,
   })
 
-  // Update URL search params when state changes
   useEffect(() => {
     const newSearchParams = new URLSearchParams()
     newSearchParams.set("page", (pageIndex + 1).toString())
@@ -130,14 +130,16 @@ export function AdminUsersPage() {
   }, [pageIndex, pageSize, sorting, filters, setSearchParams])
 
   const defaultData = useMemo(() => [], [])
-  const pageCount = usersResponse?.totalPages ?? -1 // -1 for unknown until data arrives
+  const pageCount = usersResponse?.totalPages ?? -1
 
+  // Define columns without importing ColumnDef
   const columns = useMemo(
     () => [
       {
         accessorKey: "id",
         header: "ID",
-        cell: ({ row }) => <span className='text-xs truncate'>{row.original.id}</span>,
+        cell: ({ row }) => <span className='text-xs truncate w-20 inline-block'>{row.original.id}</span>,
+        size: 100,
       },
       {
         accessorKey: "username",
@@ -163,7 +165,7 @@ export function AdminUsersPage() {
             Active <CaretSortIcon className='ml-2 h-4 w-4' />
           </Button>
         ),
-        cell: ({ row }) => <Checkbox checked={row.original.isActive} disabled />,
+        cell: ({ row }) => <Checkbox checked={row.original.isActive} disabled className='ml-4' />,
       },
       {
         accessorKey: "isAdmin",
@@ -172,7 +174,7 @@ export function AdminUsersPage() {
             Admin <CaretSortIcon className='ml-2 h-4 w-4' />
           </Button>
         ),
-        cell: ({ row }) => <Checkbox checked={row.original.isAdmin} disabled />,
+        cell: ({ row }) => <Checkbox checked={row.original.isAdmin} disabled className='ml-3' />,
       },
       {
         accessorKey: "createdAt",
@@ -205,7 +207,9 @@ export function AdminUsersPage() {
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
               <DropdownMenuItem onClick={() => handleEditUser(row.original)}>Edit User</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className='text-destructive' onClick={() => confirmDeactivateUser(row.original)}>
+              <DropdownMenuItem
+                className='text-destructive focus:bg-destructive/20 focus:text-destructive-foreground'
+                onClick={() => confirmDeactivateUser(row.original)}>
                 Deactivate User
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -214,7 +218,7 @@ export function AdminUsersPage() {
       },
     ],
     []
-  )
+  ) // Add dependencies if handleEditUser or confirmDeactivateUser change, but they are stable here.
 
   const table = useReactTable({
     data: usersResponse?.results ?? defaultData,
@@ -225,21 +229,19 @@ export function AdminUsersPage() {
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    // getPaginationRowModel: getPaginationRowModel(), // Not strictly needed for server-side pagination if manualPagination is true
     manualPagination: true,
     manualSorting: true,
-    manualFiltering: true, // If you implement server-side text filtering
+    manualFiltering: true,
     debugTable: process.env.NODE_ENV === "development",
   })
 
   const handleFilterChange = (filterName, value) => {
     setFilters((prev) => ({ ...prev, [filterName]: value }))
-    setPagination((prev) => ({ ...prev, pageIndex: 0 })) // Reset to first page on filter change
+    setPagination((prev) => ({ ...prev, pageIndex: 0 }))
   }
 
-  // Edit User Dialog
   const handleEditUser = (user) => {
-    setEditingUser(user) // This user object might be minimal from list, consider fetching full details if needed
+    setEditingUser(user)
     setIsEditDialogOpen(true)
   }
 
@@ -254,7 +256,6 @@ export function AdminUsersPage() {
     onError: (error) => toast.error(error.response?.data?.message || "Failed to update user."),
   })
 
-  // Deactivate User Alert
   const confirmDeactivateUser = (user) => {
     setUserToDeactivate(user)
     setIsDeactivateAlertOpen(true)
@@ -275,59 +276,66 @@ export function AdminUsersPage() {
     <div className='space-y-4'>
       <h1 className='text-2xl font-bold'>User Management</h1>
 
-      {/* Filters */}
-      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 border rounded-md'>
+      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 border rounded-md bg-card text-card-foreground'>
         <Input
           placeholder='Filter by Username...'
           value={filters.username}
           onChange={(e) => handleFilterChange("username", e.target.value)}
+          className='md:col-span-1'
         />
         <Input
           placeholder='Filter by Email...'
           value={filters.email}
           onChange={(e) => handleFilterChange("email", e.target.value)}
+          className='md:col-span-1'
         />
-        <div className='flex items-center space-x-2'>
-          <Checkbox
-            id='filter-active'
-            checked={filters.isActive === true}
-            onCheckedChange={(checked) =>
-              handleFilterChange("isActive", checked === "indeterminate" ? undefined : checked)
-            }
-          />
-          <label htmlFor='filter-active'>Active Only</label>
-          <Checkbox
-            id='filter-inactive'
-            checked={filters.isActive === false}
-            onCheckedChange={(checked) =>
-              handleFilterChange("isActive", checked === "indeterminate" ? undefined : !checked)
-            }
-          />
-          <label htmlFor='filter-inactive'>Inactive Only</label>
+        <div className='flex items-center space-x-2 md:col-span-1'>
+          <Label htmlFor='filter-active-select'>Status:</Label>
+          <Select
+            value={filters.isActive === undefined ? "all" : filters.isActive ? "active" : "inactive"}
+            onValueChange={(value) => {
+              let isActiveValue
+              if (value === "active") isActiveValue = true
+              else if (value === "inactive") isActiveValue = false
+              else isActiveValue = undefined // 'all'
+              handleFilterChange("isActive", isActiveValue)
+            }}>
+            <SelectTrigger className='w-[120px]'>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value='all'>All</SelectItem>
+              <SelectItem value='active'>Active</SelectItem>
+              <SelectItem value='inactive'>Inactive</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
-        <div className='flex items-center space-x-2'>
-          <Checkbox
-            id='filter-admin'
-            checked={filters.isAdmin === true}
-            onCheckedChange={(checked) =>
-              handleFilterChange("isAdmin", checked === "indeterminate" ? undefined : checked)
-            }
-          />
-          <label htmlFor='filter-admin'>Admins Only</label>
-          <Checkbox
-            id='filter-notadmin'
-            checked={filters.isAdmin === false}
-            onCheckedChange={(checked) =>
-              handleFilterChange("isAdmin", checked === "indeterminate" ? undefined : !checked)
-            }
-          />
-          <label htmlFor='filter-notadmin'>Non-Admins Only</label>
+        <div className='flex items-center space-x-2 md:col-span-1'>
+          <Label htmlFor='filter-admin-select'>Role:</Label>
+          <Select
+            value={filters.isAdmin === undefined ? "all" : filters.isAdmin ? "admin" : "user"}
+            onValueChange={(value) => {
+              let isAdminValue
+              if (value === "admin") isAdminValue = true
+              else if (value === "user") isAdminValue = false
+              else isAdminValue = undefined // 'all'
+              handleFilterChange("isAdmin", isAdminValue)
+            }}>
+            <SelectTrigger className='w-[120px]'>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value='all'>All Roles</SelectItem>
+              <SelectItem value='admin'>Admin</SelectItem>
+              <SelectItem value='user'>User</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
-      {isLoading && <LoadingSpinner />}
+      {isLoading && !usersResponse && <LoadingSpinner />}
       {isError && <ErrorMessage error={error} message='Failed to load users.' />}
-      {isFetching && !isLoading && <p className='text-sm text-muted-foreground'>Fetching updated data...</p>}
+      {isFetching && <p className='text-sm text-muted-foreground text-center py-2'>Fetching updated data...</p>}
 
       {!isLoading && !isError && (
         <div className='rounded-md border'>
@@ -338,7 +346,7 @@ export function AdminUsersPage() {
                   {headerGroup.headers.map((header) => (
                     <TableHead
                       key={header.id}
-                      style={{ width: header.getSize() !== 150 ? header.getSize() : undefined }}>
+                      style={{ width: header.column.getSize() !== 150 ? header.column.getSize() : undefined }}>
                       {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
                     </TableHead>
                   ))}
@@ -357,7 +365,7 @@ export function AdminUsersPage() {
               ) : (
                 <TableRow>
                   <TableCell colSpan={columns.length} className='h-24 text-center'>
-                    No results.
+                    No results found.
                   </TableCell>
                 </TableRow>
               )}
@@ -366,12 +374,19 @@ export function AdminUsersPage() {
         </div>
       )}
 
-      {/* Pagination Controls */}
       <div className='flex items-center justify-between space-x-2 py-4'>
         <span className='text-sm text-muted-foreground'>
-          Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount() > 0 ? table.getPageCount() : 1}
+          Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount() > 0 ? table.getPageCount() : 1}{" "}
+          (Total: {usersResponse?.totalCount ?? 0} users)
         </span>
         <div className='space-x-2'>
+          <Button
+            variant='outline'
+            size='sm'
+            onClick={() => table.setPageIndex(0)}
+            disabled={!table.getCanPreviousPage()}>
+            First
+          </Button>
           <Button
             variant='outline'
             size='sm'
@@ -382,21 +397,26 @@ export function AdminUsersPage() {
           <Button variant='outline' size='sm' onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
             Next
           </Button>
+          <Button
+            variant='outline'
+            size='sm'
+            onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+            disabled={!table.getCanNextPage()}>
+            Last
+          </Button>
         </div>
       </div>
 
-      {/* Edit User Dialog */}
       {editingUser && (
         <UserEditDialog
           open={isEditDialogOpen}
           onOpenChange={setIsEditDialogOpen}
-          user={editingUser} // Pass the full user object if fetched, or the row.original
+          user={editingUser}
           onSubmit={(data) => editUserMutation.mutate({ userId: editingUser.id, data })}
           isSubmitting={editUserMutation.isLoading}
         />
       )}
 
-      {/* Deactivate User Alert Dialog */}
       {userToDeactivate && (
         <AlertDialog open={isDeactivateAlertOpen} onOpenChange={setIsDeactivateAlertOpen}>
           <AlertDialogContent>
@@ -410,7 +430,7 @@ export function AdminUsersPage() {
               <AlertDialogCancel onClick={() => setUserToDeactivate(null)}>Cancel</AlertDialogCancel>
               <AlertDialogAction
                 onClick={() => deactivateUserMutation.mutate(userToDeactivate.id)}
-                className='bg-destructive hover:bg-destructive/90'
+                className='bg-destructive hover:bg-destructive/90 text-destructive-foreground'
                 disabled={deactivateUserMutation.isLoading}>
                 {deactivateUserMutation.isLoading ? "Deactivating..." : "Deactivate"}
               </AlertDialogAction>

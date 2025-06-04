@@ -20,25 +20,14 @@ import { UserFavoritesPage } from "./pages/user/UserFavoritesPage"
 import { AdminLayout } from "@/layouts/AdminLayout" // New
 import { AdminProtectedRoute } from "@/components/AdminProtectedRoute" // New
 import { AdminUsersPage } from "@/pages/admin/AdminUsersPage" // New
-// Placeholder for other admin pages you'll add in Phase 7 & 8
+import { AdminLanguagesPage } from "@/pages/admin/AdminLanguagesPage" // New
+import { AdminAuthorsPage } from "@/pages/admin/AdminAuthorsPage" // New
+import { AdminNovelsPage } from "@/pages/admin/AdminNovelsPage" // New
+import { AdminNovelChaptersPage } from "@/pages/admin/AdminNovelChaptersPage" // New
+
 const AdminDashboardPage = () => (
   <div className='p-4'>
     <h1 className='text-xl font-semibold'>Admin Dashboard (Coming Soon)</h1>
-  </div>
-)
-const AdminLanguagesPage = () => (
-  <div className='p-4'>
-    <h1 className='text-xl font-semibold'>Language Management (Phase 7)</h1>
-  </div>
-)
-const AdminAuthorsPage = () => (
-  <div className='p-4'>
-    <h1 className='text-xl font-semibold'>Author Management (Phase 7)</h1>
-  </div>
-)
-const AdminNovelsPage = () => (
-  <div className='p-4'>
-    <h1 className='text-xl font-semibold'>Novel Management (Phase 8)</h1>
   </div>
 )
 
@@ -105,8 +94,8 @@ function App() {
             <Route path='users' element={<AdminUsersPage />} />
             <Route path='languages' element={<AdminLanguagesPage />} /> {/* Placeholder */}
             <Route path='authors' element={<AdminAuthorsPage />} /> {/* Placeholder */}
-            <Route path='novels' element={<AdminNovelsPage />} /> {/* Placeholder */}
-            {/* Add more admin-specific routes here as needed */}
+            <Route path='novels' element={<AdminNovelsPage />} />
+            <Route path='novels/:novelId/chapters' element={<AdminNovelChaptersPage />} />
           </Route>
         </Routes>
         <Toaster richColors position='top-right' />
