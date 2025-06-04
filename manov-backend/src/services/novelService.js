@@ -54,7 +54,7 @@ async function createNovel(novelData) {
     authorId,
     originalLanguage,
     titleTranslated, // Default translated title (e.g., English)
-    synopsis,        // Default synopsis
+    synopsis, // Default synopsis
     coverImageUrl,
     sourceUrl,
     publicationStatus,
@@ -87,7 +87,7 @@ async function createNovel(novelData) {
         originalLanguage,
         slug,
         titleTranslated, // Store the default translation
-        synopsis,        // Store the default synopsis
+        synopsis, // Store the default synopsis
         coverImageUrl,
         sourceUrl,
         publicationStatus: publicationStatus || 'ONGOING',
@@ -105,7 +105,7 @@ async function createNovel(novelData) {
     });
     return newNovel;
   } catch (error) {
-    console.error("Error creating novel:", error);
+    console.error('Error creating novel:', error);
     throw error;
   }
 }
@@ -118,36 +118,48 @@ async function createNovel(novelData) {
  * @param {string} [languageCode] - Optional language code for translations.
  * @returns {Promise<Array<object>>} An array of novel objects.
  */
-async function getAllNovels(filters = {}, pagination = {}, orderBy = { updatedAt: 'desc' }, languageCode = null) {
+async function getAllNovels(
+  filters = {},
+  pagination = {},
+  orderBy = { updatedAt: 'desc' },
+  languageCode = null
+) {
   const { skip, take } = pagination;
   const where = { ...filters };
 
-  const novels = await prisma.novel.findMany({
+  const novelsPromise = prisma.novel.findMany({
     where,
     include: {
       author: {
         select: { id: true, name: true, nameRomanized: true },
       },
-      // Conditionally include specific translations
       ...(languageCode && {
         translations: {
           where: { languageCode: languageCode },
-          select: { title: true, synopsis: true } // Only fetch what's needed for override
-        }
-      })
+          select: { title: true, synopsis: true },
+        },
+      }),
     },
     orderBy,
     ...(take && { take: parseInt(take, 10) }),
     ...(skip && { skip: parseInt(skip, 10) }),
   });
 
+  const totalCountPromise = prisma.novel.count({ where });
+
+  const [novels, totalCount] = await Promise.all([
+    novelsPromise,
+    totalCountPromise,
+  ]);
+
   // If languageCode was provided, merge translation data into the novel objects
   // Otherwise, ensure a servedLanguageCode field is present indicating the default was used.
-  return novels.map(novel => {
-    const { translations, ...novelBase } = novel; // Destructure to remove raw translations array
-    let servedTitle = novelBase.titleTranslated || novelBase.title; // Default
+  const results = novels.map((novel) => {
+    // ... (existing mapping logic for translations) ...
+    const { translations, ...novelBase } = novel;
+    let servedTitle = novelBase.titleTranslated || novelBase.title;
     let servedSynopsis = novelBase.synopsis;
-    let servedLang = novelBase.originalLanguage; // Fallback served language
+    let servedLang = novelBase.originalLanguage;
 
     if (languageCode && translations && translations.length > 0) {
       const specificTranslation = translations[0];
@@ -155,21 +167,27 @@ async function getAllNovels(filters = {}, pagination = {}, orderBy = { updatedAt
       servedSynopsis = specificTranslation.synopsis;
       servedLang = languageCode;
     } else if (novelBase.titleTranslated) {
-      // If no specific lang requested, or translation not found,
-      // and a default titleTranslated exists, assume default lang (e.g. 'en')
-      // This part needs refinement based on how you define "default translated language"
-      // For now, we assume titleTranslated is the English or primary translation.
-      // servedLang = 'en'; // Or fetch from a config, or add a defaultTargetLanguage to Novel model
+      if (languageCode === novelBase.originalLanguage) {
+        servedTitle = novelBase.title;
+        servedLang = novelBase.originalLanguage;
+      } else {
+        servedTitle = novelBase.titleTranslated || novelBase.title;
+        // Assuming titleTranslated is in a consistent default language e.g. 'en'
+        // This logic might need refinement based on your exact multilingual strategy
+        servedLang = novelBase.titleTranslated
+          ? novel.defaultTranslationLanguage || 'en'
+          : novelBase.originalLanguage;
+      }
     }
-
-
     return {
       ...novelBase,
-      titleTranslated: servedTitle, // This field now holds the specific or default translated title
-      synopsis: servedSynopsis,   // This field now holds the specific or default synopsis
+      titleTranslated: servedTitle,
+      synopsis: servedSynopsis,
       servedLanguageCode: servedLang,
     };
   });
+
+  return { results, totalCount }; // Return results and totalCount
 }
 
 /**
@@ -186,7 +204,13 @@ async function getNovelByIdentifier(identifier, languageCode = null) {
     chapters: {
       where: { isPublished: true }, // Example filter for chapters
       orderBy: { chapterNumber: 'asc' },
-      select: { id: true, chapterNumber: true, title: true, isPublished: true, publishedAt: true }
+      select: {
+        id: true,
+        chapterNumber: true,
+        title: true,
+        isPublished: true,
+        publishedAt: true,
+      },
     },
     // We won't include all translations here, but fetch the specific one if languageCode is given.
   };
@@ -194,9 +218,15 @@ async function getNovelByIdentifier(identifier, languageCode = null) {
   if (isNumericId) {
     const novelId = parseInt(identifier, 10);
     if (isNaN(novelId)) return null;
-    novelBase = await prisma.novel.findUnique({ where: { id: novelId }, include: includeClause });
+    novelBase = await prisma.novel.findUnique({
+      where: { id: novelId },
+      include: includeClause,
+    });
   } else {
-    novelBase = await prisma.novel.findUnique({ where: { slug: identifier }, include: includeClause });
+    novelBase = await prisma.novel.findUnique({
+      where: { slug: identifier },
+      include: includeClause,
+    });
   }
 
   if (!novelBase) return null;
@@ -209,25 +239,25 @@ async function getNovelByIdentifier(identifier, languageCode = null) {
   let servedLanguageCode = novelBase.originalLanguage; // Fallback to original if no translations at all
 
   if (novelBase.titleTranslated) {
-      // Assuming titleTranslated is in a consistent default language e.g. 'en'
-      // This needs a clear convention. For now, let's just say it's the default.
-      // If you have a field like `defaultTranslationLanguage` on Novel, use that.
-      // For simplicity, if titleTranslated exists, we'll assume it's the primary display lang if no specific lang is requested
-      servedLanguageCode = novelBase.originalLanguage; // This might be incorrect if titleTranslated is EN and original is ZH
-      // A better default would be 'en' if titleTranslated is assumed to be English.
-      // Or, the language of the `titleTranslated` field itself.
-      // Let's refine this:
-      if (languageCode === novelBase.originalLanguage){
-          finalTitleTranslated = novelBase.title; // Use original title if original lang is requested
-          servedLanguageCode = novelBase.originalLanguage;
-      } else {
-          // Default to titleTranslated if it exists, otherwise original title
-          finalTitleTranslated = novelBase.titleTranslated || novelBase.title;
-          servedLanguageCode = novelBase.titleTranslated ? 'en' : novelBase.originalLanguage; // Placeholder logic for default translated lang
-      }
-
+    // Assuming titleTranslated is in a consistent default language e.g. 'en'
+    // This needs a clear convention. For now, let's just say it's the default.
+    // If you have a field like `defaultTranslationLanguage` on Novel, use that.
+    // For simplicity, if titleTranslated exists, we'll assume it's the primary display lang if no specific lang is requested
+    servedLanguageCode = novelBase.originalLanguage; // This might be incorrect if titleTranslated is EN and original is ZH
+    // A better default would be 'en' if titleTranslated is assumed to be English.
+    // Or, the language of the `titleTranslated` field itself.
+    // Let's refine this:
+    if (languageCode === novelBase.originalLanguage) {
+      finalTitleTranslated = novelBase.title; // Use original title if original lang is requested
+      servedLanguageCode = novelBase.originalLanguage;
+    } else {
+      // Default to titleTranslated if it exists, otherwise original title
+      finalTitleTranslated = novelBase.titleTranslated || novelBase.title;
+      servedLanguageCode = novelBase.titleTranslated
+        ? 'en'
+        : novelBase.originalLanguage; // Placeholder logic for default translated lang
+    }
   }
-
 
   if (languageCode) {
     const translation = await prisma.novelTranslation.findUnique({
@@ -272,7 +302,7 @@ async function updateNovel(id, novelData) {
     authorId,
     originalLanguage,
     titleTranslated, // Default translated title
-    synopsis,        // Default synopsis
+    synopsis, // Default synopsis
     firstPublishedAt,
     totalChapters,
     ...restOfData // other fields like coverImageUrl, sourceUrl, publicationStatus, etc.
@@ -281,46 +311,63 @@ async function updateNovel(id, novelData) {
   const dataToUpdate = { ...restOfData };
 
   if (title !== undefined) dataToUpdate.title = title;
-  if (originalLanguage !== undefined) dataToUpdate.originalLanguage = originalLanguage;
-  if (titleTranslated !== undefined) dataToUpdate.titleTranslated = titleTranslated;
+  if (originalLanguage !== undefined)
+    dataToUpdate.originalLanguage = originalLanguage;
+  if (titleTranslated !== undefined)
+    dataToUpdate.titleTranslated = titleTranslated;
   if (synopsis !== undefined) dataToUpdate.synopsis = synopsis;
-
 
   if (authorId !== undefined) {
     const numericAuthorId = parseInt(authorId, 10);
-    if (isNaN(numericAuthorId)) throw new Error('Invalid Author ID format for update.');
-    const authorExists = await prisma.author.findUnique({ where: { id: numericAuthorId } });
+    if (isNaN(numericAuthorId))
+      throw new Error('Invalid Author ID format for update.');
+    const authorExists = await prisma.author.findUnique({
+      where: { id: numericAuthorId },
+    });
     if (!authorExists) {
       throw new Error(`Author with ID ${numericAuthorId} not found.`);
     }
     dataToUpdate.authorId = numericAuthorId;
   }
 
-  const currentNovel = await prisma.novel.findUnique({ where: { id: novelId } });
+  const currentNovel = await prisma.novel.findUnique({
+    where: { id: novelId },
+  });
   if (!currentNovel) {
     throw new Error(`Novel with ID ${novelId} not found.`);
   }
 
   // Slug regeneration logic if relevant titles change
   let titleForSlug = currentNovel.titleTranslated || currentNovel.title;
-  if (titleTranslated !== undefined && titleTranslated !== currentNovel.titleTranslated) {
+  if (
+    titleTranslated !== undefined &&
+    titleTranslated !== currentNovel.titleTranslated
+  ) {
     titleForSlug = titleTranslated;
     dataToUpdate.slug = await generateUniqueSlug(titleForSlug, novelId);
-  } else if (title !== undefined && title !== currentNovel.title && (titleTranslated === undefined || titleTranslated === currentNovel.titleTranslated)) {
+  } else if (
+    title !== undefined &&
+    title !== currentNovel.title &&
+    (titleTranslated === undefined ||
+      titleTranslated === currentNovel.titleTranslated)
+  ) {
     // If original title changes and translated title isn't changing (or wasn't provided for update)
     // regenerate slug from new original title if no default translation exists, or from translated if it does.
     titleForSlug = currentNovel.titleTranslated || title; // Prioritize existing translated title for slug base, then new original title
-    if (titleForSlug !== (currentNovel.titleTranslated || currentNovel.title)) { // Only regen if base for slug changed
-        dataToUpdate.slug = await generateUniqueSlug(titleForSlug, novelId);
+    if (titleForSlug !== (currentNovel.titleTranslated || currentNovel.title)) {
+      // Only regen if base for slug changed
+      dataToUpdate.slug = await generateUniqueSlug(titleForSlug, novelId);
     }
   }
 
-
   if (firstPublishedAt !== undefined) {
-    dataToUpdate.firstPublishedAt = firstPublishedAt ? new Date(firstPublishedAt) : null;
+    dataToUpdate.firstPublishedAt = firstPublishedAt
+      ? new Date(firstPublishedAt)
+      : null;
   }
   if (totalChapters !== undefined) {
-    dataToUpdate.totalChapters = totalChapters !== null ? parseInt(totalChapters, 10) : null;
+    dataToUpdate.totalChapters =
+      totalChapters !== null ? parseInt(totalChapters, 10) : null;
   }
 
   try {
@@ -328,17 +375,19 @@ async function updateNovel(id, novelData) {
       where: { id: novelId },
       data: dataToUpdate,
       include: {
-        author: { select: { id: true, name: true, nameRomanized: true } }
-      }
+        author: { select: { id: true, name: true, nameRomanized: true } },
+      },
     });
   } catch (error) {
     if (error.code === 'P2025') {
       throw new Error(`Novel with ID ${novelId} not found.`);
     }
     if (error.code === 'P2002' && error.meta?.target?.includes('slug')) {
-      throw new Error(`Slug generated for this title already exists. Please adjust title or titleTranslated.`);
+      throw new Error(
+        `Slug generated for this title already exists. Please adjust title or titleTranslated.`
+      );
     }
-    console.error("Error updating novel:", error);
+    console.error('Error updating novel:', error);
     throw error;
   }
 }
@@ -361,7 +410,7 @@ async function deleteNovel(id) {
     if (error.code === 'P2025') {
       throw new Error(`Novel with ID ${novelId} not found.`);
     }
-    console.error("Error deleting novel:", error);
+    console.error('Error deleting novel:', error);
     throw error;
   }
 }

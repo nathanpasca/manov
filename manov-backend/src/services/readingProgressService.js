@@ -18,7 +18,8 @@ async function upsertReadingProgress(userId, novelId, progressData) {
 
   const { chapterId, readingPosition, progressPercentage } = progressData;
 
-  if (chapterId === undefined) { // chapterId is crucial for knowing where they are.
+  if (chapterId === undefined) {
+    // chapterId is crucial for knowing where they are.
     throw new Error('chapterId is required to save progress.');
   }
   const numericChapterId = parseInt(chapterId, 10);
@@ -28,10 +29,12 @@ async function upsertReadingProgress(userId, novelId, progressData) {
 
   // Optional: Validate that novelId and chapterId exist and chapter belongs to novel
   const chapterExists = await prisma.chapter.findFirst({
-    where: { id: numericChapterId, novelId: numericNovelId }
+    where: { id: numericChapterId, novelId: numericNovelId },
   });
   if (!chapterExists) {
-    throw new Error(`Chapter ID ${numericChapterId} not found or does not belong to Novel ID ${numericNovelId}.`);
+    throw new Error(
+      `Chapter ID ${numericChapterId} not found or does not belong to Novel ID ${numericNovelId}.`
+    );
   }
 
   const dataPayload = {
@@ -40,24 +43,29 @@ async function upsertReadingProgress(userId, novelId, progressData) {
     chapterId: numericChapterId,
     readingPosition, // Can be null
     // progressPercentage is optional in schema, handle if it's undefined or null
-    ...(progressPercentage !== undefined && progressPercentage !== null && !isNaN(parseInt(progressPercentage,10)) && { progressPercentage: parseInt(progressPercentage,10) }),
+    ...(progressPercentage !== undefined &&
+      progressPercentage !== null &&
+      !isNaN(parseInt(progressPercentage, 10)) && {
+        progressPercentage: parseInt(progressPercentage, 10),
+      }),
     lastReadAt: new Date(), // Explicitly set, though @updatedAt on model would also work
   };
 
-
   return prisma.readingProgress.upsert({
     where: {
-      userId_novelId: { // This refers to the @@unique constraint
+      userId_novelId: {
+        // This refers to the @@unique constraint
         userId,
         novelId: numericNovelId,
       },
     },
     update: dataPayload,
     create: dataPayload,
-    include: { // Optionally include some details for the response
-        novel: { select: { id: true, title: true, slug: true } },
-        chapter: { select: { id: true, chapterNumber: true, title: true } }
-    }
+    include: {
+      // Optionally include some details for the response
+      novel: { select: { id: true, title: true, slug: true } },
+      chapter: { select: { id: true, chapterNumber: true, title: true } },
+    },
   });
 }
 
@@ -81,9 +89,11 @@ async function getReadingProgress(userId, novelId) {
       },
     },
     include: {
-        novel: { select: { id: true, title: true, slug: true, coverImageUrl: true } },
-        chapter: { select: { id: true, chapterNumber: true, title: true } }
-    }
+      novel: {
+        select: { id: true, title: true, slug: true, coverImageUrl: true },
+      },
+      chapter: { select: { id: true, chapterNumber: true, title: true } },
+    },
   });
 }
 
@@ -92,21 +102,40 @@ async function getReadingProgress(userId, novelId) {
  * @param {string} userId - The ID of the user.
  * @returns {Promise<Array<object>>} An array of reading progress objects.
  */
-async function getAllReadingProgressForUser(userId) {
-  return prisma.readingProgress.findMany({
-    where: { userId },
+async function getAllReadingProgressForUser(userId, pagination = {}) {
+  // Added pagination param
+  const { skip, take } = pagination;
+  const where = { userId };
+
+  const progressPromise = prisma.readingProgress.findMany({
+    where,
     orderBy: {
-      lastReadAt: 'desc', // Show most recently read first
+      lastReadAt: 'desc',
     },
+    ...(take && { take: parseInt(take, 10) }),
+    ...(skip && { skip: parseInt(skip, 10) }),
     include: {
       novel: {
-        select: { id: true, title: true, slug: true, coverImageUrl: true, author: {select: {name: true}} },
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          coverImageUrl: true,
+          author: { select: { name: true, nameRomanized: true } },
+        }, // Added nameRomanized
       },
       chapter: {
         select: { id: true, chapterNumber: true, title: true },
       },
     },
   });
+
+  const totalCountPromise = prisma.readingProgress.count({ where });
+  const [results, totalCount] = await Promise.all([
+    progressPromise,
+    totalCountPromise,
+  ]);
+  return { results, totalCount };
 }
 
 module.exports = {

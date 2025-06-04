@@ -1,6 +1,6 @@
 // File: src/services/authorService.js
 
-const prisma = require("../lib/prisma"); // Using the shared Prisma Client instance
+const prisma = require('../lib/prisma'); // Using the shared Prisma Client instance
 
 /**
  * Creates a new author.
@@ -23,7 +23,7 @@ async function createAuthor(authorData) {
 
   // Basic check for required fields (more robust validation in Phase 8)
   if (!name || !originalLanguage) {
-    throw new Error("Author name and original language are required.");
+    throw new Error('Author name and original language are required.');
   }
 
   try {
@@ -44,7 +44,7 @@ async function createAuthor(authorData) {
   } catch (error) {
     // Handle potential errors, e.g., unique constraint if you add one later
     // For now, re-throwing generic error
-    console.error("Error creating author:", error);
+    console.error('Error creating author:', error);
     throw error;
   }
 }
@@ -57,14 +57,25 @@ async function createAuthor(authorData) {
  */
 async function getAllAuthors(filters = {}, pagination = {}) {
   const { skip, take } = pagination;
-  return prisma.author.findMany({
+
+  const authorsPromise = prisma.author.findMany({
     where: filters,
     orderBy: {
-      name: "asc", // Optional: order by name
+      name: 'asc',
     },
     ...(take && { take: parseInt(take, 10) }),
     ...(skip && { skip: parseInt(skip, 10) }),
+    // Consider adding _count for novels if needed on author cards
+    // include: { _count: { select: { novels: true } } }
   });
+
+  const totalCountPromise = prisma.author.count({ where: filters });
+
+  const [results, totalCount] = await Promise.all([
+    authorsPromise,
+    totalCountPromise,
+  ]);
+  return { results, totalCount };
 }
 
 /**
@@ -94,7 +105,7 @@ async function getAuthorById(id) {
 async function updateAuthor(id, authorData) {
   const authorId = parseInt(id, 10);
   if (isNaN(authorId)) {
-    throw new Error("Invalid author ID format.");
+    throw new Error('Invalid author ID format.');
   }
 
   const { birthDate, deathDate, ...restOfData } = authorData;
@@ -113,11 +124,11 @@ async function updateAuthor(id, authorData) {
       data: dataToUpdate,
     });
   } catch (error) {
-    if (error.code === "P2025") {
+    if (error.code === 'P2025') {
       // Prisma error for record not found to update
       throw new Error(`Author with ID ${authorId} not found.`);
     }
-    console.error("Error updating author:", error);
+    console.error('Error updating author:', error);
     throw error;
   }
 }
@@ -131,7 +142,7 @@ async function updateAuthor(id, authorData) {
 async function deleteAuthor(id) {
   const authorId = parseInt(id, 10);
   if (isNaN(authorId)) {
-    throw new Error("Invalid author ID format.");
+    throw new Error('Invalid author ID format.');
   }
   try {
     // Important: Prisma schema for Author-Novel relation is likely Restrict onDelete.
@@ -142,20 +153,20 @@ async function deleteAuthor(id) {
       where: { id: authorId },
     });
   } catch (error) {
-    if (error.code === "P2025") {
+    if (error.code === 'P2025') {
       // Prisma error for record not found to delete
       throw new Error(`Author with ID ${authorId} not found.`);
     }
     // P2003 is foreign key constraint failure (e.g., author still has novels and onDelete is Restrict)
     if (
-      error.code === "P2003" &&
-      error.meta?.field_name?.includes("Novel_authorId_fkey")
+      error.code === 'P2003' &&
+      error.meta?.field_name?.includes('Novel_authorId_fkey')
     ) {
       throw new Error(
-        `Author with ID ${authorId} cannot be deleted because they are associated with existing novels.`,
+        `Author with ID ${authorId} cannot be deleted because they are associated with existing novels.`
       );
     }
-    console.error("Error deleting author:", error);
+    console.error('Error deleting author:', error);
     throw error;
   }
 }

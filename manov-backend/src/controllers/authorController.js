@@ -17,16 +17,31 @@ async function createAuthor(req, res, next) {
 
 async function getAllAuthors(req, res, next) {
   try {
-    const { isActive, skip, take } = req.query;
+    const { isActive, page, limit } = req.query; // Use page, limit consistently
     const filters = {};
-    // Validate query parameters if necessary (can also use express-validator's query())
     if (isActive !== undefined) {
-      filters.isActive = isActive === 'true'; // Basic conversion
+      filters.isActive = isActive === 'true';
     }
-    const pagination = { skip, take };
 
-    const authors = await authorService.getAllAuthors(filters, pagination);
-    res.status(200).json(authors);
+    const pagination = {};
+    const pageNum = parseInt(page, 10);
+    const limitNum = parseInt(limit, 10);
+
+    if (!isNaN(pageNum) && pageNum > 0 && !isNaN(limitNum) && limitNum > 0) {
+      pagination.take = limitNum;
+      pagination.skip = (pageNum - 1) * limitNum;
+    } else if (!isNaN(limitNum) && limitNum > 0) {
+      pagination.take = limitNum;
+    }
+
+    const data = await authorService.getAllAuthors(filters, pagination);
+    res.status(200).json({
+      results: data.results,
+      totalCount: data.totalCount,
+      page: pageNum || 1,
+      limit: limitNum || data.results.length,
+      totalPages: limitNum ? Math.ceil(data.totalCount / limitNum) : 1,
+    });
   } catch (error) {
     next(error);
   }
@@ -35,7 +50,7 @@ async function getAllAuthors(req, res, next) {
 async function getAuthorById(req, res, next) {
   try {
     // authorId is validated and converted to int by validateAuthorIdParam
-    const { authorId } = req.params; 
+    const { authorId } = req.params;
     const author = await authorService.getAuthorById(authorId); // Service expects integer
     if (!author) {
       return res.status(404).json({ message: 'Author not found.' });
@@ -58,11 +73,14 @@ async function updateAuthor(req, res, next) {
     //   return res.status(400).json({ message: 'No data provided for update.' });
     // }
 
-
-    const updatedAuthor = await authorService.updateAuthor(authorId, authorData);
+    const updatedAuthor = await authorService.updateAuthor(
+      authorId,
+      authorData
+    );
     res.status(200).json(updatedAuthor);
   } catch (error) {
-    if (error.message.includes('not found')) { // From service layer
+    if (error.message.includes('not found')) {
+      // From service layer
       return res.status(404).json({ message: error.message });
     }
     next(error);
@@ -80,7 +98,7 @@ async function deleteAuthor(req, res, next) {
       return res.status(404).json({ message: error.message });
     }
     if (error.message.includes('associated with existing novels')) {
-        return res.status(409).json({ message: error.message });
+      return res.status(409).json({ message: error.message });
     }
     next(error);
   }
