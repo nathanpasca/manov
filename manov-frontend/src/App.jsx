@@ -1,4 +1,3 @@
-// ... other imports
 import { NovelsPage } from "@/pages/novels/NovelsPage" // Updated import if you overwrote placeholder
 import { NovelDetailPage } from "@/pages/novels/NovelDetailPage" // New
 import { AuthorsPage } from "@/pages/authors/AuthorsPage" // Updated import
@@ -17,6 +16,31 @@ import { HomePage } from "./pages/HomePage"
 import { UserReadingProgressPage } from "./pages/user/UserReadingProgressPage"
 import { ChapterReadingPage } from "./pages/chapters/ChapterReadingPage"
 import { UserFavoritesPage } from "./pages/user/UserFavoritesPage"
+
+import { AdminLayout } from "@/layouts/AdminLayout" // New
+import { AdminProtectedRoute } from "@/components/AdminProtectedRoute" // New
+import { AdminUsersPage } from "@/pages/admin/AdminUsersPage" // New
+// Placeholder for other admin pages you'll add in Phase 7 & 8
+const AdminDashboardPage = () => (
+  <div className='p-4'>
+    <h1 className='text-xl font-semibold'>Admin Dashboard (Coming Soon)</h1>
+  </div>
+)
+const AdminLanguagesPage = () => (
+  <div className='p-4'>
+    <h1 className='text-xl font-semibold'>Language Management (Phase 7)</h1>
+  </div>
+)
+const AdminAuthorsPage = () => (
+  <div className='p-4'>
+    <h1 className='text-xl font-semibold'>Author Management (Phase 7)</h1>
+  </div>
+)
+const AdminNovelsPage = () => (
+  <div className='p-4'>
+    <h1 className='text-xl font-semibold'>Novel Management (Phase 8)</h1>
+  </div>
+)
 
 function App() {
   return (
@@ -66,6 +90,23 @@ function App() {
             />
 
             <Route path='*' element={<NotFoundPage />} />
+          </Route>
+
+          {/* Admin Routes with AdminLayout and AdminProtectedRoute */}
+          <Route
+            path='/admin'
+            element={
+              <AdminProtectedRoute>
+                <AdminLayout />
+              </AdminProtectedRoute>
+            }>
+            <Route index element={<AdminDashboardPage />} /> {/* Default admin page */}
+            <Route path='dashboard' element={<AdminDashboardPage />} />
+            <Route path='users' element={<AdminUsersPage />} />
+            <Route path='languages' element={<AdminLanguagesPage />} /> {/* Placeholder */}
+            <Route path='authors' element={<AdminAuthorsPage />} /> {/* Placeholder */}
+            <Route path='novels' element={<AdminNovelsPage />} /> {/* Placeholder */}
+            {/* Add more admin-specific routes here as needed */}
           </Route>
         </Routes>
         <Toaster richColors position='top-right' />
