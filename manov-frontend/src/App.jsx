@@ -25,6 +25,9 @@ import { AdminAuthorsPage } from "@/pages/admin/AdminAuthorsPage" // New
 import { AdminNovelsPage } from "@/pages/admin/AdminNovelsPage" // New
 import { AdminNovelChaptersPage } from "@/pages/admin/AdminNovelChaptersPage" // New
 
+import { AdminNovelTranslationsPage } from "./pages/admin/AdminNovelTranslationsPage"
+import { AdminChapterTranslationsPage } from "./pages/admin/AdminChapterTranslationsPage"
+
 const AdminDashboardPage = () => (
   <div className='p-4'>
     <h1 className='text-xl font-semibold'>Admin Dashboard (Coming Soon)</h1>
@@ -96,6 +99,8 @@ function App() {
             <Route path='authors' element={<AdminAuthorsPage />} /> {/* Placeholder */}
             <Route path='novels' element={<AdminNovelsPage />} />
             <Route path='novels/:novelId/chapters' element={<AdminNovelChaptersPage />} />
+            <Route path='novels/:novelId/translations' element={<AdminNovelTranslationsPage />} />
+            <Route path='chapters/:chapterId/translations' element={<AdminChapterTranslationsPage />} />
           </Route>
         </Routes>
         <Toaster richColors position='top-right' />

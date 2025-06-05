@@ -133,8 +133,24 @@ export function ChapterReadingPage() {
     navigate(`/novels/${novelId}/chapters/${targetChapter.chapterNumber}?lang=${selectedLang || ""}`)
   }
   const handleLanguageChange = (langCode) => {
-    /* ... */
+    const newLang = langCode || ""
+    // 1. Update the state. This will trigger the useQuery to refetch.
+    setSelectedLang(newLang)
+
+    // 2. Update the URL to reflect the new state, without a full page reload.
+    const newSearchParams = new URLSearchParams(location.search)
+    if (newLang) {
+      newSearchParams.set("lang", newLang)
+    } else {
+      newSearchParams.delete("lang")
+    }
+    navigate(`${location.pathname}?${newSearchParams.toString()}`, { replace: true })
   }
+
+  useEffect(() => {
+    if (scrollViewportRef.current) scrollViewportRef.current.scrollTop = 0
+    setCurrentScrollPercentage(0)
+  }, [chapter?.id])
   useEffect(() => {
     if (scrollViewportRef.current) scrollViewportRef.current.scrollTop = 0
     setCurrentScrollPercentage(0)

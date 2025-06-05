@@ -140,6 +140,9 @@ export function AdminNovelsPage() {
               <DropdownMenuItem asChild>
                 <RouterLink to={`/admin/novels/${row.original.id}/chapters`}>Manage Chapters</RouterLink>
               </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <RouterLink to={`/admin/novels/${row.original.id}/translations`}>Manage Translations</RouterLink>
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 className='text-destructive focus:bg-destructive/20 focus:text-destructive-foreground'

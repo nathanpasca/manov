@@ -2,6 +2,7 @@
 
 const userService = require('../services/userService');
 const prisma = require('../lib/prisma');
+const chapterService = require('../services/chapterService');
 
 /**
  * (Admin) Lists all users with pagination and filtering.
@@ -136,9 +137,171 @@ async function deleteUserByAdmin(req, res, next) {
   }
 }
 
+// --- Novel Translation Controllers ---
+async function listNovelTranslationsAdmin(req, res, next) {
+  try {
+    const { novelId } = req.params;
+    const translations = await novelService.getNovelTranslations(
+      parseInt(novelId, 10)
+    );
+    res.status(200).json(translations);
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function addNovelTranslationAdmin(req, res, next) {
+  try {
+    const { novelId } = req.params;
+    const { languageCode, title, synopsis, translatorId } = req.body;
+    if (!languageCode)
+      return res.status(400).json({
+        message: 'languageCode in body is required for adding translation.',
+      });
+
+    const translation = await novelService.upsertNovelTranslation(
+      parseInt(novelId, 10),
+      languageCode,
+      { title, synopsis, translatorId }
+    );
+    res.status(201).json(translation);
+  } catch (error) {
+    if (
+      error.message.includes('not found') ||
+      error.message.includes('not valid')
+    )
+      return res.status(404).json({ message: error.message });
+    if (error.message.includes('required'))
+      return res.status(400).json({ message: error.message });
+    next(error);
+  }
+}
+
+async function updateNovelTranslationAdmin(req, res, next) {
+  try {
+    const { novelId, languageCode } = req.params;
+    const { title, synopsis, translatorId } = req.body;
+    const translation = await novelService.upsertNovelTranslation(
+      parseInt(novelId, 10),
+      languageCode,
+      { title, synopsis, translatorId }
+    );
+    res.status(200).json(translation);
+  } catch (error) {
+    if (
+      error.message.includes('not found') ||
+      error.message.includes('not valid')
+    )
+      return res.status(404).json({ message: error.message });
+    if (error.message.includes('required'))
+      return res.status(400).json({ message: error.message });
+    next(error);
+  }
+}
+
+async function removeNovelTranslationAdmin(req, res, next) {
+  try {
+    const { novelId, languageCode } = req.params;
+    await novelService.deleteNovelTranslation(
+      parseInt(novelId, 10),
+      languageCode
+    );
+    res.status(204).send();
+  } catch (error) {
+    if (error.message.includes('not found'))
+      return res.status(404).json({ message: error.message });
+    next(error);
+  }
+}
+
+// --- Chapter Translation Controllers (similar pattern) ---
+async function listChapterTranslationsAdmin(req, res, next) {
+  try {
+    const { chapterId } = req.params;
+    const translations = await chapterService.getChapterTranslations(
+      parseInt(chapterId, 10)
+    );
+    res.status(200).json(translations);
+  } catch (error) {
+    next(error);
+  }
+}
+
+async function addChapterTranslationAdmin(req, res, next) {
+  try {
+    const { chapterId } = req.params;
+    const { languageCode, title, content, translatorId } = req.body;
+    if (!languageCode)
+      return res.status(400).json({
+        message: 'languageCode in body is required for adding translation.',
+      });
+
+    const translation = await chapterService.upsertChapterTranslation(
+      parseInt(chapterId, 10),
+      languageCode,
+      { title, content, translatorId }
+    );
+    res.status(201).json(translation);
+  } catch (error) {
+    if (
+      error.message.includes('not found') ||
+      error.message.includes('not valid')
+    )
+      return res.status(404).json({ message: error.message });
+    if (error.message.includes('required'))
+      return res.status(400).json({ message: error.message });
+    next(error);
+  }
+}
+
+async function updateChapterTranslationAdmin(req, res, next) {
+  try {
+    const { chapterId, languageCode } = req.params;
+    const { title, content, translatorId } = req.body;
+    const translation = await chapterService.upsertChapterTranslation(
+      parseInt(chapterId, 10),
+      languageCode,
+      { title, content, translatorId }
+    );
+    res.status(200).json(translation);
+  } catch (error) {
+    if (
+      error.message.includes('not found') ||
+      error.message.includes('not valid')
+    )
+      return res.status(404).json({ message: error.message });
+    if (error.message.includes('required'))
+      return res.status(400).json({ message: error.message });
+    next(error);
+  }
+}
+
+async function removeChapterTranslationAdmin(req, res, next) {
+  try {
+    const { chapterId, languageCode } = req.params;
+    await chapterService.deleteChapterTranslation(
+      parseInt(chapterId, 10),
+      languageCode
+    );
+    res.status(204).send();
+  } catch (error) {
+    if (error.message.includes('not found'))
+      return res.status(404).json({ message: error.message });
+    next(error);
+  }
+}
+
 module.exports = {
   listAllUsers,
   getUserDetailsAdmin,
   updateUserDetailsAdmin,
   deleteUserByAdmin,
+  listNovelTranslationsAdmin,
+  addNovelTranslationAdmin,
+  updateNovelTranslationAdmin,
+  removeNovelTranslationAdmin,
+  listChapterTranslationsAdmin,
+  addChapterTranslationAdmin,
+  updateChapterTranslationAdmin,
+  removeChapterTranslationAdmin,
 };

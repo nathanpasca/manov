@@ -156,6 +156,9 @@ export function AdminNovelChaptersPage() {
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
               <DropdownMenuItem onClick={() => handleEdit(row.original)}>Edit Chapter</DropdownMenuItem>
               {/* View chapter could link to public reading page: <DropdownMenuItem asChild><RouterLink to={`/novels/${novelId}/chapters/${row.original.chapterNumber}`}>View Chapter</RouterLink></DropdownMenuItem> */}
+              <DropdownMenuItem asChild>
+                <RouterLink to={`/admin/chapters/${row.original.id}/translations`}>Manage Translations</RouterLink>
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 className='text-destructive focus:bg-destructive/20 focus:text-destructive-foreground'

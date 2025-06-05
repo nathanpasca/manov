@@ -415,10 +415,132 @@ async function deleteNovel(id) {
   }
 }
 
+/**
+ * Creates or updates a translation for a novel.
+ * @param {number} novelId - The ID of the novel.
+ * @param {string} languageCode - The language code for the translation.
+ * @param {object} translationData - Data for the translation { title, synopsis, translatorId? }.
+ * @returns {Promise<object>} The created or updated novel translation object.
+ * @throws {Error} If novel or language not found, or required fields missing.
+ */
+async function upsertNovelTranslation(novelId, languageCode, translationData) {
+  const { title, synopsis, translatorId } = translationData;
+  const numericNovelId = parseInt(novelId, 10);
+
+  if (!languageCode || !title) {
+    throw new Error(
+      'Language code and title are required for novel translation.'
+    );
+  }
+
+  const novelExists = await prisma.novel.findUnique({
+    where: { id: numericNovelId },
+  });
+  if (!novelExists) {
+    throw new Error(`Novel with ID ${numericNovelId} not found.`);
+  }
+
+  const languageExists = await prisma.language.findUnique({
+    where: { code: languageCode },
+  });
+  if (!languageExists || !languageExists.isActive) {
+    throw new Error(
+      `Language code '${languageCode}' is not valid or not active.`
+    );
+  }
+
+  if (translatorId) {
+    const userExists = await prisma.user.findUnique({
+      where: { id: translatorId },
+    });
+    if (!userExists) {
+      throw new Error(`User with ID ${translatorId} (translator) not found.`);
+    }
+  }
+
+  return prisma.novelTranslation.upsert({
+    where: {
+      novelId_languageCode: {
+        novelId: numericNovelId,
+        languageCode,
+      },
+    },
+    update: {
+      title,
+      synopsis: synopsis !== undefined ? synopsis : null, // Allow clearing synopsis
+      translatorId: translatorId || null,
+    },
+    create: {
+      novelId: numericNovelId,
+      languageCode,
+      title,
+      synopsis: synopsis !== undefined ? synopsis : null,
+      translatorId: translatorId || null,
+    },
+    include: {
+      language: true,
+      translator: translatorId
+        ? { select: { id: true, username: true, displayName: true } }
+        : undefined,
+    },
+  });
+}
+
+/**
+ * Deletes a translation for a novel.
+ * @param {number} novelId - The ID of the novel.
+ * @param {string} languageCode - The language code of the translation to delete.
+ * @returns {Promise<object>} The deleted novel translation object.
+ * @throws {Error} If translation not found.
+ */
+async function deleteNovelTranslation(novelId, languageCode) {
+  const numericNovelId = parseInt(novelId, 10);
+  try {
+    return await prisma.novelTranslation.delete({
+      where: {
+        novelId_languageCode: {
+          novelId: numericNovelId,
+          languageCode,
+        },
+      },
+    });
+  } catch (error) {
+    if (error.code === 'P2025') {
+      // Prisma error for record not found
+      throw new Error(
+        `Translation for novel ID ${numericNovelId} in language '${languageCode}' not found.`
+      );
+    }
+    throw error;
+  }
+}
+
+/**
+ * Retrieves all translations for a specific novel.
+ * @param {number} novelId - The ID of the novel.
+ * @returns {Promise<Array<object>>} An array of novel translation objects.
+ */
+async function getNovelTranslations(novelId) {
+  const numericNovelId = parseInt(novelId, 10);
+  return prisma.novelTranslation.findMany({
+    where: { novelId: numericNovelId },
+    include: {
+      language: { select: { name: true, nativeName: true, code: true } },
+      translator: { select: { id: true, username: true, displayName: true } }, // Translator info
+    },
+    orderBy: {
+      languageCode: 'asc',
+    },
+  });
+}
+
 module.exports = {
   createNovel,
   getAllNovels,
   getNovelByIdentifier,
   updateNovel,
   deleteNovel,
+  upsertNovelTranslation,
+  deleteNovelTranslation,
+  getNovelTranslations,
 };
