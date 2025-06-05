@@ -137,3 +137,44 @@ export const adminUpdateChapter = async (chapterId, chapterData) => {
 export const adminDeleteChapter = async (chapterId) => {
   await apiClient.delete(`/chapters/${chapterId}`) // Admin protected
 }
+
+// --- Novel Translation Management ---
+export const adminFetchNovelTranslations = async (novelId) => {
+  const { data } = await apiClient.get(`/admin/novels/${novelId}/translations`)
+  return data
+}
+
+export const adminCreateNovelTranslation = async (novelId, translationData) => {
+  // languageCode must be in translationData for creation
+  const { data } = await apiClient.post(`/admin/novels/${novelId}/translations`, translationData)
+  return data
+}
+
+export const adminUpdateNovelTranslation = async (novelId, languageCode, translationData) => {
+  const { data } = await apiClient.put(`/admin/novels/${novelId}/translations/${languageCode}`, translationData)
+  return data
+}
+
+export const adminDeleteNovelTranslation = async (novelId, languageCode) => {
+  await apiClient.delete(`/admin/novels/${novelId}/translations/${languageCode}`)
+}
+
+// --- Chapter Translation Management ---
+export const adminFetchChapterTranslations = async (chapterId) => {
+  const { data } = await apiClient.get(`/admin/chapters/${chapterId}/translations`)
+  return data
+}
+
+export const adminCreateChapterTranslation = async (chapterId, translationData) => {
+  const { data } = await apiClient.post(`/admin/chapters/${chapterId}/translations`, translationData)
+  return data
+}
+
+export const adminUpdateChapterTranslation = async (chapterId, languageCode, translationData) => {
+  const { data } = await apiClient.put(`/admin/chapters/${chapterId}/translations/${languageCode}`, translationData)
+  return data
+}
+
+export const adminDeleteChapterTranslation = async (chapterId, languageCode) => {
+  await apiClient.delete(`/admin/chapters/${chapterId}/translations/${languageCode}`)
+}

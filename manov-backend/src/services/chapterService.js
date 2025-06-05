@@ -110,10 +110,12 @@ async function getChaptersByNovelId(
       novel: {
         select: { id: true, title: true, slug: true, originalLanguage: true },
       },
+      // --- CORRECTED THIS BLOCK ---
       ...(languageCode && {
-        translations: {
+        chapterTranslations: {
+          // Use 'chapterTranslations' instead of 'translations'
           where: { languageCode: languageCode },
-          select: { title: true, content: true },
+          select: { title: true, content: true }, // Content is large, maybe omit for list view? For now, this matches the query.
         },
       }),
     },
@@ -129,29 +131,26 @@ async function getChaptersByNovelId(
     totalCountPromise,
   ]);
 
+  // The mapping logic also needs to be updated to look for 'chapterTranslations'
   const results = chapters.map((chapter) => {
-    // ... (existing mapping logic for translations) ...
-    const { translations, novel, ...chapterBase } = chapter;
+    // --- CORRECTED THIS LINE ---
+    const { chapterTranslations, novel, ...chapterBase } = chapter; // Use 'chapterTranslations'
     let servedTitle = chapterBase.title;
-    let servedContent = chapterBase.content; // Should not be returned in list view, only in detail
     let servedLang = novel.originalLanguage;
 
-    if (languageCode && translations && translations.length > 0) {
-      const specificTranslation = translations[0];
+    if (languageCode && chapterTranslations && chapterTranslations.length > 0) {
+      const specificTranslation = chapterTranslations[0];
       servedTitle =
         specificTranslation.title !== null &&
         specificTranslation.title !== undefined
           ? specificTranslation.title
           : servedTitle;
-      // Content for list view is usually not needed, but if so:
-      // servedContent = specificTranslation.content;
       servedLang = languageCode;
     }
     return {
       ...chapterBase,
       title: servedTitle,
-      // Omitting 'content' for list view for performance, it's fetched on chapter detail page
-      content: undefined, // Explicitly remove content from list view
+      content: undefined,
       novel: { id: novel.id, title: novel.title, slug: novel.slug },
       servedLanguageCode: servedLang,
     };
@@ -396,6 +395,126 @@ async function deleteChapter(id) {
   }
 }
 
+/**
+ * Creates or updates a translation for a chapter.
+ * @param {number} chapterId - The ID of the chapter.
+ * @param {string} languageCode - The language code for the translation.
+ * @param {object} translationData - Data for the translation { title?, content, translatorId? }.
+ * @returns {Promise<object>} The created or updated chapter translation object.
+ */
+async function upsertChapterTranslation(
+  chapterId,
+  languageCode,
+  translationData
+) {
+  const { title, content, translatorId } = translationData;
+  const numericChapterId = parseInt(chapterId, 10);
+
+  if (!languageCode || !content) {
+    throw new Error(
+      'Language code and content are required for chapter translation.'
+    );
+  }
+
+  const chapterExists = await prisma.chapter.findUnique({
+    where: { id: numericChapterId },
+  });
+  if (!chapterExists) {
+    throw new Error(`Chapter with ID ${numericChapterId} not found.`);
+  }
+
+  const languageExists = await prisma.language.findUnique({
+    where: { code: languageCode },
+  });
+  if (!languageExists || !languageExists.isActive) {
+    throw new Error(
+      `Language code '${languageCode}' is not valid or not active.`
+    );
+  }
+
+  if (translatorId) {
+    const userExists = await prisma.user.findUnique({
+      where: { id: translatorId },
+    });
+    if (!userExists) {
+      throw new Error(`User with ID ${translatorId} (translator) not found.`);
+    }
+  }
+
+  return prisma.chapterTranslation.upsert({
+    where: {
+      chapterId_languageCode: {
+        chapterId: numericChapterId,
+        languageCode,
+      },
+    },
+    update: {
+      title: title !== undefined ? title : null, // Allow clearing title
+      content,
+      translatorId: translatorId || null,
+    },
+    create: {
+      chapterId: numericChapterId,
+      languageCode,
+      title: title !== undefined ? title : null,
+      content,
+      translatorId: translatorId || null,
+    },
+    include: {
+      language: true,
+      translator: translatorId
+        ? { select: { id: true, username: true, displayName: true } }
+        : undefined,
+    },
+  });
+}
+
+/**
+ * Deletes a translation for a chapter.
+ * @param {number} chapterId - The ID of the chapter.
+ * @param {string} languageCode - The language code of the translation to delete.
+ * @returns {Promise<object>} The deleted chapter translation object.
+ */
+async function deleteChapterTranslation(chapterId, languageCode) {
+  const numericChapterId = parseInt(chapterId, 10);
+  try {
+    return await prisma.chapterTranslation.delete({
+      where: {
+        chapterId_languageCode: {
+          chapterId: numericChapterId,
+          languageCode,
+        },
+      },
+    });
+  } catch (error) {
+    if (error.code === 'P2025') {
+      throw new Error(
+        `Translation for chapter ID ${numericChapterId} in language '${languageCode}' not found.`
+      );
+    }
+    throw error;
+  }
+}
+
+/**
+ * Retrieves all translations for a specific chapter.
+ * @param {number} chapterId - The ID of the chapter.
+ * @returns {Promise<Array<object>>} An array of chapter translation objects.
+ */
+async function getChapterTranslations(chapterId) {
+  const numericChapterId = parseInt(chapterId, 10);
+  return prisma.chapterTranslation.findMany({
+    where: { chapterId: numericChapterId },
+    include: {
+      language: { select: { name: true, nativeName: true, code: true } },
+      translator: { select: { id: true, username: true, displayName: true } }, // Translator info
+    },
+    orderBy: {
+      languageCode: 'asc',
+    },
+  });
+}
+
 module.exports = {
   createChapter,
   getChaptersByNovelId,
@@ -403,4 +522,7 @@ module.exports = {
   getChapterByNovelAndNumber,
   updateChapter,
   deleteChapter,
+  upsertChapterTranslation,
+  deleteChapterTranslation,
+  getChapterTranslations,
 };
