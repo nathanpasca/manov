@@ -2,9 +2,10 @@ import React from "react"
 import ReactDOM from "react-dom/client"
 import App from "./App.jsx"
 import "./index.css"
+import "react-quill-new/dist/quill.snow.css"
 import { ThemeProvider } from "@/components/theme-provider"
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query" // New
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools" // Optional
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools"
 
 // Create a client
 const queryClient = new QueryClient({

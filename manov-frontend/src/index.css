@@ -150,3 +150,88 @@ button:focus-visible {
     @apply bg-background text-foreground;
   }
 }
+
+/* Custom Quill Editor Styles for Shadcn/UI Theme */
+
+/* Styles for the toolbar */
+.quill-editor-wrapper .ql-toolbar.ql-snow {
+  border-radius: var(--radius) var(--radius) 0 0;
+  border-color: hsl(var(--border));
+  background-color: hsl(var(--muted));
+  position: sticky; /* Keeps toolbar visible when the editor scrolls */
+  top: 0;
+  z-index: 10; /* Ensures toolbar is above the content */
+  border-bottom: none; /* Clean look between toolbar and editor */
+}
+
+/* Styles for the main editor container */
+.quill-editor-wrapper .ql-container.ql-snow {
+  border-radius: 0 0 var(--radius) var(--radius);
+  border-color: hsl(var(--border));
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-size: 1rem;
+}
+
+.quill-editor-wrapper .ql-editor {
+  font-family: var(--font-sans);
+  /* Define a minimum height so it's not too small when empty */
+  min-height: 250px;
+  /* Define a maximum height. The editor will not grow beyond this. */
+  max-height: 45vh;
+  /* CRITICAL: This enables the vertical scrollbar when content exceeds max-height */
+  overflow-y: auto;
+}
+
+/* Styling for the placeholder text */
+.quill-editor-wrapper .ql-editor.ql-blank::before {
+  color: hsl(var(--muted-foreground));
+  font-style: normal;
+  left: 1rem; /* Adjust to match your padding */
+  right: 1rem;
+}
+
+/* === THEME STYLING FOR TOOLBAR ICONS AND POPUPS === */
+
+/* Toolbar Icon Colors */
+.quill-editor-wrapper .ql-snow .ql-stroke {
+  stroke: hsl(var(--foreground));
+}
+.quill-editor-wrapper .ql-snow .ql-fill {
+  fill: hsl(var(--foreground));
+}
+.quill-editor-wrapper .ql-snow .ql-picker-label {
+  color: hsl(var(--foreground));
+}
+
+/* Dropdown menu styling */
+.quill-editor-wrapper .ql-snow .ql-picker-options {
+  background-color: hsl(var(--popover));
+  border-color: hsl(var(--border));
+}
+.quill-editor-wrapper .ql-snow .ql-picker-item:hover,
+.quill-editor-wrapper .ql-snow .ql-picker-item.ql-selected {
+  background-color: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+}
+
+/* Link editing tooltip styling */
+.quill-editor-wrapper .ql-snow .ql-tooltip {
+  background-color: hsl(var(--popover));
+  border-color: hsl(var(--border));
+  color: hsl(var(--popover-foreground));
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border-radius: var(--radius);
+}
+.quill-editor-wrapper .ql-snow .ql-tooltip input[type="text"] {
+  background-color: hsl(var(--input));
+  border-color: hsl(var(--border));
+  color: hsl(var(--foreground));
+  border-radius: var(--radius-sm);
+}
+.quill-editor-wrapper .ql-snow .ql-tooltip a.ql-action::before {
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+}

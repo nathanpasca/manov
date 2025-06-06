@@ -45,8 +45,6 @@ function App() {
             <Route path='/novels' element={<NovelsPage />} />
             <Route path='/novels/:identifier' element={<NovelDetailPage />} />
 
-            <Route path='/novels/:novelId/chapters/:chapterNumber' element={<ChapterReadingPage />} />
-
             <Route
               path='/users/me/reading-progress'
               element={
@@ -83,6 +81,8 @@ function App() {
 
             <Route path='*' element={<NotFoundPage />} />
           </Route>
+
+          <Route path='/novels/:novelId/chapters/:chapterNumber' element={<ChapterReadingPage />} />
 
           {/* Admin Routes with AdminLayout and AdminProtectedRoute */}
           <Route

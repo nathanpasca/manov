@@ -1,7 +1,7 @@
 import React, { useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { adminChapterSchema } from "@/lib/validators/adminSchemas" // Defined earlier
+import { adminChapterSchema } from "@/lib/validators/adminSchemas"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -14,17 +14,15 @@ import {
 } from "@/components/ui/dialog"
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { CalendarIcon } from "lucide-react"
 import { Calendar } from "@/components/ui/calendar"
 import { cn } from "@/lib/utils"
 import { format } from "date-fns"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { FormDescription } from "@/components/ui/form"
+import { RichTextEditor } from "../RichTextEditor" // Ensure this is the correct path
 
-export function ChapterFormDialog({ open, onOpenChange, novelId, chapter, onSubmit, isSubmitting }) {
+export function ChapterFormDialog({ open, onOpenChange, chapter, onSubmit, isSubmitting }) {
   const isEditing = !!chapter
 
   const form = useForm({
@@ -48,7 +46,7 @@ export function ChapterFormDialog({ open, onOpenChange, novelId, chapter, onSubm
         form.reset({
           chapterNumber: chapter.chapterNumber !== undefined ? parseFloat(chapter.chapterNumber) : 0.0,
           title: chapter.title || "",
-          content: chapter.content || "", // This will be the default language content
+          content: chapter.content || "",
           wordCount: chapter.wordCount !== null ? Number(chapter.wordCount) : null,
           isPublished: chapter.isPublished !== undefined ? chapter.isPublished : false,
           publishedAt: chapter.publishedAt ? new Date(chapter.publishedAt) : null,
@@ -81,24 +79,26 @@ export function ChapterFormDialog({ open, onOpenChange, novelId, chapter, onSubm
         data.readingTimeEstimate !== null && data.readingTimeEstimate !== ""
           ? parseInt(data.readingTimeEstimate, 10)
           : null,
-      publishedAt: data.publishedAt ? data.publishedAt.toISOString() : null, // Send as ISO string or null
+      publishedAt: data.publishedAt ? data.publishedAt.toISOString() : null,
     }
     onSubmit(submissionData)
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className='sm:max-w-2xl max-h-[90vh] flex flex-col'>
-        <DialogHeader>
+      <DialogContent className='sm:max-w-3xl h-[90vh] flex flex-col p-0'>
+        <DialogHeader className='p-6 pb-4 flex-shrink-0'>
           <DialogTitle>{isEditing ? `Edit Chapter ${chapter?.chapterNumber}` : "Add New Chapter"}</DialogTitle>
           <DialogDescription>
             {isEditing ? `Update details for Chapter ${chapter?.chapterNumber}.` : "Enter details for the new chapter."}
-            {isEditing && novelId && <p className='text-xs text-muted-foreground'>Novel ID: {novelId}</p>}
           </DialogDescription>
         </DialogHeader>
-        <ScrollArea className='flex-grow min-h-0 pr-2'>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleFormSubmit)} className='space-y-4 py-2 pl-1'>
+
+        <Form {...form}>
+          {/* The form itself is now the main flex container for the content and footer */}
+          <form onSubmit={form.handleSubmit(handleFormSubmit)} className='flex flex-col flex-grow min-h-0'>
+            {/* This div will contain all form fields and will scroll if needed */}
+            <div className='flex-grow px-6 py-2 space-y-4 overflow-y-auto'>
               <FormField
                 control={form.control}
                 name='chapterNumber'
@@ -113,13 +113,14 @@ export function ChapterFormDialog({ open, onOpenChange, novelId, chapter, onSubm
                         step='0.1'
                         placeholder='e.g., 1 or 1.5'
                         {...field}
-                        onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
                 name='title'
@@ -133,25 +134,24 @@ export function ChapterFormDialog({ open, onOpenChange, novelId, chapter, onSubm
                   </FormItem>
                 )}
               />
+
+              {/* KEY CHANGE: The FormItem for the editor is now a flex container */}
               <FormField
                 control={form.control}
                 name='content'
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className='flex flex-col'>
                     <FormLabel>
                       Content <span className='text-destructive'>*</span>
                     </FormLabel>
                     <FormControl>
-                      <Textarea
-                        placeholder='Chapter content goes here... (Markdown or HTML supported by backend)'
-                        className='min-h-[150px] max-h-[300px] font-mono text-sm resize-y'
-                        {...field}
+                      {/* The editor will now use its own height and scroll properties from the CSS */}
+                      <RichTextEditor
+                        placeholder='Chapter content goes here...'
+                        value={field.value}
+                        onChange={field.onChange}
                       />
                     </FormControl>
-                    <FormDescription>
-                      Note: For rich text/HTML, ensure backend sanitizes. A proper Rich Text Editor is recommended for
-                      complex content.
-                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -212,20 +212,13 @@ export function ChapterFormDialog({ open, onOpenChange, novelId, chapter, onSubm
                               !field.value && "text-muted-foreground"
                             )}>
                             <CalendarIcon className='mr-2 h-4 w-4' />
-                            {field.value ? format(field.value, "PPP HH:mm") : <span>Pick a date and time</span>}
+                            {field.value ? format(field.value, "PPP HH:mm") : <span>Pick a date</span>}
                           </Button>
                         </FormControl>
                       </PopoverTrigger>
                       <PopoverContent className='w-auto p-0'>
-                        <Calendar
-                          mode='single'
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          initialFocus
-                          showTimeSelect
-                        />
-                      </PopoverContent>{" "}
-                      {/* showTimeSelect might require a custom Calendar or different date lib */}
+                        <Calendar mode='single' selected={field.value} onSelect={field.onChange} initialFocus />
+                      </PopoverContent>
                     </Popover>
                     <FormMessage />
                   </FormItem>
@@ -252,12 +245,13 @@ export function ChapterFormDialog({ open, onOpenChange, novelId, chapter, onSubm
                   <FormItem>
                     <FormLabel>Translator Notes (Optional)</FormLabel>
                     <FormControl>
-                      <Textarea placeholder='Any notes from the translator...' className='min-h-[80px]' {...field} />
+                      <Input placeholder='Any notes...' {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
               <FormField
                 control={form.control}
                 name='originalChapterUrl'
@@ -271,20 +265,20 @@ export function ChapterFormDialog({ open, onOpenChange, novelId, chapter, onSubm
                   </FormItem>
                 )}
               />
-              {/* TODO: Add section for ChapterTranslations if backend endpoints become available */}
-              <DialogFooter className='pt-4 sticky bottom-0 bg-background py-3 border-t'>
-                <DialogClose asChild>
-                  <Button type='button' variant='outline'>
-                    Cancel
-                  </Button>
-                </DialogClose>
-                <Button type='submit' disabled={isSubmitting}>
-                  {isSubmitting ? (isEditing ? "Saving..." : "Adding...") : isEditing ? "Save Changes" : "Add Chapter"}
+            </div>
+
+            <DialogFooter className='p-6 pt-4 border-t flex-shrink-0'>
+              <DialogClose asChild>
+                <Button type='button' variant='outline'>
+                  Cancel
                 </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </ScrollArea>
+              </DialogClose>
+              <Button type='submit' disabled={isSubmitting}>
+                {isSubmitting ? (isEditing ? "Saving..." : "Adding...") : isEditing ? "Save Changes" : "Add Chapter"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   )
