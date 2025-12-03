@@ -1,0 +1,19 @@
+[project]
+name = "manov-backend"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "beautifulsoup4>=4.14.3",
+    "fastapi[standard]>=0.123.5",
+    "openai>=2.8.1",
+    "passlib[bcrypt]>=1.7.4",
+    "playwright>=1.56.0",
+    "prisma>=0.15.0",
+    "python-dotenv>=1.2.1",
+    "python-jose[cryptography]>=3.5.0",
+    "python-multipart>=0.0.20",
+    "requests>=2.32.5",
+    "uvicorn>=0.38.0",
+]

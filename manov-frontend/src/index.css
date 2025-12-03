@@ -1,0 +1,52 @@
+/* 1. Import Font dari Google */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Merriweather:wght@300;400;700&display=swap');
+
+/* 2. Import Tailwind v4 */
+@import "tailwindcss";
+
+/* 3. Konfigurasi Tema (CSS-first config) */
+@theme {
+  /* Font Configuration */
+  --font-serif: "Merriweather", serif;
+  --font-sans: "Inter", sans-serif;
+
+  /* Custom Colors (Untuk nuansa Dark Mode mewah) */
+  --color-dark-bg: #0a0a0a;
+  /* Hitam pekat */
+  --color-dark-card: #171717;
+  /* Abu gelap untuk kartu */
+  --color-dark-border: #262626;
+  /* Border halus */
+}
+
+/* 4. Manual Dark Mode Variant 
+   Secara default v4 mendeteksi settingan OS. 
+   Kita tambahkan ini agar tombol toggle di Navbar (class="dark") tetap berfungsi.
+*/
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Global Styles */
+body {
+  /* Gunakan theme() untuk mengakses warna Tailwind */
+  background-color: theme('colors.gray.50');
+  color: theme('colors.gray.900');
+  transition: background-color 0.3s, color 0.3s;
+}
+
+/* Style saat class .dark aktif di tag <html> */
+:root.dark body {
+  background-color: var(--color-dark-bg);
+  color: theme('colors.gray.100');
+}
+
+:root {
+  --toast-bg: #ffffff;
+  --toast-text: #111827;
+  --toast-border: #f3f4f6;
+}
+
+:root.dark {
+  --toast-bg: #1f2937;
+  --toast-text: #f3f4f6;
+  --toast-border: rgba(255, 255, 255, 0.1);
+}

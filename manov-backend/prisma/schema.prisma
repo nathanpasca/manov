@@ -1,0 +1,186 @@
+generator client {
+  provider             = "prisma-client-py"
+  interface            = "asyncio"
+  recursive_type_depth = 5
+}
+
+datasource db {
+  provider = "postgresql" // Ganti ke postgresql
+  url      = env("DATABASE_URL")
+}
+
+model Novel {
+  id            Int       @id @default(autoincrement())
+  slug          String    @unique
+  
+  title         String    
+  originalTitle String    
+  romajiTitle   String?   
+  author        String?
+  coverUrl      String?
+
+  synopsis      String?
+  
+  status        String    @default("ONGOING") 
+  
+  chapters      Chapter[]
+  libraries     Library[]
+  histories     History[]
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  genres        Genre[]
+  
+  // Social Stats
+  averageRating Float     @default(0)
+  ratingCount   Int       @default(0)
+  
+  ratings       Rating[]
+  comments      Comment[]
+}
+
+model Genre {
+  id    Int     @id @default(autoincrement())
+  name  String  @unique
+  
+  novels Novel[]
+}
+
+model Chapter {
+  id            Int      @id @default(autoincrement())
+  novelId       Int
+  novel         Novel    @relation(fields: [novelId], references: [id])
+  
+  chapterNum    Int      
+  
+  rawTitle      String?  
+  rawContent    String   @db.Text // Sekarang valid di Postgres
+
+  sourceUrl     String?
+
+  translations  ChapterTranslation[]
+  comments      Comment[]
+
+  @@unique([novelId, chapterNum])
+}
+
+model ChapterTranslation {
+  id            Int      @id @default(autoincrement())
+  
+  chapterId     Int
+  chapter       Chapter  @relation(fields: [chapterId], references: [id])
+  
+  language      String   // "ID", "EN"
+  
+  title         String   
+  content       String   @db.Text // Sekarang valid di Postgres
+  
+  publishedAt   DateTime? 
+  
+  price         Int      @default(0) 
+
+  unlockedBy    UnlockedChapter[]
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([chapterId, language])
+}
+
+// --- USER SYSTEM ---
+
+model User {
+  id            Int       @id @default(autoincrement())
+  email         String    @unique
+  username      String
+  password      String    // Disimpan dalam bentuk HASH (bukan plain text)
+  
+  role          String    @default("USER") // USER, ADMIN
+  coins         Int       @default(0)      // Mata uang untuk unlock chapter
+  
+  createdAt     DateTime  @default(now())
+  
+  // Relasi
+  library       Library[] // Buku yang di-bookmark
+  history       History[] // Jejak baca terakhir
+  unlocked      UnlockedChapter[] // Chapter yang sudah dibeli
+  
+  ratings       Rating[]
+  comments      Comment[]
+}
+
+model Library {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  
+  novelId   Int
+  novel     Novel    @relation(fields: [novelId], references: [id])
+  
+  createdAt DateTime @default(now())
+
+  @@unique([userId, novelId]) // Satu user cuma bisa bookmark novel yg sama 1x
+}
+
+model History {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id])
+  
+  novelId     Int
+  novel       Novel    @relation(fields: [novelId], references: [id])
+  
+  chapterNum  Int      // Chapter terakhir yang dibaca
+  
+  updatedAt   DateTime @updatedAt // Kapan terakhir baca
+
+  @@unique([userId, novelId])
+}
+
+// Mencatat chapter mana saja yang sudah dibeli user pakai koin
+model UnlockedChapter {
+  id              Int      @id @default(autoincrement())
+  userId          Int
+  user            User     @relation(fields: [userId], references: [id])
+  
+  translationId   Int      
+  translation     ChapterTranslation @relation(fields: [translationId], references: [id])
+  
+  cost            Int      // Berapa koin yang dibayar saat itu
+  unlockedAt      DateTime @default(now())
+
+  @@unique([userId, translationId])
+}
+
+// --- SOCIAL FEATURES ---
+
+model Rating {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  
+  novelId   Int
+  novel     Novel    @relation(fields: [novelId], references: [id])
+  
+  score     Int      // 1-5
+  createdAt DateTime @default(now())
+
+  @@unique([userId, novelId])
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+  
+  // Comment bisa di Novel (Review) ATAU di Chapter (Discussion)
+  novelId   Int?
+  novel     Novel?   @relation(fields: [novelId], references: [id])
+  
+  chapterId Int?
+  chapter   Chapter? @relation(fields: [chapterId], references: [id])
+}
