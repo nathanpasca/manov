@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api/axios';
 import { motion } from 'framer-motion';
 import { LogIn, Mail, Lock, AlertCircle, ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -24,7 +24,7 @@ const Login = () => {
 
         try {
             // Hit Endpoint Login Backend
-            const res = await axios.post('http://localhost:8000/api/auth/login', formData);
+            const res = await api.post('/auth/login', formData);
 
             // Simpan Token ke Context
             login(res.data.access_token, res.data.user);

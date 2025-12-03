@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api/axios';
 import { motion } from 'framer-motion';
 import { UserPlus, User, Mail, Lock, AlertCircle, ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -24,7 +24,7 @@ const Register = () => {
 
         try {
             // 1. Register User
-            const res = await axios.post('http://localhost:8000/api/auth/register', formData);
+            const res = await api.post('/auth/register', formData);
 
             // 2. Auto Login setelah register sukses
             login(res.data.access_token, res.data.user);
