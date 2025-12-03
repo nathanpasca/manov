@@ -1,9 +1,20 @@
 import asyncio
 from prisma import Prisma
 from app.utils.security import get_password_hash
+from dotenv import load_dotenv
+
+load_dotenv(override=True)
+
+import os
 
 async def create_super_admin():
-    db = Prisma()
+    # Debug: Print URL to confirm (masked)
+    url = os.environ.get("DATABASE_URL")
+    if url:
+        print(f"DEBUG: Using DATABASE_URL: {url.replace('password123', '****')}")
+    
+    # Pass URL explicitly to avoid any env var ambiguity in the subprocess
+    db = Prisma(datasource={'url': url})
     await db.connect()
 
     print("--- 👑 CREATING SUPER ADMIN ---")

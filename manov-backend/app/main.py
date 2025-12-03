@@ -24,7 +24,7 @@ app = FastAPI(lifespan=lifespan, title="Manov API")
 from fastapi.middleware.cors import CORSMiddleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"], # URL Frontend React nanti
+    allow_origins=["http://localhost:5173", "https://manov.nathanpasca.com"], # URL Frontend React nanti
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
