@@ -98,6 +98,54 @@ const NovelDetail = () => {
         }
     };
 
+    const handleDeleteNovel = () => {
+        toast((t) => (
+            <div className={`${t.visible ? 'animate-enter' : 'animate-leave'} flex flex-col gap-3 min-w-[200px] bg-white dark:bg-gray-800 text-gray-900 dark:text-white p-4 rounded-2xl shadow-xl border border-gray-100 dark:border-white/10`}>
+                <span className="font-medium">Delete this novel?</span>
+                <p className="text-xs text-gray-500 dark:text-gray-400">This action cannot be undone.</p>
+                <div className="flex gap-2 justify-end">
+                    <button
+                        onClick={() => toast.dismiss(t.id)}
+                        className="px-3 py-1.5 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg transition-colors"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={() => {
+                            toast.dismiss(t.id);
+                            confirmDeleteNovel();
+                        }}
+                        className="px-3 py-1.5 text-sm font-medium bg-red-500 text-white hover:bg-red-600 rounded-lg transition-colors shadow-sm"
+                    >
+                        Delete
+                    </button>
+                </div>
+            </div>
+        ), {
+            duration: 5000,
+            position: 'top-center',
+            style: {
+                background: 'transparent',
+                boxShadow: 'none',
+                padding: 0,
+            },
+        });
+    };
+
+    const confirmDeleteNovel = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            await axios.delete(`http://localhost:8000/api/admin/novels/${novel.id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            toast.success("Novel deleted");
+            navigate('/');
+        } catch (err) {
+            console.error(err);
+            toast.error("Failed to delete novel");
+        }
+    };
+
     // Logic Search Chapter
     const filteredChapters = novel?.chapters.filter(ch => {
         const translation = ch.translations.find(t => t.language === 'EN');
@@ -373,6 +421,27 @@ const NovelDetail = () => {
                                 )}
                             </div>
                         </div>
+
+                        {/* ADMIN ACTIONS */}
+                        {user && user.role === 'ADMIN' && (
+                            <div className="mt-8 pt-6 border-t border-gray-100 dark:border-white/10">
+                                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Admin Actions</h4>
+                                <div className="flex flex-col gap-2">
+                                    <button
+                                        onClick={() => navigate(`/admin/edit-novel/${novel.slug}`)}
+                                        className="w-full py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm"
+                                    >
+                                        Edit Metadata
+                                    </button>
+                                    <button
+                                        onClick={handleDeleteNovel}
+                                        className="w-full py-2 bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20 rounded-lg hover:bg-red-500 hover:text-white transition font-medium text-sm"
+                                    >
+                                        Delete Novel
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
 

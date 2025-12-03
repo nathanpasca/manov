@@ -159,3 +159,35 @@ async def update_chapter_content(translation_id: int, req: UpdateChapterRequest)
         }
     )
     return updated
+
+@router.delete("/novels/{id}")
+async def delete_novel(id: int):
+    """Delete a novel and ALL related data (Cascade Manual)"""
+    if not db.is_connected(): await db.connect()
+
+    # 1. Delete Social & User Data linked to Novel
+    await db.rating.delete_many(where={'novelId': id})
+    await db.comment.delete_many(where={'novelId': id})
+    await db.library.delete_many(where={'novelId': id})
+    await db.history.delete_many(where={'novelId': id})
+
+    # 2. Handle Chapters
+    chapters = await db.chapter.find_many(where={'novelId': id}, include={'translations': True})
+    for chapter in chapters:
+        # Delete Chapter Comments
+        await db.comment.delete_many(where={'chapterId': chapter.id})
+        
+        # Delete UnlockedChapter (via translations)
+        for trans in chapter.translations:
+             await db.unlockedchapter.delete_many(where={'translationId': trans.id})
+        
+        # Delete Translations
+        await db.chaptertranslation.delete_many(where={'chapterId': chapter.id})
+
+    # 3. Delete Chapters
+    await db.chapter.delete_many(where={'novelId': id})
+
+    # 4. Delete Novel
+    await db.novel.delete(where={'id': id})
+
+    return {"message": "Novel deleted successfully"}
