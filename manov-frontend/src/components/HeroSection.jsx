@@ -43,7 +43,7 @@ const HeroSection = ({ featured }) => {
                         <span className="bg-blue-600 px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase">Trending Now</span>
                         <div className="flex items-center gap-1 text-yellow-400 text-sm">
                             <Star size={14} fill="currentColor" />
-                            <span className="font-semibold">4.9</span>
+                            <span className="font-semibold">{featured.averageRating ? featured.averageRating.toFixed(1) : "N/A"}</span>
                         </div>
                     </motion.div>
 
