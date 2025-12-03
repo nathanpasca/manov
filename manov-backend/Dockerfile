@@ -24,9 +24,12 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Install runtime dependencies (like libpq for postgres if needed, though prisma handles it)
+# Install runtime dependencies
 RUN apt-get update && apt-get install -y \
     curl \
+    libatomic1 \
+    openssl \
+    ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy virtual environment from builder
