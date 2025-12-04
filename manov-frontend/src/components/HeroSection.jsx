@@ -20,7 +20,7 @@ const HeroSection = ({ featured }) => {
             </div>
 
             {/* Content Container */}
-            <div className="relative h-full max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-end md:items-center pb-12 md:pb-0 gap-8">
+            <div className="relative h-full max-w-6xl mx-auto px-6 flex flex-col justify-center md:justify-start md:flex-row md:items-center gap-8">
 
                 {/* Floating Cover Art */}
                 <motion.div
@@ -29,17 +29,11 @@ const HeroSection = ({ featured }) => {
                     transition={{ duration: 0.8 }}
                     className="hidden md:block w-48 h-72 rounded-xl overflow-hidden shadow-2xl border-4 border-white/10 flex-shrink-0"
                 >
-                    <img
-                        src={featured.coverUrl}
-                        alt="Cover"
-                        className="w-full h-full object-cover"
-                        fetchPriority="high"
-                        loading="eager"
-                    />
+                    <img src={featured.coverUrl} alt="Cover" className="w-full h-full object-cover" />
                 </motion.div>
 
                 {/* Text Info */}
-                <div className="flex-1 space-y-4 md:space-y-6 text-white mb-8 md:mb-0">
+                <div className="md:flex-1 space-y-4 md:space-y-6 text-white md:mb-0">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
