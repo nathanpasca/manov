@@ -5,7 +5,7 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.openapi.docs import get_swagger_ui_html, get_redoc_html
 from fastapi.openapi.utils import get_openapi
 from prisma import Prisma
-from app.routers import novels, admin, auth, user, genres, social
+from app.routers import novels, admin, auth, user, genres, social, sitemap
 
 from contextlib import asynccontextmanager
 
@@ -88,6 +88,7 @@ app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(user.router, prefix="/api/user", tags=["User"])
 app.include_router(genres.router, prefix="/api", tags=["Genres"])
 app.include_router(social.router, prefix="/api", tags=["Social"])
+app.include_router(sitemap.router)
 @app.get("/")
 def read_root():
     return {"message": "Welcome to Manov API"}

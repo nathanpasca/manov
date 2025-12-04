@@ -7,6 +7,7 @@ import { Settings, ArrowLeft, ArrowRight, Edit, BookOpen, X, Type, Moon, Sun, Co
 import { motion, AnimatePresence } from 'framer-motion';
 import { smartParser } from '../utils/smartParser';
 import CommentSection from '../components/CommentSection';
+import SEO from '../components/SEO';
 
 const Reader = () => {
     const { slug, chapterNum } = useParams();
@@ -95,7 +96,11 @@ const Reader = () => {
     );
 
     return (
-        <div className={`min-h-screen transition-colors duration-500 ease-in-out ${getThemeColors()} flex flex-col font-sans`}>
+        <div className="min-h-screen bg-[#f8f9fa] dark:bg-[#0a0a0a] text-gray-900 dark:text-gray-300 font-serif transition-colors duration-300 flex flex-col">
+            <SEO
+                title={chapter ? `Chapter ${chapter.chapterNum}: ${chapter.title}` : "Reading..."}
+                description={`Read Chapter ${chapterNum} of ${chapter ? chapter.novelTitle : "this novel"} on Manov.`}
+            />
 
             {/* NAVBAR */}
             <motion.div

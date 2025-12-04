@@ -9,6 +9,8 @@ import {
 import { useAuth } from '../context/AuthContext';
 import StarRating from '../components/StarRating';
 import CommentSection from '../components/CommentSection';
+import SEO from '../components/SEO';
+import { Helmet } from 'react-helmet-async';
 import toast from 'react-hot-toast';
 
 const NovelDetail = () => {
@@ -161,6 +163,35 @@ const NovelDetail = () => {
 
     return (
         <div className="min-h-screen pt-24 bg-gray-50 dark:bg-[#0a0a0a] text-gray-900 dark:text-gray-100 font-sans transition-colors duration-300">
+            <SEO
+                title={novel.title}
+                description={novel.synopsis ? novel.synopsis.slice(0, 160) + "..." : "Read this novel on Manov."}
+                image={novel.coverUrl}
+                type="book"
+            />
+            <Helmet>
+                <script type="application/ld+json">
+                    {JSON.stringify({
+                        "@context": "https://schema.org",
+                        "@type": "Book",
+                        "name": novel.title,
+                        "author": {
+                            "@type": "Person",
+                            "name": novel.author || "Unknown"
+                        },
+                        "description": novel.synopsis,
+                        "image": novel.coverUrl,
+                        "aggregateRating": novel.averageRating ? {
+                            "@type": "AggregateRating",
+                            "ratingValue": novel.averageRating,
+                            "ratingCount": novel.ratingCount || 1,
+                            "bestRating": "5",
+                            "worstRating": "1"
+                        } : undefined,
+                        "inLanguage": "en"
+                    })}
+                </script>
+            </Helmet>
 
             {/* --- HERO SECTION (Immersive Background) --- */}
             <div className="relative w-full h-[500px] overflow-hidden">

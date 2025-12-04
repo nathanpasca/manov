@@ -158,5 +158,6 @@ async def get_chapter_content(
         "content": translation.content,
         "language": translation.language,
         "nextChapterNum": next_chapter.chapterNum if next_chapter else None,
-        "prevChapterNum": prev_chapter.chapterNum if prev_chapter else None
+        "prevChapterNum": prev_chapter.chapterNum if prev_chapter else None,
+        "novelTitle": novel.title # Added for SEO
     }

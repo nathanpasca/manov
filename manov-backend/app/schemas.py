@@ -41,6 +41,7 @@ class ChapterContent(BaseModel):
     language: str
     nextChapterNum: Optional[int] = None
     prevChapterNum: Optional[int] = None
+    novelTitle: Optional[str] = None
 
 class NovelDetail(NovelList):
     originalTitle: str

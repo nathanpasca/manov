@@ -29,7 +29,13 @@ const HeroSection = ({ featured }) => {
                     transition={{ duration: 0.8 }}
                     className="hidden md:block w-48 h-72 rounded-xl overflow-hidden shadow-2xl border-4 border-white/10 flex-shrink-0"
                 >
-                    <img src={featured.coverUrl} alt="Cover" className="w-full h-full object-cover" />
+                    <img
+                        src={featured.coverUrl}
+                        alt="Cover"
+                        className="w-full h-full object-cover"
+                        fetchPriority="high"
+                        loading="eager"
+                    />
                 </motion.div>
 
                 {/* Text Info */}

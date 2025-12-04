@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import { BookOpen, Star } from 'lucide-react';
 
-const NovelCard = ({ novel }) => {
+const NovelCard = ({ novel, priority = false }) => {
     return (
         <Link
             to={`/novel/${novel.slug}`}
@@ -10,7 +10,13 @@ const NovelCard = ({ novel }) => {
             {/* Background Image (Cover) - Full Fill */}
             <div className="absolute inset-0">
                 {novel.coverUrl ? (
-                    <img src={novel.coverUrl} alt={novel.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                    <img
+                        src={novel.coverUrl}
+                        alt={novel.title}
+                        loading={priority ? "eager" : "lazy"}
+                        fetchPriority={priority ? "high" : "auto"}
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    />
                 ) : (
                     <div className="w-full h-full bg-gray-200 flex items-center justify-center text-gray-400"><BookOpen size={40} /></div>
                 )}

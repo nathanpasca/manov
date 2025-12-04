@@ -5,6 +5,9 @@ import HeroSection from '../components/HeroSection';
 import SearchBar from '../components/SearchBar';
 import NovelCard from '../components/NovelCard';
 import SkeletonCard from '../components/SkeletonCard';
+import { motion } from 'framer-motion';
+import SEO from '../components/SEO';
+import { BookOpen, Search, Filter } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Clock, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -83,7 +86,11 @@ const Home = () => {
     const featuredNovel = novels.length > 0 ? novels[0] : null;
 
     return (
-        <div className="min-h-screen pt-24 bg-gray-50 dark:bg-transparent text-gray-900 dark:text-gray-100 pb-20 font-sans transition-colors duration-300">
+        <div className="min-h-screen pt-24 bg-gray-50 dark:bg-[#0a0a0a] text-gray-900 dark:text-gray-100 pb-20 font-sans transition-colors duration-300">
+            <SEO
+                title="Home"
+                description="Manov - Your ultimate destination for AI-translated novels. Read unlimited chapters for free."
+            />
 
             {/* 1. HERO SECTION (Passing Data Real) */}
             <HeroSection featured={featuredNovel} />
@@ -148,8 +155,12 @@ const Home = () => {
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 auto-rows-[300px]">
                             {filteredNovels.length > 0 ? (
-                                filteredNovels.map((novel) => (
-                                    <NovelCard key={novel.id} novel={novel} />
+                                filteredNovels.map((novel, index) => (
+                                    <NovelCard
+                                        key={novel.id}
+                                        novel={novel}
+                                        priority={index < 4}
+                                    />
                                 ))
                             ) : (
                                 <div className="col-span-full text-center py-20 text-gray-500 dark:text-gray-400">
