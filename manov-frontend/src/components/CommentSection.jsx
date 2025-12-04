@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { MessageSquare, Send, User, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
+import api from '../api/axios';
 
 const CommentSection = ({ targetId, type = 'novel' }) => {
     const { user } = useAuth();
@@ -14,13 +15,13 @@ const CommentSection = ({ targetId, type = 'novel' }) => {
 
     // Determine endpoint based on type
     const endpoint = type === 'novel'
-        ? `http://localhost:8000/api/novels/${targetId}/comments`
-        : `http://localhost:8000/api/chapters/${targetId}/comments`;
+        ? `/novels/${targetId}/comments`
+        : `/chapters/${targetId}/comments`;
 
     const fetchComments = async () => {
         try {
             setLoading(true);
-            const res = await axios.get(endpoint);
+            const res = await api.get(endpoint);
             setComments(res.data);
         } catch (err) {
             console.error("Failed to load comments", err);
@@ -43,11 +44,9 @@ const CommentSection = ({ targetId, type = 'novel' }) => {
 
         try {
             setSubmitting(true);
-            const token = localStorage.getItem('token');
-            const res = await axios.post(
+            const res = await api.post(
                 endpoint,
-                { content: newComment },
-                { headers: { Authorization: `Bearer ${token}` } }
+                { content: newComment }
             );
 
             // Add new comment to top

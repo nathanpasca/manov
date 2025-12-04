@@ -1,8 +1,13 @@
 import axios from 'axios';
 
-// Buat instance axios dengan konfigurasi default
+// Determine Base URL based on Environment
+const baseURL = import.meta.env.MODE === 'production'
+    ? import.meta.env.VITE_API_URL // In Production, use the Environment Variable (Set in Vercel)
+    : 'http://localhost:8000/api'; // In Development, always use Localhost
+
+// Create axios instance
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api',
+    baseURL: baseURL,
     headers: {
         'Content-Type': 'application/json',
     },

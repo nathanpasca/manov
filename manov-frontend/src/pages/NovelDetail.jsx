@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../api/axios';
 import { motion } from 'framer-motion';
 import {
     BookOpen, User, Tag, Clock, Star,
@@ -29,13 +29,13 @@ const NovelDetail = () => {
             try {
                 setLoading(true);
                 // Ambil Data Novel
-                const res = await axios.get(`http://localhost:8000/api/novels/${slug}`);
+                const res = await api.get(`/novels/${slug}`);
                 setNovel(res.data);
                 document.title = `${res.data.title} | Manov`;
 
                 // Jika user login, cek bookmark & rating
                 if (user && res.data) {
-                    const statusRes = await axios.get(`http://localhost:8000/api/user/library/check/${res.data.id}`);
+                    const statusRes = await api.get(`/user/library/check/${res.data.id}`);
                     setIsBookmarked(statusRes.data.isBookmarked);
 
                     // Set User Rating dari backend
@@ -59,11 +59,11 @@ const NovelDetail = () => {
         setBookmarkLoading(true);
         try {
             if (isBookmarked) {
-                await axios.delete(`http://localhost:8000/api/user/library/${novel.id}`);
+                await api.delete(`/user/library/${novel.id}`);
                 setIsBookmarked(false);
                 toast.success("Removed from library");
             } else {
-                await axios.post(`http://localhost:8000/api/user/library/${novel.id}`);
+                await api.post(`/user/library/${novel.id}`);
                 setIsBookmarked(true);
                 toast.success("Added to library");
             }
@@ -80,12 +80,7 @@ const NovelDetail = () => {
             return;
         }
         try {
-            const token = localStorage.getItem('token');
-            const res = await axios.post(
-                `http://localhost:8000/api/novels/${novel.id}/rate`,
-                { score },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
+            const res = await api.post(`/novels/${novel.id}/rate`, { score });
             setUserRating(score);
             setNovel(prev => ({
                 ...prev,

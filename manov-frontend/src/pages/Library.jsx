@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { BookOpen, BookmarkX } from 'lucide-react';
 import NovelCard from '../components/NovelCard';
 import { useAuth } from '../context/AuthContext';
+import api from '../api/axios';
 
 const Library = () => {
     const { user, logout } = useAuth();
@@ -12,7 +13,7 @@ const Library = () => {
 
     const fetchLibrary = async () => {
         try {
-            const res = await axios.get('http://localhost:8000/api/user/library');
+            const res = await api.get('/user/library');
             setLibrary(res.data);
         } catch (err) {
             console.error("Gagal load library", err);
