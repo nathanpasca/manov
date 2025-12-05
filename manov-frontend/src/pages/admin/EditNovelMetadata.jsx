@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import api from '../../api/axios';
 import toast from 'react-hot-toast';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Save, ArrowLeft, Image as ImageIcon, Book, User, Info, Loader, Plus, Trash2, Edit } from 'lucide-react';
+import { Save, ArrowLeft, Image as ImageIcon, Book, User, Info, Loader, Plus, Trash2, Edit, Link } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const EditNovelMetadata = () => {
@@ -20,6 +20,7 @@ const EditNovelMetadata = () => {
         id: null,
         title: '',
         originalTitle: '',
+        slug: '',
         author: '',
         coverUrl: '',
         synopsis: '',
@@ -42,6 +43,7 @@ const EditNovelMetadata = () => {
                     id: novelRes.data.id,
                     title: novelRes.data.title,
                     originalTitle: novelRes.data.originalTitle,
+                    slug: novelRes.data.slug,
                     author: novelRes.data.author || '',
                     coverUrl: novelRes.data.coverUrl || '',
                     synopsis: novelRes.data.synopsis || '',
@@ -130,6 +132,19 @@ const EditNovelMetadata = () => {
                                         value={formData.title}
                                         onChange={e => setFormData({ ...formData, title: e.target.value })}
                                     />
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-400 uppercase mb-2 flex items-center gap-2">
+                                        <Link size={14} /> Slug (URL Fragment)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        className="w-full bg-gray-50 dark:bg-black/20 border border-gray-200 dark:border-white/10 rounded-xl px-4 py-3 focus:ring-2 focus:ring-blue-500/50 outline-none transition dark:text-white font-mono text-sm text-blue-500"
+                                        value={formData.slug}
+                                        onChange={e => setFormData({ ...formData, slug: e.target.value })}
+                                    />
+                                    <p className="text-[10px] text-gray-400 mt-1 ml-1">Warning: Changing this will change the URL. Make sure no broken links occur.</p>
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -312,9 +327,9 @@ const EditNovelMetadata = () => {
                         </div>
                     </div>
 
-                </div>
-            </motion.div>
-        </div>
+                </div >
+            </motion.div >
+        </div >
     );
 };
 

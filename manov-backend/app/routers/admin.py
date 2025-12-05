@@ -18,11 +18,16 @@ class ScrapeRequest(BaseModel):
 class UpdateNovelRequest(BaseModel):
     title: str
     originalTitle: str
+    slug: str
     author: str
     coverUrl: str
     synopsis: str
     status: str
     genres: List[int] = []
+
+# ...
+
+
 
 class UpdateChapterRequest(BaseModel):
     title: str
@@ -135,6 +140,7 @@ async def update_novel_metadata(id: int, req: UpdateNovelRequest):
         data={
             'title': req.title,
             'originalTitle': req.originalTitle,
+            'slug': req.slug,
             'author': req.author,
             'coverUrl': req.coverUrl,
             'synopsis': req.synopsis,
