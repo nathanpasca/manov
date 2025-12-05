@@ -74,7 +74,7 @@ async def get_open_api_endpoint(username: str = Depends(get_current_username)):
 from fastapi.middleware.cors import CORSMiddleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "https://manov.nathanpasca.com"], # URL Frontend React nanti
+    allow_origins=["http://localhost:5173", "https://manov.nathanpasca.com", "https://manov.pascarz.site"], # URL Frontend React nanti
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
