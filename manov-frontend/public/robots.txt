@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://manov.vercel.app/sitemap.xml
+Sitemap: https://manov.nathanpasca.com/sitemap.xml

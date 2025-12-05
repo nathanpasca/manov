@@ -168,27 +168,52 @@ const NovelDetail = () => {
                 description={novel.synopsis ? novel.synopsis.slice(0, 160) + "..." : "Read this novel on Manov."}
                 image={novel.coverUrl}
                 type="book"
+                url={`https://manov.nathanpasca.com/novel/${novel.slug}`}
             />
             <Helmet>
+                {/* Book Schema */}
                 <script type="application/ld+json">
                     {JSON.stringify({
                         "@context": "https://schema.org",
                         "@type": "Book",
                         "name": novel.title,
+                        "url": `https://manov.nathanpasca.com/novel/${novel.slug}`,
                         "author": {
                             "@type": "Person",
                             "name": novel.author || "Unknown"
                         },
                         "description": novel.synopsis,
                         "image": novel.coverUrl,
+                        "genre": novel.genres?.map(g => g.name).join(", ") || undefined,
+                        "inLanguage": "en",
                         "aggregateRating": novel.averageRating ? {
                             "@type": "AggregateRating",
                             "ratingValue": novel.averageRating,
                             "ratingCount": novel.ratingCount || 1,
                             "bestRating": "5",
                             "worstRating": "1"
-                        } : undefined,
-                        "inLanguage": "en"
+                        } : undefined
+                    })}
+                </script>
+                {/* Breadcrumb Schema */}
+                <script type="application/ld+json">
+                    {JSON.stringify({
+                        "@context": "https://schema.org",
+                        "@type": "BreadcrumbList",
+                        "itemListElement": [
+                            {
+                                "@type": "ListItem",
+                                "position": 1,
+                                "name": "Home",
+                                "item": "https://manov.nathanpasca.com"
+                            },
+                            {
+                                "@type": "ListItem",
+                                "position": 2,
+                                "name": novel.title,
+                                "item": `https://manov.nathanpasca.com/novel/${novel.slug}`
+                            }
+                        ]
                     })}
                 </script>
             </Helmet>

@@ -7,6 +7,7 @@ import NovelCard from '../components/NovelCard';
 import SkeletonCard from '../components/SkeletonCard';
 import { motion } from 'framer-motion';
 import SEO from '../components/SEO';
+import { Helmet } from 'react-helmet-async';
 import { BookOpen, Search, Filter } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Clock, ArrowRight } from 'lucide-react';
@@ -90,7 +91,49 @@ const Home = () => {
             <SEO
                 title="Home"
                 description="Manov - Your ultimate destination for AI-translated novels. Read unlimited chapters for free."
+                url="https://manov.nathanpasca.com"
             />
+            <Helmet>
+                <script type="application/ld+json">
+                    {JSON.stringify({
+                        "@context": "https://schema.org",
+                        "@type": "WebSite",
+                        "name": "Manov",
+                        "url": "https://manov.nathanpasca.com",
+                        "description": "Your ultimate destination for AI-translated novels. Read unlimited chapters for free.",
+                        "potentialAction": {
+                            "@type": "SearchAction",
+                            "target": {
+                                "@type": "EntryPoint",
+                                "urlTemplate": "https://manov.nathanpasca.com/?search={search_term_string}"
+                            },
+                            "query-input": "required name=search_term_string"
+                        }
+                    })}
+                </script>
+                {novels.length > 0 && (
+                    <script type="application/ld+json">
+                        {JSON.stringify({
+                            "@context": "https://schema.org",
+                            "@type": "ItemList",
+                            "itemListElement": novels.slice(0, 10).map((novel, index) => ({
+                                "@type": "ListItem",
+                                "position": index + 1,
+                                "item": {
+                                    "@type": "Book",
+                                    "name": novel.title,
+                                    "url": `https://manov.nathanpasca.com/novel/${novel.slug}`,
+                                    "image": novel.coverUrl,
+                                    "author": {
+                                        "@type": "Person",
+                                        "name": novel.author || "Unknown"
+                                    }
+                                }
+                            }))
+                        })}
+                    </script>
+                )}
+            </Helmet>
 
             {/* 1. HERO SECTION (Passing Data Real) */}
             <HeroSection featured={featuredNovel} />

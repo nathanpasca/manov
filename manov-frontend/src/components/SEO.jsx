@@ -1,8 +1,9 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
 
-const SEO = ({ title, description, image, type = 'website' }) => {
+const SEO = ({ title, description, image, type = 'website', url }) => {
     const siteName = 'Manov';
+    const siteUrl = 'https://manov.nathanpasca.com';
     const fullTitle = title ? `${title} | ${siteName}` : siteName;
     const defaultDescription = 'Read your favorite novels with AI-powered translations.';
     const metaDescription = description || defaultDescription;
@@ -10,14 +11,19 @@ const SEO = ({ title, description, image, type = 'website' }) => {
     // Use a default image if none provided (you might want to add a real og-image.jpg to your public folder)
     const metaImage = image || '/og-image.jpg';
 
+    // Canonical URL - use provided URL or construct from siteUrl
+    const canonicalUrl = url || siteUrl;
+
     return (
         <Helmet>
             {/* Standard Metadata */}
             <title>{fullTitle}</title>
             <meta name="description" content={metaDescription} />
+            <link rel="canonical" href={canonicalUrl} />
 
             {/* Open Graph / Facebook */}
             <meta property="og:type" content={type} />
+            <meta property="og:url" content={canonicalUrl} />
             <meta property="og:title" content={fullTitle} />
             <meta property="og:description" content={metaDescription} />
             <meta property="og:image" content={metaImage} />
