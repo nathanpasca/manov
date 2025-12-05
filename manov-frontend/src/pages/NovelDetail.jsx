@@ -131,10 +131,7 @@ const NovelDetail = () => {
 
     const confirmDeleteNovel = async () => {
         try {
-            const token = localStorage.getItem('token');
-            await axios.delete(`http://localhost:8000/api/admin/novels/${novel.id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await api.delete(`/admin/novels/${novel.id}`);
             toast.success("Novel deleted");
             navigate('/');
         } catch (err) {

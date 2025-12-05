@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+
 import { useAuth } from '../context/AuthContext';
 import { MessageSquare, Send, User, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -97,9 +97,7 @@ const CommentSection = ({ targetId, type = 'novel' }) => {
     const confirmDelete = async (commentId) => {
         try {
             const token = localStorage.getItem('token');
-            await axios.delete(`http://localhost:8000/api/comments/${commentId}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            await api.delete(`/comments/${commentId}`);
             setComments(comments.filter(c => c.id !== commentId));
             toast.success("Comment deleted");
         } catch (err) {

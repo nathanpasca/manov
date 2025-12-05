@@ -1,55 +1,131 @@
 import asyncio
 import json
 import os
+import re
 from prisma import Prisma
-from services.translator import LLMTranslator
+from playwright.sync_api import sync_playwright
+from app.services.translator import LLMTranslator
+from app.services.scraper_crawler import NovelCrawler
 
 # --- KONFIGURASI ---
-NOVEL_SLUG = "yidu-lvshe" # Ganti slug novel sesuai keinginanmu
-NOVEL_TITLE = "异度旅社 (Yidu Hotel)" # Judul Novel
+START_URL = "https://www.69shuba.com/txt/89876/40393077" # Supply link chapter 1 disni
 RAW_DATA_FOLDER = "raw_data"
 
+def slugify(text: str) -> str:
+    """Simple slugify implementation."""
+    text = text.lower()
+    text = re.sub(r'[^\w\s-]', '', text)
+    text = re.sub(r'[\s_-]+', '-', text)
+    return text.strip('-')
+
+def extract_novel_metadata(url: str):
+    """
+    Extract novel title from the first chapter URL using a headless browser.
+    """
+    print(f"🔍 Analyzing metadata from: {url}")
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=False)
+        page = browser.new_page()
+        try:
+            page.goto(url, timeout=60000)
+            
+            # Cloudflare Wait
+            try:
+                page.wait_for_selector('.txtnav', state='visible', timeout=10000)
+            except:
+                print("⚠️  Cloudflare detected. Waiting...")
+                page.wait_for_selector('.txtnav', state='visible', timeout=60000)
+                
+            page_title = page.title() # Format: "Chapter - Novel - Site"
+            print(f"   📄 Page Title: {page_title}")
+            
+            novel_title = "Unknown Novel"
+            if "-" in page_title:
+                parts = page_title.split('-')
+                if len(parts) >= 2:
+                    candidate = parts[0].strip()
+                    # If part 0 is chapter (has digits), take part 1
+                    if any(char.isdigit() for char in candidate):
+                        novel_title = parts[1].strip()
+                    else:
+                        novel_title = candidate
+            else:
+                novel_title = page_title
+            
+            # Cleanup
+            novel_title = novel_title.replace("69书吧", "").strip()
+            
+            return {
+                "title": novel_title,
+                "original_title": novel_title # Temporary same
+            }
+        except Exception as e:
+            print(f"❌ Error getting metadata: {e}")
+            return None
+        finally:
+            browser.close()
+
 async def main():
-    # 1. Init Database & Translator
+    # 1. Extract Metadata
+    print("🚀 Starting Batch Processor...")
+    # Wrap sync call in thread
+    metadata = await asyncio.to_thread(extract_novel_metadata, START_URL)
+    
+    if not metadata:
+        print("❌ Failed to extract metadata. Exiting.")
+        return
+
+    novel_title = metadata['title']
+    novel_slug = slugify(novel_title)
+    
+    print(f"📚 Target Novel: {novel_title}")
+    print(f"🔗 Slug: {novel_slug}")
+
+    # 2. Init Database & Translator
     db = Prisma()
     await db.connect()
     
     translator = LLMTranslator()
     
-    print("🔌 Terhubung ke Database...")
-
-    # 2. Pastikan Novel Entry Ada
-    # Kita cari dulu novelnya by slug
-    novel = await db.novel.find_unique(where={'slug': NOVEL_SLUG})
+    # 3. Ensure Novel Entry Exists
+    novel = await db.novel.find_unique(where={'slug': novel_slug})
     
     if not novel:
-        print(f"🆕 Novel '{NOVEL_TITLE}' belum ada. Membuat entry baru...")
+        print(f"🆕 Creating new novel entry for '{novel_title}'...")
         novel = await db.novel.create(data={
-            'title': NOVEL_TITLE,
-            'slug': NOVEL_SLUG,
-            'originalTitle': "异度旅社",
-            'author': "Yuan Tong", # Bisa diambil dari JSON sebenernya
+            'title': novel_title,
+            'slug': novel_slug,
+            'originalTitle': metadata['original_title'],
+            'author': "Unknown", 
             'status': 'ONGOING'
         })
-    
-    print(f"📚 Target Novel: {novel.title} (ID: {novel.id})")
+    else:
+        print(f"✅ Found existing novel: {novel.title} (ID: {novel.id})")
 
-    # 3. Baca File JSON
-    files = sorted(os.listdir(RAW_DATA_FOLDER)) # Urutkan biar chapter 1, 2, 3...
+    # 4. Start Crawling (Sync Blocking)
+    print("\n🕷️  Starting Crawler (This might take a while)...")
+    crawler = NovelCrawler()
+    # Note: start_crawling is synchronous and handles the loop internally
+    # WRAP IN THREAD to avoid Playwright Async Loop Error
+    await asyncio.to_thread(crawler.start_crawling, START_URL, max_chapters=100)
+
+    # 5. Process & Translate (Async Loop)
+    print("\n📝 Processing & Translating Chapters...")
+    files = sorted(os.listdir(RAW_DATA_FOLDER))
     
     for filename in files:
         if not filename.endswith(".json"): continue
         
         filepath = os.path.join(RAW_DATA_FOLDER, filename)
         
-        # Extract nomor chapter dari nama file (chapter_0001.json -> 1)
+        # Extract chapter number
         try:
+            # Format: chapter_0001.json
             chapter_num = int(filename.split('_')[1].split('.')[0])
         except:
-            print(f"⚠️ Skip file aneh: {filename}")
             continue
 
-        # Cek apakah chapter ini sudah ada di DB?
+        # Check existing in DB
         existing_chapter = await db.chapter.find_unique(
             where={
                 'novelId_chapterNum': {
@@ -60,50 +136,46 @@ async def main():
         )
 
         if existing_chapter:
-            print(f"⏭️  Chapter {chapter_num} sudah ada di DB. Skip.")
+            print(f"⏭️  Chapter {chapter_num} exist. Skipping.")
             continue
 
-        print(f"\n🔨 Processing Chapter {chapter_num} from {filename}...")
+        print(f"🔨 Processing Chapter {chapter_num}...")
         
-        # Load Raw Data
         with open(filepath, 'r', encoding='utf-8') as f:
             data = json.load(f)
             
         raw_content = data['content']
         raw_title = data['title']
+        source_url = data.get('source_url')
 
-        # --- STEP TRANSLATE ---
-        print(f"   🤖 Translating ({len(raw_content)} chars)...")
-        translated_content = translator.translate(raw_content)
-        
-        # Translate Judul (Simple request)
-        translated_title = translator.translate(raw_title)
+        # Translate
+        print(f"   🤖 Translating Title & Content...")
+        translated_title = await translator.translate(raw_title)
+        translated_content = await translator.translate(raw_content)
 
-        # --- STEP SAVE TO DB ---
+        # Save to DB
         print("   💾 Saving to Postgres...")
-        
-        # 1. Simpan Chapter Induk (Raw)
         new_chapter = await db.chapter.create(data={
             'novelId': novel.id,
             'chapterNum': chapter_num,
             'rawTitle': raw_title,
-            'rawContent': raw_content
+            'rawContent': raw_content,
+            'sourceUrl': source_url
         })
 
-        # 2. Simpan Translation (ID)
         await db.chaptertranslation.create(data={
             'chapterId': new_chapter.id,
             'language': 'EN',
             'title': translated_title,
             'content': translated_content,
-            # Scheduling: Default publish NOW (bisa diubah logikanya nanti)
+            # No publishedAt to keep it draft? Or set it.
             # 'publishedAt': datetime.now() 
         })
-
-        print(f"✅ Chapter {chapter_num} Selesai!")
+        
+        print(f"✅ Chapter {chapter_num} Done!")
 
     await db.disconnect()
-    print("\n🎉 Semua proses selesai!")
+    print("\n🎉 Batch Processing Complete!")
 
 if __name__ == "__main__":
     asyncio.run(main())
