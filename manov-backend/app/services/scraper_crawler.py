@@ -6,9 +6,9 @@ import os
 import random
 import re
 class NovelCrawler:
-    def __init__(self):
+    def __init__(self, output_dir="raw_data"):
         # Buat folder untuk menyimpan hasil
-        self.output_dir = "raw_data"
+        self.output_dir = output_dir
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
 

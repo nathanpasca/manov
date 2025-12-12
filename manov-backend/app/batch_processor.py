@@ -8,7 +8,7 @@ from app.services.translator import LLMTranslator
 from app.services.scraper_crawler import NovelCrawler
 
 # --- KONFIGURASI ---
-START_URL = "https://www.69shuba.com/txt/89876/40393077" # Supply link chapter 1 disni
+START_URL = "https://www.69shuba.com/txt/89349/40066143" # Supply link chapter 1 disni
 RAW_DATA_FOLDER = "raw_data"
 
 def slugify(text: str) -> str:
@@ -74,7 +74,7 @@ def extract_novel_metadata(url: str):
             browser.close()
 
 # Helper Retry
-async def retry_async_op(func, retries=3, delay=2, *args, **kwargs):
+async def retry_async_op(func, *args, retries=3, delay=2, **kwargs):
     for i in range(retries):
         try:
             return await func(*args, **kwargs)
@@ -128,6 +128,12 @@ async def main():
     else:
         print(f"✅ Found existing novel: {novel.title} (ID: {novel.id})")
 
+    # 3.5 Setup Novel Data Folder
+    novel_data_folder = os.path.join(RAW_DATA_FOLDER, novel.slug)
+    if not os.path.exists(novel_data_folder):
+        os.makedirs(novel_data_folder)
+    print(f"wb 📂 Data Folder: {novel_data_folder}")
+
     # 4. Start Crawling (Sync Blocking)
     print("\n🕷️  Starting Crawler (This might take a while)...")
     
@@ -146,8 +152,8 @@ async def main():
     last_local_chapter_num = 0
     last_local_url = None
     
-    if os.path.exists(RAW_DATA_FOLDER):
-        files = sorted([f for f in os.listdir(RAW_DATA_FOLDER) if f.endswith(".json")])
+    if os.path.exists(novel_data_folder):
+        files = sorted([f for f in os.listdir(novel_data_folder) if f.endswith(".json")])
         if files:
             # Check the last few files to find the highest number
             for f in reversed(files):
@@ -157,7 +163,7 @@ async def main():
                     if num > last_local_chapter_num:
                         last_local_chapter_num = num
                         # Read URL from file
-                        with open(os.path.join(RAW_DATA_FOLDER, f), 'r', encoding='utf-8') as jf:
+                        with open(os.path.join(novel_data_folder, f), 'r', encoding='utf-8') as jf:
                             d = json.load(jf)
                             if 'source_url' in d:
                                 last_local_url = d['source_url']
@@ -195,19 +201,19 @@ async def main():
             print("   ⚠️ Could not verify real number, falling back to candidate logic.")
             start_chapter_num = resume_candidate_num
     
-    crawler = NovelCrawler()
+    crawler = NovelCrawler(output_dir=novel_data_folder)
     # Note: start_crawling is synchronous and handles the loop internally
     # WRAP IN THREAD to avoid Playwright Async Loop Error
-    await asyncio.to_thread(crawler.start_crawling, crawler_start_url, max_chapters=50, start_counter=start_chapter_num)
+    await asyncio.to_thread(crawler.start_crawling, crawler_start_url, max_chapters=1, start_counter=start_chapter_num)
 
     # 5. Process & Translate (Async Loop)
     print("\n📝 Processing & Translating Chapters...")
-    files = sorted(os.listdir(RAW_DATA_FOLDER))
+    files = sorted(os.listdir(novel_data_folder))
     
     for filename in files:
         if not filename.endswith(".json"): continue
         
-        filepath = os.path.join(RAW_DATA_FOLDER, filename)
+        filepath = os.path.join(novel_data_folder, filename)
         
         # Extract chapter number
         try:
