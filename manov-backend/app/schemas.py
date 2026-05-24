@@ -1,51 +1,58 @@
-from pydantic import BaseModel
-from typing import List, Optional
 from datetime import datetime
+
+from pydantic import BaseModel
+
 
 class ChapterTranslationSimple(BaseModel):
     title: str
     language: str
-    publishedAt: Optional[datetime] = None
+    publishedAt: datetime | None = None
+
 
 class ChapterItem(BaseModel):
     id: int
     chapterNum: int
-    translations: List[ChapterTranslationSimple]
+    translations: list[ChapterTranslationSimple]
+
 
 class Genre(BaseModel):
     id: int
     name: str
 
+
 class GenreCreate(BaseModel):
     name: str
+
 
 class NovelList(BaseModel):
     id: int
     title: str
     slug: str
-    coverUrl: Optional[str] = None
+    coverUrl: str | None = None
     status: str
-    author: Optional[str] = None
-    genres: List[Genre] = []
+    author: str | None = None
+    genres: list[Genre] = []
     chapterCount: int = 0
-    synopsis: Optional[str] = None
+    synopsis: str | None = None
     averageRating: float = 0.0
     ratingCount: int = 0
 
+
 class ChapterContent(BaseModel):
     id: int
-    chapterId: int # ID dari tabel Chapter (untuk comments)
+    chapterId: int  # ID dari tabel Chapter (untuk comments)
     chapterNum: int
     title: str
     content: str
     language: str
-    nextChapterNum: Optional[int] = None
-    prevChapterNum: Optional[int] = None
-    novelTitle: Optional[str] = None
+    nextChapterNum: int | None = None
+    prevChapterNum: int | None = None
+    novelTitle: str | None = None
+
 
 class NovelDetail(NovelList):
     originalTitle: str
-    synopsis: Optional[str] = None
-    updatedAt: Optional[datetime] = None
+    synopsis: str | None = None
+    updatedAt: datetime | None = None
     # Di detail novel, kita tampilkan list nomor chapter saja
-    chapters: List[ChapterItem]
+    chapters: list[ChapterItem]

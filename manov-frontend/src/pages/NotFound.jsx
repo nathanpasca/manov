@@ -4,24 +4,25 @@ import { Home, AlertTriangle } from 'lucide-react';
 
 const NotFound = () => {
     React.useEffect(() => {
-        document.title = "Page Not Found | Manov";
+        document.title = 'Page Not Found | Manov';
     }, []);
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-[#0a0a0a] text-gray-900 dark:text-white p-6 text-center">
-            <div className="w-24 h-24 bg-red-100 dark:bg-red-500/10 rounded-full flex items-center justify-center mb-6 text-red-500">
+        <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-6 text-center text-gray-900 dark:bg-[#0a0a0a] dark:text-white">
+            <div className="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-red-100 text-red-500 dark:bg-red-500/10">
                 <AlertTriangle size={48} />
             </div>
 
-            <h1 className="text-6xl font-black mb-2">404</h1>
-            <h2 className="text-2xl font-bold mb-4">Page Not Found</h2>
-            <p className="text-gray-500 dark:text-gray-400 max-w-md mb-8">
-                The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.
+            <h1 className="mb-2 text-6xl font-black">404</h1>
+            <h2 className="mb-4 text-2xl font-bold">Page Not Found</h2>
+            <p className="mb-8 max-w-md text-gray-500 dark:text-gray-400">
+                The page you are looking for might have been removed, had its
+                name changed, or is temporarily unavailable.
             </p>
 
             <Link
                 to="/"
-                className="flex items-center gap-2 px-8 py-3 bg-blue-600 text-white rounded-full font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-500/30"
+                className="flex items-center gap-2 rounded-full bg-blue-600 px-8 py-3 font-bold text-white shadow-lg shadow-blue-500/30 transition hover:bg-blue-700"
             >
                 <Home size={20} /> Back to Home
             </Link>

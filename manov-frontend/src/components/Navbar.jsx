@@ -3,8 +3,15 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import {
-    BookOpen, Search, User, LogOut, Sun, Moon,
-    Menu, X, LayoutDashboard
+    BookOpen,
+    Search,
+    User,
+    LogOut,
+    Sun,
+    Moon,
+    Menu,
+    X,
+    LayoutDashboard,
 } from 'lucide-react';
 
 const Navbar = () => {
@@ -59,16 +66,16 @@ const Navbar = () => {
             <motion.nav
                 initial={{ y: -100 }}
                 animate={{ y: 0 }}
-                className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b ${isScrolled || !isImmersive
-                    ? 'bg-white/80 dark:bg-[#0a0a0a]/80 backdrop-blur-xl border-gray-200 dark:border-white/10 py-3 shadow-lg'
-                    : 'bg-transparent border-transparent py-5'
-                    }`}
+                className={`fixed left-0 right-0 top-0 z-50 border-b transition-all duration-300 ${
+                    isScrolled || !isImmersive
+                        ? 'border-gray-200 bg-white/80 py-3 shadow-lg backdrop-blur-xl dark:border-white/10 dark:bg-[#0a0a0a]/80'
+                        : 'border-transparent bg-transparent py-5'
+                }`}
             >
-                <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
-
+                <div className="mx-auto flex max-w-7xl items-center justify-between px-6">
                     {/* LOGO */}
-                    <Link to="/" className="flex items-center gap-2 group">
-                        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-blue-500/30 group-hover:scale-110 transition-transform">
+                    <Link to="/" className="group flex items-center gap-2">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white shadow-lg shadow-blue-500/30 transition-transform group-hover:scale-110">
                             <BookOpen size={18} />
                         </div>
                         <span className="text-lg font-bold tracking-tight text-gray-900 dark:text-white">
@@ -77,46 +84,85 @@ const Navbar = () => {
                     </Link>
 
                     {/* DESKTOP MENU */}
-                    <div className="hidden md:flex items-center gap-6">
-                        <Link to="/" className={`text-sm font-medium transition ${!isImmersive || isScrolled ? 'text-gray-600 dark:text-gray-300 hover:text-blue-500' : 'text-white/80 hover:text-white'}`}>Home</Link>
-                        <Link to="/library" className={`text-sm font-medium transition ${!isImmersive || isScrolled ? 'text-gray-600 dark:text-gray-300 hover:text-blue-500' : 'text-white/80 hover:text-white'}`}>Library</Link>
-                        <Link to="/about" className={`text-sm font-medium transition ${!isImmersive || isScrolled ? 'text-gray-600 dark:text-gray-300 hover:text-blue-500' : 'text-white/80 hover:text-white'}`}>About</Link>
+                    <div className="hidden items-center gap-6 md:flex">
+                        <Link
+                            to="/"
+                            className={`text-sm font-medium transition ${!isImmersive || isScrolled ? 'text-gray-600 hover:text-blue-500 dark:text-gray-300' : 'text-white/80 hover:text-white'}`}
+                        >
+                            Home
+                        </Link>
+                        <Link
+                            to="/library"
+                            className={`text-sm font-medium transition ${!isImmersive || isScrolled ? 'text-gray-600 hover:text-blue-500 dark:text-gray-300' : 'text-white/80 hover:text-white'}`}
+                        >
+                            Library
+                        </Link>
+                        <Link
+                            to="/about"
+                            className={`text-sm font-medium transition ${!isImmersive || isScrolled ? 'text-gray-600 hover:text-blue-500 dark:text-gray-300' : 'text-white/80 hover:text-white'}`}
+                        >
+                            About
+                        </Link>
 
                         {/* Theme Toggle */}
                         <button
                             onClick={toggleTheme}
-                            className={`p-2 rounded-full transition ${!isImmersive || isScrolled
-                                ? 'bg-gray-100 dark:bg-white/10 text-gray-600 dark:text-yellow-400 hover:bg-gray-200 dark:hover:bg-white/20'
-                                : 'bg-white/10 text-white hover:bg-white/20'
-                                }`}
+                            className={`rounded-full p-2 transition ${
+                                !isImmersive || isScrolled
+                                    ? 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/10 dark:text-yellow-400 dark:hover:bg-white/20'
+                                    : 'bg-white/10 text-white hover:bg-white/20'
+                            }`}
                         >
                             {isDark ? <Sun size={18} /> : <Moon size={18} />}
                         </button>
 
                         {/* Auth Buttons */}
                         {user ? (
-                            <div className={`flex items-center gap-4 pl-4 border-l ${!isImmersive || isScrolled ? 'border-gray-200 dark:border-white/10' : 'border-white/20'}`}>
+                            <div
+                                className={`flex items-center gap-4 border-l pl-4 ${!isImmersive || isScrolled ? 'border-gray-200 dark:border-white/10' : 'border-white/20'}`}
+                            >
                                 {user.role === 'ADMIN' && (
-                                    <Link to="/admin" className="text-sm font-medium text-purple-500 hover:text-purple-400 flex items-center gap-1">
+                                    <Link
+                                        to="/admin"
+                                        className="flex items-center gap-1 text-sm font-medium text-purple-500 hover:text-purple-400"
+                                    >
                                         <LayoutDashboard size={16} /> Admin
                                     </Link>
                                 )}
 
                                 <div className="flex items-center gap-2">
-                                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs font-bold shadow-lg">
+                                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 text-xs font-bold text-white shadow-lg">
                                         {user.username.charAt(0).toUpperCase()}
                                     </div>
-                                    <span className={`text-sm font-medium ${!isImmersive || isScrolled ? 'dark:text-white' : 'text-white'}`}>{user.username}</span>
+                                    <span
+                                        className={`text-sm font-medium ${!isImmersive || isScrolled ? 'dark:text-white' : 'text-white'}`}
+                                    >
+                                        {user.username}
+                                    </span>
                                 </div>
 
-                                <button onClick={logout} className={`transition ${!isImmersive || isScrolled ? 'text-gray-400 hover:text-red-500' : 'text-white/60 hover:text-red-400'}`} title="Logout">
+                                <button
+                                    onClick={logout}
+                                    className={`transition ${!isImmersive || isScrolled ? 'text-gray-400 hover:text-red-500' : 'text-white/60 hover:text-red-400'}`}
+                                    title="Logout"
+                                >
                                     <LogOut size={18} />
                                 </button>
                             </div>
                         ) : (
-                            <div className={`flex items-center gap-3 pl-4 border-l ${!isImmersive || isScrolled ? 'border-gray-200 dark:border-white/10' : 'border-white/20'}`}>
-                                <Link to="/login" className={`text-sm font-medium hover:text-blue-500 ${!isImmersive || isScrolled ? 'text-gray-600 dark:text-white' : 'text-white'}`}>Sign In</Link>
-                                <Link to="/register" className="bg-white text-black px-4 py-2 rounded-full text-sm font-bold hover:bg-gray-200 transition shadow-lg shadow-white/10">
+                            <div
+                                className={`flex items-center gap-3 border-l pl-4 ${!isImmersive || isScrolled ? 'border-gray-200 dark:border-white/10' : 'border-white/20'}`}
+                            >
+                                <Link
+                                    to="/login"
+                                    className={`text-sm font-medium hover:text-blue-500 ${!isImmersive || isScrolled ? 'text-gray-600 dark:text-white' : 'text-white'}`}
+                                >
+                                    Sign In
+                                </Link>
+                                <Link
+                                    to="/register"
+                                    className="rounded-full bg-white px-4 py-2 text-sm font-bold text-black shadow-lg shadow-white/10 transition hover:bg-gray-200"
+                                >
                                     Get Started
                                 </Link>
                             </div>
@@ -124,7 +170,10 @@ const Navbar = () => {
                     </div>
 
                     {/* MOBILE TOGGLE */}
-                    <button className={`md:hidden ${!isImmersive || isScrolled ? 'text-gray-900 dark:text-white' : 'text-white'}`} onClick={() => setMobileMenuOpen(true)}>
+                    <button
+                        className={`md:hidden ${!isImmersive || isScrolled ? 'text-gray-900 dark:text-white' : 'text-white'}`}
+                        onClick={() => setMobileMenuOpen(true)}
+                    >
                         <Menu size={24} />
                     </button>
                 </div>
@@ -142,7 +191,7 @@ const Navbar = () => {
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             onClick={() => setMobileMenuOpen(false)}
-                            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] md:hidden"
+                            className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm md:hidden"
                         />
 
                         {/* Menu Panel */}
@@ -150,75 +199,144 @@ const Navbar = () => {
                             initial={{ x: '100%' }}
                             animate={{ x: 0 }}
                             exit={{ x: '100%' }}
-                            transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                            className="fixed top-0 right-0 bottom-0 w-[280px] z-[70] bg-white dark:bg-[#0a0a0a] p-6 md:hidden flex flex-col shadow-2xl border-l border-gray-100 dark:border-white/10"
+                            transition={{
+                                type: 'spring',
+                                damping: 25,
+                                stiffness: 200,
+                            }}
+                            className="fixed bottom-0 right-0 top-0 z-[70] flex w-[280px] flex-col border-l border-gray-100 bg-white p-6 shadow-2xl md:hidden dark:border-white/10 dark:bg-[#0a0a0a]"
                         >
-                            <div className="flex items-center justify-between mb-8">
-                                <span className="text-xl font-bold dark:text-white flex items-center gap-2">
-                                    <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white">
+                            <div className="mb-8 flex items-center justify-between">
+                                <span className="flex items-center gap-2 text-xl font-bold dark:text-white">
+                                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white">
                                         <BookOpen size={18} />
                                     </div>
                                     Menu
                                 </span>
-                                <button onClick={() => setMobileMenuOpen(false)} className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition dark:text-white">
+                                <button
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    className="rounded-full p-2 transition hover:bg-gray-100 dark:text-white dark:hover:bg-white/10"
+                                >
                                     <X size={24} />
                                 </button>
                             </div>
 
                             <div className="flex flex-col gap-2">
-                                <Link to="/" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 text-gray-700 dark:text-gray-200 font-medium transition flex items-center gap-3">
-                                    <BookOpen size={20} className="text-blue-500" /> Home
+                                <Link
+                                    to="/"
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    className="flex items-center gap-3 rounded-xl px-4 py-3 font-medium text-gray-700 transition hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-white/5"
+                                >
+                                    <BookOpen
+                                        size={20}
+                                        className="text-blue-500"
+                                    />{' '}
+                                    Home
                                 </Link>
-                                <Link to="/library" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 text-gray-700 dark:text-gray-200 font-medium transition flex items-center gap-3">
-                                    <BookOpen size={20} className="text-purple-500" /> My Library
+                                <Link
+                                    to="/library"
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    className="flex items-center gap-3 rounded-xl px-4 py-3 font-medium text-gray-700 transition hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-white/5"
+                                >
+                                    <BookOpen
+                                        size={20}
+                                        className="text-purple-500"
+                                    />{' '}
+                                    My Library
                                 </Link>
-                                <Link to="/about" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 text-gray-700 dark:text-gray-200 font-medium transition flex items-center gap-3">
-                                    <BookOpen size={20} className="text-green-500" /> About
+                                <Link
+                                    to="/about"
+                                    onClick={() => setMobileMenuOpen(false)}
+                                    className="flex items-center gap-3 rounded-xl px-4 py-3 font-medium text-gray-700 transition hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-white/5"
+                                >
+                                    <BookOpen
+                                        size={20}
+                                        className="text-green-500"
+                                    />{' '}
+                                    About
                                 </Link>
 
-                                <div className="h-px bg-gray-100 dark:bg-white/5 my-2"></div>
+                                <div className="my-2 h-px bg-gray-100 dark:bg-white/5"></div>
 
                                 <button
                                     onClick={toggleTheme}
-                                    className="px-4 py-3 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 text-gray-700 dark:text-gray-200 font-medium transition flex items-center gap-3 w-full text-left"
+                                    className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left font-medium text-gray-700 transition hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-white/5"
                                 >
-                                    {isDark ? <Sun size={20} className="text-yellow-500" /> : <Moon size={20} className="text-gray-500" />}
-                                    {isDark ? "Light Mode" : "Dark Mode"}
+                                    {isDark ? (
+                                        <Sun
+                                            size={20}
+                                            className="text-yellow-500"
+                                        />
+                                    ) : (
+                                        <Moon
+                                            size={20}
+                                            className="text-gray-500"
+                                        />
+                                    )}
+                                    {isDark ? 'Light Mode' : 'Dark Mode'}
                                 </button>
 
-                                <div className="h-px bg-gray-100 dark:bg-white/5 my-2"></div>
+                                <div className="my-2 h-px bg-gray-100 dark:bg-white/5"></div>
 
                                 {user ? (
                                     <>
-                                        <div className="px-4 py-3 flex items-center gap-3 mb-2">
-                                            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center text-white font-bold shadow-lg">
-                                                {user.username.charAt(0).toUpperCase()}
+                                        <div className="mb-2 flex items-center gap-3 px-4 py-3">
+                                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 font-bold text-white shadow-lg">
+                                                {user.username
+                                                    .charAt(0)
+                                                    .toUpperCase()}
                                             </div>
                                             <div>
-                                                <p className="font-bold dark:text-white">{user.username}</p>
-                                                <p className="text-xs text-gray-500">Member</p>
+                                                <p className="font-bold dark:text-white">
+                                                    {user.username}
+                                                </p>
+                                                <p className="text-xs text-gray-500">
+                                                    Member
+                                                </p>
                                             </div>
                                         </div>
 
                                         {user.role === 'ADMIN' && (
-                                            <Link to="/admin" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 rounded-xl bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 font-bold transition flex items-center gap-3 mb-2">
-                                                <LayoutDashboard size={20} /> Admin Dashboard
+                                            <Link
+                                                to="/admin"
+                                                onClick={() =>
+                                                    setMobileMenuOpen(false)
+                                                }
+                                                className="mb-2 flex items-center gap-3 rounded-xl bg-purple-50 px-4 py-3 font-bold text-purple-600 transition dark:bg-purple-500/10 dark:text-purple-400"
+                                            >
+                                                <LayoutDashboard size={20} />{' '}
+                                                Admin Dashboard
                                             </Link>
                                         )}
 
                                         <button
-                                            onClick={() => { logout(); setMobileMenuOpen(false); }}
-                                            className="px-4 py-3 rounded-xl hover:bg-red-50 dark:hover:bg-red-500/10 text-red-500 font-medium transition flex items-center gap-3 w-full text-left"
+                                            onClick={() => {
+                                                logout();
+                                                setMobileMenuOpen(false);
+                                            }}
+                                            className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left font-medium text-red-500 transition hover:bg-red-50 dark:hover:bg-red-500/10"
                                         >
                                             <LogOut size={20} /> Logout
                                         </button>
                                     </>
                                 ) : (
-                                    <div className="grid grid-cols-2 gap-3 mt-4">
-                                        <Link to="/login" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 rounded-xl border border-gray-200 dark:border-white/10 text-center font-bold dark:text-white hover:bg-gray-50 dark:hover:bg-white/5 transition">
+                                    <div className="mt-4 grid grid-cols-2 gap-3">
+                                        <Link
+                                            to="/login"
+                                            onClick={() =>
+                                                setMobileMenuOpen(false)
+                                            }
+                                            className="rounded-xl border border-gray-200 px-4 py-3 text-center font-bold transition hover:bg-gray-50 dark:border-white/10 dark:text-white dark:hover:bg-white/5"
+                                        >
                                             Sign In
                                         </Link>
-                                        <Link to="/register" onClick={() => setMobileMenuOpen(false)} className="px-4 py-3 rounded-xl bg-blue-600 text-white text-center font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-500/30">
+                                        <Link
+                                            to="/register"
+                                            onClick={() =>
+                                                setMobileMenuOpen(false)
+                                            }
+                                            className="rounded-xl bg-blue-600 px-4 py-3 text-center font-bold text-white shadow-lg shadow-blue-500/30 transition hover:bg-blue-700"
+                                        >
                                             Register
                                         </Link>
                                     </div>

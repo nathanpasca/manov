@@ -1,0 +1,43 @@
+# Python
+.venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info
+.pytest_cache
+.mypy_cache
+.ruff_cache
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Development
+.git
+.gitignore
+README.md
+Dockerfile
+docker-compose.yml
+docker-compose.*.yml
+
+# Tests
+tests/
+conftest.py
+
+# Data (mounted as volume in production)
+raw_data/
+*.db
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

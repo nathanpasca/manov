@@ -20,10 +20,11 @@ const StarRating = ({ rating = 0, onRate, readOnly = false, size = 20 }) => {
                     >
                         <Star
                             size={size}
-                            className={`${starValue <= (hover || rating)
-                                    ? "fill-yellow-400 text-yellow-400"
-                                    : "fill-transparent text-gray-300 dark:text-gray-600"
-                                }`}
+                            className={`${
+                                starValue <= (hover || rating)
+                                    ? 'fill-yellow-400 text-yellow-400'
+                                    : 'fill-transparent text-gray-300 dark:text-gray-600'
+                            }`}
                         />
                     </button>
                 );

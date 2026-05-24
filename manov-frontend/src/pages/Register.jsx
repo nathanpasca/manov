@@ -1,8 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import api from '../api/axios';
+import { authService } from '../services';
 import { motion } from 'framer-motion';
-import { UserPlus, User, Mail, Lock, AlertCircle, ArrowRight } from 'lucide-react';
+import {
+    UserPlus,
+    User,
+    Mail,
+    Lock,
+    AlertCircle,
+    ArrowRight,
+} from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 const Register = () => {
@@ -10,10 +17,14 @@ const Register = () => {
     const { login } = useAuth();
 
     useEffect(() => {
-        document.title = "Register | Manov";
+        document.title = 'Register | Manov';
     }, []);
 
-    const [formData, setFormData] = useState({ username: '', email: '', password: '' });
+    const [formData, setFormData] = useState({
+        username: '',
+        email: '',
+        password: '',
+    });
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -24,7 +35,7 @@ const Register = () => {
 
         try {
             // 1. Register User
-            const res = await api.post('/auth/register', formData);
+            const res = await authService.register(formData);
 
             // 2. Auto Login setelah register sukses
             login(res.data.access_token, res.data.user);
@@ -32,57 +43,72 @@ const Register = () => {
             // 3. Redirect ke Home
             navigate('/');
         } catch (err) {
-            setError(err.response?.data?.detail || "Registration failed. Try a different email.");
+            setError(
+                err.response?.data?.detail ||
+                    'Registration failed. Try a different email.'
+            );
         } finally {
             setLoading(false);
         }
     };
 
     return (
-        <div className="min-h-screen pt-24 flex items-center justify-center bg-gray-50 dark:bg-[#0a0a0a] text-gray-900 dark:text-white px-4 transition-colors duration-300">
-
+        <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 pt-24 text-gray-900 transition-colors duration-300 dark:bg-[#0a0a0a] dark:text-white">
             {/* Background Ambience */}
-            <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1519681393798-3828fb4090bb?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center opacity-40 blur-sm"></div>
-            <div className="absolute inset-0 bg-gradient-to-t from-[#0f0f0f] via-black/50 to-transparent"></div>
+            <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-blue-950 to-gray-900"></div>
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900/20 via-transparent to-transparent"></div>
 
             {/* Glass Card */}
             <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5 }}
-                className="relative z-10 w-full max-w-md p-8 bg-black/40 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl m-4"
+                className="relative z-10 m-4 w-full max-w-md rounded-3xl border border-white/10 bg-black/40 p-8 shadow-2xl backdrop-blur-xl"
             >
-                <div className="text-center mb-8">
+                <div className="mb-8 text-center">
                     <motion.div
                         initial={{ y: -20, opacity: 0 }}
                         animate={{ y: 0, opacity: 1 }}
-                        className="w-16 h-16 bg-white rounded-2xl mx-auto flex items-center justify-center shadow-lg shadow-white/10 mb-4"
+                        className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white shadow-lg shadow-white/10"
                     >
                         <UserPlus className="text-black" size={32} />
                     </motion.div>
-                    <h1 className="text-3xl font-bold text-white tracking-tight">Create Account</h1>
-                    <p className="text-gray-400 text-sm mt-2">Join Manov and start your journey</p>
+                    <h1 className="text-3xl font-bold tracking-tight text-white">
+                        Create Account
+                    </h1>
+                    <p className="mt-2 text-sm text-gray-400">
+                        Join Manov and start your journey
+                    </p>
                 </div>
 
                 {error && (
-                    <div className="bg-red-500/10 border border-red-500/20 text-red-200 text-sm p-3 rounded-xl flex items-center gap-2 mb-6">
+                    <div className="mb-6 flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-200">
                         <AlertCircle size={16} /> {error}
                     </div>
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-4">
-
                     {/* Username Field */}
                     <div className="space-y-1">
-                        <label className="text-xs font-bold text-gray-500 uppercase ml-1">Username</label>
+                        <label className="ml-1 text-xs font-bold uppercase text-gray-500">
+                            Username
+                        </label>
                         <div className="relative">
-                            <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                            <User
+                                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                                size={20}
+                            />
                             <input
                                 type="text"
                                 required
                                 value={formData.username}
-                                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all"
+                                onChange={(e) =>
+                                    setFormData({
+                                        ...formData,
+                                        username: e.target.value,
+                                    })
+                                }
+                                className="w-full rounded-xl border border-white/10 bg-white/5 py-3.5 pl-12 pr-4 text-white transition-all placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-white/20"
                                 placeholder="johndoe"
                             />
                         </div>
@@ -90,15 +116,25 @@ const Register = () => {
 
                     {/* Email Field */}
                     <div className="space-y-1">
-                        <label className="text-xs font-bold text-gray-500 uppercase ml-1">Email Address</label>
+                        <label className="ml-1 text-xs font-bold uppercase text-gray-500">
+                            Email Address
+                        </label>
                         <div className="relative">
-                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                            <Mail
+                                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                                size={20}
+                            />
                             <input
                                 type="email"
                                 required
                                 value={formData.email}
-                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all"
+                                onChange={(e) =>
+                                    setFormData({
+                                        ...formData,
+                                        email: e.target.value,
+                                    })
+                                }
+                                className="w-full rounded-xl border border-white/10 bg-white/5 py-3.5 pl-12 pr-4 text-white transition-all placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-white/20"
                                 placeholder="name@example.com"
                             />
                         </div>
@@ -106,15 +142,25 @@ const Register = () => {
 
                     {/* Password Field */}
                     <div className="space-y-1">
-                        <label className="text-xs font-bold text-gray-500 uppercase ml-1">Password</label>
+                        <label className="ml-1 text-xs font-bold uppercase text-gray-500">
+                            Password
+                        </label>
                         <div className="relative">
-                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+                            <Lock
+                                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
+                                size={20}
+                            />
                             <input
                                 type="password"
                                 required
                                 value={formData.password}
-                                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 pl-12 pr-4 text-white placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all"
+                                onChange={(e) =>
+                                    setFormData({
+                                        ...formData,
+                                        password: e.target.value,
+                                    })
+                                }
+                                className="w-full rounded-xl border border-white/10 bg-white/5 py-3.5 pl-12 pr-4 text-white transition-all placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-white/20"
                                 placeholder="••••••••"
                             />
                         </div>
@@ -123,16 +169,22 @@ const Register = () => {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full bg-white hover:bg-gray-100 text-black font-bold py-4 rounded-xl shadow-lg shadow-white/10 transition-all active:scale-95 flex items-center justify-center gap-2 mt-6"
+                        className="mt-6 flex w-full items-center justify-center gap-2 rounded-xl bg-white py-4 font-bold text-black shadow-lg shadow-white/10 transition-all hover:bg-gray-100 active:scale-95"
                     >
-                        {loading ? "Creating Account..." : "Sign Up"}
+                        {loading ? 'Creating Account...' : 'Sign Up'}
                         {!loading && <ArrowRight size={20} />}
                     </button>
                 </form>
 
                 <div className="mt-8 text-center">
-                    <p className="text-gray-500 text-sm">
-                        Already have an account? <Link to="/login" className="text-white font-bold hover:underline">Sign In</Link>
+                    <p className="text-sm text-gray-500">
+                        Already have an account?{' '}
+                        <Link
+                            to="/login"
+                            className="font-bold text-white hover:underline"
+                        >
+                            Sign In
+                        </Link>
                     </p>
                 </div>
             </motion.div>

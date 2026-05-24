@@ -1,5 +1,4 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
-import axios from 'axios';
 
 const AuthContext = createContext();
 
@@ -8,18 +7,15 @@ export const AuthProvider = ({ children }) => {
     const [token, setToken] = useState(localStorage.getItem('token') || null);
     const [loading, setLoading] = useState(true);
 
-    // Setup Default Axios Header setiap kali token berubah
+    // Sync token with localStorage and keep user state on refresh
     useEffect(() => {
         if (token) {
-            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
             localStorage.setItem('token', token);
 
             // Decode user data dari localStorage kalau ada (opsional, biar gak hilang pas refresh)
             const storedUser = localStorage.getItem('user');
             if (storedUser) setUser(JSON.parse(storedUser));
-
         } else {
-            delete axios.defaults.headers.common['Authorization'];
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             setUser(null);

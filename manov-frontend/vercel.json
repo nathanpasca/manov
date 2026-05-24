@@ -1,12 +1,12 @@
 {
-  "rewrites": [
-    {
-      "source": "/sitemap.xml",
-      "destination": "https://manov-api.nathanpasca.com/sitemap.xml"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
-  ]
+    "rewrites": [
+        {
+            "source": "/sitemap.xml",
+            "destination": "https://YOUR_DOKPLOY_BACKEND_DOMAIN/sitemap.xml"
+        },
+        {
+            "source": "/(.*)",
+            "destination": "/index.html"
+        }
+    ]
 }

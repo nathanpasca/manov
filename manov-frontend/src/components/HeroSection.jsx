@@ -6,10 +6,13 @@ import { useNavigate } from 'react-router-dom';
 const HeroSection = ({ featured }) => {
     const navigate = useNavigate();
 
-    if (!featured) return <div className="h-[500px] bg-gray-200 animate-pulse rounded-b-[3rem]"></div>;
+    if (!featured)
+        return (
+            <div className="h-[500px] animate-pulse rounded-b-[3rem] bg-gray-200"></div>
+        );
 
     return (
-        <div className="relative w-full h-[60vh] md:h-[500px] overflow-hidden rounded-b-[3rem] shadow-2xl mx-auto max-w-[1920px]">
+        <div className="relative mx-auto h-[60vh] w-full max-w-[1920px] overflow-hidden rounded-b-[3rem] shadow-2xl md:h-[500px]">
             {/* Background Image */}
             <div
                 className="absolute inset-0 bg-cover bg-center"
@@ -20,30 +23,39 @@ const HeroSection = ({ featured }) => {
             </div>
 
             {/* Content Container */}
-            <div className="relative h-full max-w-6xl mx-auto px-6 flex flex-col justify-center md:justify-start md:flex-row md:items-center gap-8">
-
+            <div className="relative mx-auto flex h-full max-w-6xl flex-col justify-center gap-8 px-6 md:flex-row md:items-center md:justify-start">
                 {/* Floating Cover Art */}
                 <motion.div
                     initial={{ opacity: 0, y: 40, rotate: -2 }}
                     animate={{ opacity: 1, y: 0, rotate: 0 }}
                     transition={{ duration: 0.8 }}
-                    className="hidden md:block w-48 h-72 rounded-xl overflow-hidden shadow-2xl border-4 border-white/10 flex-shrink-0"
+                    className="hidden h-72 w-48 flex-shrink-0 overflow-hidden rounded-xl border-4 border-white/10 shadow-2xl md:block"
                 >
-                    <img src={featured.coverUrl} alt="Cover" className="w-full h-full object-cover" />
+                    <img
+                        src={featured.coverUrl}
+                        alt="Cover"
+                        className="h-full w-full object-cover"
+                    />
                 </motion.div>
 
                 {/* Text Info */}
-                <div className="md:flex-1 space-y-4 md:space-y-6 text-white md:mb-0">
+                <div className="space-y-4 text-white md:mb-0 md:flex-1 md:space-y-6">
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.2 }}
                         className="flex items-center gap-2"
                     >
-                        <span className="bg-blue-600 px-2 py-0.5 rounded text-[10px] font-bold tracking-wider uppercase">Trending Now</span>
-                        <div className="flex items-center gap-1 text-yellow-400 text-sm">
+                        <span className="rounded bg-blue-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
+                            Trending Now
+                        </span>
+                        <div className="flex items-center gap-1 text-sm text-yellow-400">
                             <Star size={14} fill="currentColor" />
-                            <span className="font-semibold">{featured.averageRating ? featured.averageRating.toFixed(1) : "N/A"}</span>
+                            <span className="font-semibold">
+                                {featured.averageRating
+                                    ? featured.averageRating.toFixed(1)
+                                    : 'N/A'}
+                            </span>
                         </div>
                     </motion.div>
 
@@ -51,7 +63,7 @@ const HeroSection = ({ featured }) => {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.3 }}
-                        className="text-4xl md:text-6xl font-black tracking-tight leading-tight"
+                        className="text-4xl font-black leading-tight tracking-tight md:text-6xl"
                     >
                         {featured.title}
                     </motion.h1>
@@ -60,9 +72,9 @@ const HeroSection = ({ featured }) => {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.4 }}
-                        className="text-gray-300 text-sm md:text-lg max-w-xl line-clamp-3"
+                        className="line-clamp-3 max-w-xl text-sm text-gray-300 md:text-lg"
                     >
-                        {featured.synopsis || "No Synopsis Available."}
+                        {featured.synopsis || 'No Synopsis Available.'}
                     </motion.p>
 
                     <motion.div
@@ -72,19 +84,29 @@ const HeroSection = ({ featured }) => {
                         className="flex items-center gap-3 pt-2"
                     >
                         <button
-                            onClick={() => navigate(`/novel/${featured.slug}/read/1`)}
-                            disabled={!featured.chapterCount || featured.chapterCount === 0}
-                            className={`flex items-center gap-2 px-8 py-3 rounded-full font-bold transition active:scale-95 ${!featured.chapterCount || featured.chapterCount === 0
-                                ? 'bg-gray-500 text-gray-300 cursor-not-allowed'
-                                : 'bg-white text-black hover:bg-gray-200'
-                                }`}
+                            onClick={() =>
+                                navigate(`/novel/${featured.slug}/read/1`)
+                            }
+                            disabled={
+                                !featured.chapterCount ||
+                                featured.chapterCount === 0
+                            }
+                            className={`flex items-center gap-2 rounded-full px-8 py-3 font-bold transition active:scale-95 ${
+                                !featured.chapterCount ||
+                                featured.chapterCount === 0
+                                    ? 'cursor-not-allowed bg-gray-500 text-gray-300'
+                                    : 'bg-white text-black hover:bg-gray-200'
+                            }`}
                         >
                             <Play size={18} fill="currentColor" />
-                            {(!featured.chapterCount || featured.chapterCount === 0) ? "No Chapters" : "Read Now"}
+                            {!featured.chapterCount ||
+                            featured.chapterCount === 0
+                                ? 'No Chapters'
+                                : 'Read Now'}
                         </button>
                         <button
                             onClick={() => navigate(`/novel/${featured.slug}`)}
-                            className="p-3 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur transition border border-white/10"
+                            className="rounded-full border border-white/10 bg-white/10 p-3 backdrop-blur transition hover:bg-white/20"
                         >
                             <Info size={20} />
                         </button>

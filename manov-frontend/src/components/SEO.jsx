@@ -5,7 +5,8 @@ const SEO = ({ title, description, image, type = 'website', url }) => {
     const siteName = 'Manov';
     const siteUrl = 'https://manov.nathanpasca.com';
     const fullTitle = title ? `${title} | ${siteName}` : siteName;
-    const defaultDescription = 'Read your favorite novels with AI-powered translations.';
+    const defaultDescription =
+        'Read your favorite novels with AI-powered translations.';
     const metaDescription = description || defaultDescription;
 
     // Use a default image if none provided (you might want to add a real og-image.jpg to your public folder)

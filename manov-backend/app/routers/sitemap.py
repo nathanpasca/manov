@@ -1,23 +1,20 @@
-import os
-from fastapi import APIRouter, Response
-from prisma import Prisma
 from datetime import datetime
 
+from fastapi import APIRouter, Response
+
+from app.config import settings
+from app.database import db
+
 router = APIRouter()
-db = Prisma()
+
 
 @router.get("/sitemap.xml")
 async def get_sitemap():
-    if not db.is_connected():
-        await db.connect()
-
     # Ambil semua novel (hanya butuh slug dan updated_at)
-    novels = await db.novel.find_many(
-        order={'updatedAt': 'desc'}
-    )
+    novels = await db.novel.find_many(order={"updatedAt": "desc"})
 
     # Base URL website dari environment variable
-    base_url = os.getenv("FRONTEND_URL", "https://manov.nathanpasca.com")
+    base_url = settings.FRONTEND_URL
 
     # Header XML
     xml_content = '<?xml version="1.0" encoding="UTF-8"?>\n'
@@ -36,10 +33,10 @@ async def get_sitemap():
 
     for page in static_pages:
         xml_content += f"""    <url>
-        <loc>{base_url}{page['path']}</loc>
+        <loc>{base_url}{page["path"]}</loc>
         <lastmod>{today}</lastmod>
-        <changefreq>{page['changefreq']}</changefreq>
-        <priority>{page['priority']}</priority>
+        <changefreq>{page["changefreq"]}</changefreq>
+        <priority>{page["priority"]}</priority>
     </url>
 """
 
@@ -54,6 +51,6 @@ async def get_sitemap():
     </url>
 """
 
-    xml_content += '</urlset>'
+    xml_content += "</urlset>"
 
     return Response(content=xml_content, media_type="application/xml")

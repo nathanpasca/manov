@@ -5,57 +5,57 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql" // Ganti ke postgresql
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
 model Novel {
   id            Int       @id @default(autoincrement())
   slug          String    @unique
-  
-  title         String    
-  originalTitle String    
-  romajiTitle   String?   
+
+  title         String
+  originalTitle String
+  romajiTitle   String?
   author        String?
   coverUrl      String?
 
   synopsis      String?
-  
-  status        String    @default("ONGOING") 
-  
+
+  status        String    @default("ONGOING")
+
   chapters      Chapter[]
   libraries     Library[]
   histories     History[]
-  
+
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
   genres        Genre[]
-  
+
   // Social Stats
   averageRating Float     @default(0)
   ratingCount   Int       @default(0)
-  
+
   ratings       Rating[]
   comments      Comment[]
 }
 
 model Genre {
-  id    Int     @id @default(autoincrement())
-  name  String  @unique
-  
+  id     Int     @id @default(autoincrement())
+  name   String  @unique
+
   novels Novel[]
 }
 
 model Chapter {
-  id            Int      @id @default(autoincrement())
+  id            Int                  @id @default(autoincrement())
   novelId       Int
-  novel         Novel    @relation(fields: [novelId], references: [id])
-  
-  chapterNum    Int      
-  
-  rawTitle      String?  
-  rawContent    String   @db.Text // Sekarang valid di Postgres
+  novel         Novel                @relation(fields: [novelId], references: [id], onDelete: Cascade)
+
+  chapterNum    Int
+
+  rawTitle      String?
+  rawContent    String               @db.Text
 
   sourceUrl     String?
 
@@ -66,24 +66,24 @@ model Chapter {
 }
 
 model ChapterTranslation {
-  id            Int      @id @default(autoincrement())
-  
+  id            Int               @id @default(autoincrement())
+
   chapterId     Int
-  chapter       Chapter  @relation(fields: [chapterId], references: [id])
-  
-  language      String   // "ID", "EN"
-  
-  title         String   
-  content       String   @db.Text // Sekarang valid di Postgres
-  
-  publishedAt   DateTime? 
-  
-  price         Int      @default(0) 
+  chapter       Chapter           @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  language      String            // "ID", "EN"
+
+  title         String
+  content       String            @db.Text
+
+  publishedAt   DateTime?
+
+  price         Int               @default(0)
 
   unlockedBy    UnlockedChapter[]
-  
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
 
   @@unique([chapterId, language])
 }
@@ -95,17 +95,17 @@ model User {
   email         String    @unique
   username      String
   password      String    // Disimpan dalam bentuk HASH (bukan plain text)
-  
+
   role          String    @default("USER") // USER, ADMIN
   coins         Int       @default(0)      // Mata uang untuk unlock chapter
-  
+
   createdAt     DateTime  @default(now())
-  
+
   // Relasi
   library       Library[] // Buku yang di-bookmark
   history       History[] // Jejak baca terakhir
   unlocked      UnlockedChapter[] // Chapter yang sudah dibeli
-  
+
   ratings       Rating[]
   comments      Comment[]
 }
@@ -113,11 +113,11 @@ model User {
 model Library {
   id        Int      @id @default(autoincrement())
   userId    Int
-  user      User     @relation(fields: [userId], references: [id])
-  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   novelId   Int
-  novel     Novel    @relation(fields: [novelId], references: [id])
-  
+  novel     Novel    @relation(fields: [novelId], references: [id], onDelete: Cascade)
+
   createdAt DateTime @default(now())
 
   @@unique([userId, novelId]) // Satu user cuma bisa bookmark novel yg sama 1x
@@ -126,13 +126,13 @@ model Library {
 model History {
   id          Int      @id @default(autoincrement())
   userId      Int
-  user        User     @relation(fields: [userId], references: [id])
-  
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   novelId     Int
-  novel       Novel    @relation(fields: [novelId], references: [id])
-  
+  novel       Novel    @relation(fields: [novelId], references: [id], onDelete: Cascade)
+
   chapterNum  Int      // Chapter terakhir yang dibaca
-  
+
   updatedAt   DateTime @updatedAt // Kapan terakhir baca
 
   @@unique([userId, novelId])
@@ -140,15 +140,15 @@ model History {
 
 // Mencatat chapter mana saja yang sudah dibeli user pakai koin
 model UnlockedChapter {
-  id              Int      @id @default(autoincrement())
+  id              Int                @id @default(autoincrement())
   userId          Int
-  user            User     @relation(fields: [userId], references: [id])
-  
-  translationId   Int      
-  translation     ChapterTranslation @relation(fields: [translationId], references: [id])
-  
-  cost            Int      // Berapa koin yang dibayar saat itu
-  unlockedAt      DateTime @default(now())
+  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  translationId   Int
+  translation     ChapterTranslation @relation(fields: [translationId], references: [id], onDelete: Cascade)
+
+  cost            Int                // Berapa koin yang dibayar saat itu
+  unlockedAt      DateTime           @default(now())
 
   @@unique([userId, translationId])
 }
@@ -158,11 +158,11 @@ model UnlockedChapter {
 model Rating {
   id        Int      @id @default(autoincrement())
   userId    Int
-  user      User     @relation(fields: [userId], references: [id])
-  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   novelId   Int
-  novel     Novel    @relation(fields: [novelId], references: [id])
-  
+  novel     Novel    @relation(fields: [novelId], references: [id], onDelete: Cascade)
+
   score     Int      // 1-5
   createdAt DateTime @default(now())
 
@@ -172,15 +172,15 @@ model Rating {
 model Comment {
   id        Int      @id @default(autoincrement())
   userId    Int
-  user      User     @relation(fields: [userId], references: [id])
-  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   content   String   @db.Text
   createdAt DateTime @default(now())
-  
+
   // Comment bisa di Novel (Review) ATAU di Chapter (Discussion)
   novelId   Int?
-  novel     Novel?   @relation(fields: [novelId], references: [id])
-  
+  novel     Novel?   @relation(fields: [novelId], references: [id], onDelete: Cascade)
+
   chapterId Int?
-  chapter   Chapter? @relation(fields: [chapterId], references: [id])
+  chapter   Chapter? @relation(fields: [chapterId], references: [id], onDelete: Cascade)
 }

@@ -7,13 +7,52 @@ requires-python = ">=3.12"
 dependencies = [
     "beautifulsoup4>=4.14.3",
     "fastapi[standard]>=0.123.5",
+    "nh3>=0.2.21",
     "openai>=2.8.1",
     "passlib[bcrypt]>=1.7.4",
     "playwright>=1.56.0",
     "prisma>=0.15.0",
-    "python-dotenv>=1.2.1",
+    "pydantic-settings>=2.9.1",
     "python-jose[cryptography]>=3.5.0",
     "python-multipart>=0.0.20",
     "requests>=2.32.5",
+    "slowapi>=0.1.9",
     "uvicorn>=0.38.0",
 ]
+
+[dependency-groups]
+dev = [
+    "faker>=37.1.0",
+    "httpx>=0.28.1",
+    "mypy>=1.15.0",
+    "pytest>=8.4.0",
+    "pytest-asyncio>=0.26.0",
+    "ruff>=0.11.0",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP", "B", "C4", "SIM"]
+ignore = ["E501", "B008", "N815"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+pythonpath = ["."]
