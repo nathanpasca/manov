@@ -82,14 +82,13 @@ async def get_open_api_endpoint(username: str = Depends(get_current_username)):
     return get_openapi(title="Manov API", version="0.1.0", routes=app.routes)
 
 
-# --- CORS (PENTING BUAT REACT NANTI) ---
+# --- CORS ---
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
-        "https://manov.pascarz.site",
-        "https://manov.pascarz.site",
-    ],  # URL Frontend React nanti
+        settings.FRONTEND_URL,
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
