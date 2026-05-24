@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     DOCS_USERNAME: str = "admin"
     DOCS_PASSWORD: str = "password"
-    FRONTEND_URL: str = "https://manov.nathanpasca.com"
+    FRONTEND_URL: str = "https://manov.pascarz.site"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 1 week
 
 

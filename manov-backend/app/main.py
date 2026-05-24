@@ -87,7 +87,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
-        "https://manov.nathanpasca.com",
+        "https://manov.pascarz.site",
         "https://manov.pascarz.site",
     ],  # URL Frontend React nanti
     allow_credentials=True,

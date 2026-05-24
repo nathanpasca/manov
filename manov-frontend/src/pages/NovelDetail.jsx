@@ -198,7 +198,7 @@ const NovelDetail = () => {
                 }
                 image={novel.coverUrl}
                 type="book"
-                url={`https://manov.nathanpasca.com/novel/${novel.slug}`}
+                url={`https://manov.pascarz.site/novel/${novel.slug}`}
             />
             <Helmet>
                 {/* Book Schema */}
@@ -207,7 +207,7 @@ const NovelDetail = () => {
                         '@context': 'https://schema.org',
                         '@type': 'Book',
                         name: novel.title,
-                        url: `https://manov.nathanpasca.com/novel/${novel.slug}`,
+                        url: `https://manov.pascarz.site/novel/${novel.slug}`,
                         author: {
                             '@type': 'Person',
                             name: novel.author || 'Unknown',
@@ -239,13 +239,13 @@ const NovelDetail = () => {
                                 '@type': 'ListItem',
                                 position: 1,
                                 name: 'Home',
-                                item: 'https://manov.nathanpasca.com',
+                                item: 'https://manov.pascarz.site',
                             },
                             {
                                 '@type': 'ListItem',
                                 position: 2,
                                 name: novel.title,
-                                item: `https://manov.nathanpasca.com/novel/${novel.slug}`,
+                                item: `https://manov.pascarz.site/novel/${novel.slug}`,
                             },
                         ],
                     })}

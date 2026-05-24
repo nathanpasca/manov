@@ -3,7 +3,7 @@ import { Helmet } from 'react-helmet-async';
 
 const SEO = ({ title, description, image, type = 'website', url }) => {
     const siteName = 'Manov';
-    const siteUrl = 'https://manov.nathanpasca.com';
+    const siteUrl = 'https://manov.pascarz.site';
     const fullTitle = title ? `${title} | ${siteName}` : siteName;
     const defaultDescription =
         'Read your favorite novels with AI-powered translations.';

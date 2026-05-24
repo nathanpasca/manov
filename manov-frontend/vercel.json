@@ -2,7 +2,7 @@
     "rewrites": [
         {
             "source": "/sitemap.xml",
-            "destination": "https://YOUR_DOKPLOY_BACKEND_DOMAIN/sitemap.xml"
+            "destination": "https://apimanov.pascarz.site/sitemap.xml"
         },
         {
             "source": "/(.*)",
