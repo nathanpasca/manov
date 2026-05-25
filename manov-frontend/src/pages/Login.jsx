@@ -1,44 +1,36 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { BookOpen, Loader2 } from 'lucide-react';
 import { authService } from '../services';
-import { motion } from 'framer-motion';
-import { LogIn, Mail, Lock, AlertCircle, ArrowRight } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import toast from 'react-hot-toast';
 
 const Login = () => {
+    const [formData, setFormData] = useState({ email: '', password: '' });
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
     const navigate = useNavigate();
     const { login } = useAuth();
 
-    const [formData, setFormData] = useState({ email: '', password: '' });
-    const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
-
-    useEffect(() => {
-        document.title = 'Login | Manov';
-    }, []);
+    const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+        if (error) setError('');
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError('');
         setLoading(true);
+        setError('');
 
         try {
-            // Hit Endpoint Login Backend
             const res = await authService.login(formData);
-
-            // Simpan Token ke Context
             login(res.data.access_token, res.data.user);
-
-            // Redirect sesuai role
-            if (res.data.user.role === 'ADMIN') {
-                navigate('/admin');
-            } else {
-                navigate('/');
-            }
+            toast.success('Welcome back!');
+            navigate('/');
         } catch (err) {
+            console.error(err);
             setError(
-                err.response?.data?.detail ||
-                    'Login failed. Check your credentials.'
+                err.response?.data?.detail || 'Login failed. Please try again.'
             );
         } finally {
             setLoading(false);
@@ -46,115 +38,80 @@ const Login = () => {
     };
 
     return (
-        <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 pt-24 text-gray-900 transition-colors duration-300 dark:bg-[#0a0a0a] dark:text-white">
-            {/* Background Ambience */}
-            <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-blue-950 to-gray-900"></div>
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900/20 via-transparent to-transparent"></div>
-
-            {/* Glass Card */}
-            <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
-                className="relative z-10 w-full max-w-md rounded-3xl border border-white/10 bg-black/40 p-8 shadow-2xl backdrop-blur-xl"
-            >
+        <div className="flex min-h-screen items-center justify-center bg-[#faf8f5] px-4 dark:bg-[#1c1917]">
+            <div className="w-full max-w-md">
                 <div className="mb-8 text-center">
-                    <motion.div
-                        initial={{ scale: 0.8, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        transition={{ delay: 0.2 }}
-                        className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-600 shadow-lg shadow-blue-500/30"
-                    >
-                        <LogIn className="text-white" size={32} />
-                    </motion.div>
-                    <h1 className="text-3xl font-bold tracking-tight text-white">
-                        Welcome Back
+                    <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-stone-900 text-white">
+                        <BookOpen size={24} />
+                    </div>
+                    <h1 className="text-2xl font-bold text-stone-900 dark:text-white">
+                        Welcome back
                     </h1>
-                    <p className="mt-2 text-sm text-gray-400">
-                        Sign in to access your library
+                    <p className="mt-1 text-sm text-stone-500">
+                        Sign in to continue reading
                     </p>
                 </div>
 
                 {error && (
-                    <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className="mb-6 flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-200"
-                    >
-                        <AlertCircle size={16} /> {error}
-                    </motion.div>
+                    <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900/30 dark:bg-red-900/20 dark:text-red-300">
+                        {error}
+                    </div>
                 )}
 
-                <form onSubmit={handleSubmit} className="space-y-5">
-                    <div className="space-y-1">
-                        <label className="ml-1 text-xs font-bold uppercase text-gray-500">
-                            Email Address
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <label className="mb-1 block text-sm font-medium text-stone-700 dark:text-stone-300">
+                            Email
                         </label>
-                        <div className="relative">
-                            <Mail
-                                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-                                size={20}
-                            />
-                            <input
-                                type="email"
-                                required
-                                value={formData.email}
-                                onChange={(e) =>
-                                    setFormData({
-                                        ...formData,
-                                        email: e.target.value,
-                                    })
-                                }
-                                className="w-full rounded-xl border border-white/10 bg-white/5 py-3.5 pl-12 pr-4 text-white transition-all placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                                placeholder="name@example.com"
-                            />
-                        </div>
+                        <input
+                            type="email"
+                            name="email"
+                            required
+                            value={formData.email}
+                            onChange={handleChange}
+                            className="w-full rounded-lg border border-stone-200 bg-white px-4 py-2.5 text-sm text-stone-900 transition focus:outline-none focus:ring-1 focus:ring-stone-400 dark:border-white/10 dark:bg-white/5 dark:text-white"
+                            placeholder="you@example.com"
+                        />
                     </div>
 
-                    <div className="space-y-1">
-                        <label className="ml-1 text-xs font-bold uppercase text-gray-500">
+                    <div>
+                        <label className="mb-1 block text-sm font-medium text-stone-700 dark:text-stone-300">
                             Password
                         </label>
-                        <div className="relative">
-                            <Lock
-                                className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"
-                                size={20}
-                            />
-                            <input
-                                type="password"
-                                required
-                                value={formData.password}
-                                onChange={(e) =>
-                                    setFormData({
-                                        ...formData,
-                                        password: e.target.value,
-                                    })
-                                }
-                                className="w-full rounded-xl border border-white/10 bg-white/5 py-3.5 pl-12 pr-4 text-white transition-all placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                                placeholder="••••••••"
-                            />
-                        </div>
+                        <input
+                            type="password"
+                            name="password"
+                            required
+                            value={formData.password}
+                            onChange={handleChange}
+                            className="w-full rounded-lg border border-stone-200 bg-white px-4 py-2.5 text-sm text-stone-900 transition focus:outline-none focus:ring-1 focus:ring-stone-400 dark:border-white/10 dark:bg-white/5 dark:text-white"
+                            placeholder="••••••••"
+                        />
                     </div>
 
                     <button
                         type="submit"
                         disabled={loading}
-                        className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-4 font-bold text-white shadow-lg shadow-blue-600/20 transition-all hover:bg-blue-700 active:scale-95"
+                        className="flex w-full items-center justify-center gap-2 rounded-lg bg-stone-900 py-2.5 text-sm font-medium text-white transition hover:bg-stone-700 disabled:opacity-50"
                     >
-                        {loading ? 'Signing in...' : 'Sign In'}
-                        {!loading && <ArrowRight size={20} />}
+                        {loading ? (
+                            <Loader2 size={16} className="animate-spin" />
+                        ) : (
+                            'Sign In'
+                        )}
                     </button>
                 </form>
 
-                <div className="mt-8 text-center">
-                    <p className="text-sm text-gray-500">
-                        Don't have an account?{' '}
-                        <span className="cursor-pointer text-blue-400 hover:underline">
-                            Create one
-                        </span>
-                    </p>
-                </div>
-            </motion.div>
+                <p className="mt-6 text-center text-sm text-stone-500">
+                    Don&apos;t have an account?{' '}
+                    <Link
+                        to="/register"
+                        className="font-medium text-stone-800 underline underline-offset-2 hover:text-stone-600 dark:text-stone-300"
+                    >
+                        Create one
+                    </Link>
+                </p>
+            </div>
         </div>
     );
 };

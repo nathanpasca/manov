@@ -6,11 +6,11 @@ const SEO = ({ title, description, image, type = 'website', url }) => {
     const siteUrl = import.meta.env.VITE_FRONTEND_URL || 'https://manov.pascarz.site';
     const fullTitle = title ? `${title} | ${siteName}` : siteName;
     const defaultDescription =
-        'Read your favorite novels with AI-powered translations.';
+        'Read translated web novels. Free, unlimited chapters.';
     const metaDescription = description || defaultDescription;
 
     // Use a default image if none provided (you might want to add a real og-image.jpg to your public folder)
-    const metaImage = image || '/og-image.jpg';
+    const metaImage = image || '/og-image.png';
 
     // Canonical URL - use provided URL or construct from siteUrl
     const canonicalUrl = url || siteUrl;

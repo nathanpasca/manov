@@ -111,7 +111,7 @@ const AdminDashboard = () => {
                     <div>
                         <h1 className="flex items-center gap-3 text-3xl font-black text-gray-900 dark:text-white">
                             <LayoutDashboard
-                                className="text-blue-600"
+                                className="text-stone-600"
                                 size={32}
                             />
                             Admin Dashboard
@@ -123,7 +123,7 @@ const AdminDashboard = () => {
                     <div className="flex gap-3">
                         <button
                             onClick={() => navigate('/admin/add-novel')}
-                            className="flex items-center gap-2 rounded-xl bg-blue-600 px-6 py-3 font-bold text-white shadow-lg shadow-blue-500/30 transition hover:bg-blue-700"
+                            className="flex items-center gap-2 rounded-xl bg-stone-900 px-6 py-3 font-medium text-white transition hover:bg-stone-700"
                         >
                             <Plus size={20} /> Add Novel
                         </button>
@@ -142,10 +142,10 @@ const AdminDashboard = () => {
                     animate={{ opacity: 1, y: 0 }}
                     className="relative mb-12 overflow-hidden rounded-3xl border border-gray-100 bg-white p-6 shadow-sm md:p-8 dark:border-white/10 dark:bg-white/5"
                 >
-                    <div className="pointer-events-none absolute right-0 top-0 -mr-16 -mt-16 h-64 w-64 rounded-full bg-blue-500/5 blur-3xl"></div>
+                    <div className="pointer-events-none absolute right-0 top-0 -mr-16 -mt-16 h-64 w-64 rounded-full bg-stone-500/5 blur-3xl"></div>
 
                     <h2 className="relative z-10 mb-6 flex items-center gap-2 text-xl font-bold">
-                        <Database className="text-blue-500" size={20} /> Scraper
+                        <Database className="text-stone-500" size={20} /> Scraper
                         Tool
                     </h2>
 
@@ -261,7 +261,7 @@ const AdminDashboard = () => {
                                                 </p>
                                                 <div className="flex flex-wrap gap-2">
                                                     <span
-                                                        className={`rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${novel.status === 'ONGOING' ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-300' : 'bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-300'}`}
+                                                        className={`rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${novel.status === 'ONGOING' ? 'bg-stone-100 text-stone-700 dark:bg-white/5 dark:text-stone-300' : 'bg-stone-100 text-stone-700 dark:bg-white/5 dark:text-stone-300'}`}
                                                     >
                                                         {novel.status}
                                                     </span>
@@ -275,7 +275,7 @@ const AdminDashboard = () => {
                                         <div className="flex gap-2">
                                             <button
                                                 onClick={() => handleResume(novel)}
-                                                className="rounded-lg p-2 text-gray-500 transition hover:bg-green-50 hover:text-green-600 dark:hover:bg-green-500/10"
+                                                className="rounded-lg p-2 text-gray-500 transition hover:bg-stone-50 hover:text-stone-600 dark:hover:bg-white/5"
                                                 title="Resume Scraping"
                                             >
                                                 <RefreshCw size={18} />
@@ -286,7 +286,7 @@ const AdminDashboard = () => {
                                                         `/admin/edit-novel/${novel.slug}`
                                                     )
                                                 }
-                                                className="rounded-lg p-2 text-gray-500 transition hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-500/10"
+                                                className="rounded-lg p-2 text-gray-500 transition hover:bg-stone-50 hover:text-stone-600 dark:hover:bg-white/5"
                                                 title="Edit Metadata"
                                             >
                                                 <Edit size={18} />

@@ -8,28 +8,28 @@ const HeroSection = ({ featured }) => {
 
     if (!featured)
         return (
-            <div className="h-[500px] animate-pulse rounded-b-[3rem] bg-gray-200"></div>
+            <div className="h-[400px] animate-pulse bg-stone-200 dark:bg-stone-800"></div>
         );
 
     return (
-        <div className="relative mx-auto h-[60vh] w-full max-w-[1920px] overflow-hidden rounded-b-[3rem] shadow-2xl md:h-[500px]">
+        <div className="relative mx-auto h-[55vh] w-full max-w-[1920px] overflow-hidden md:h-[420px]">
             {/* Background Image */}
             <div
                 className="absolute inset-0 bg-cover bg-center"
                 style={{ backgroundImage: `url(${featured.coverUrl})` }}
             >
-                <div className="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
+                <div className="absolute inset-0 bg-black/50"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent"></div>
             </div>
 
             {/* Content Container */}
-            <div className="relative mx-auto flex h-full max-w-6xl flex-col justify-center gap-8 px-6 md:flex-row md:items-center md:justify-start">
+            <div className="relative mx-auto flex h-full max-w-6xl flex-col justify-center gap-6 px-6 md:flex-row md:items-center md:justify-start md:gap-10">
                 {/* Floating Cover Art */}
                 <motion.div
-                    initial={{ opacity: 0, y: 40, rotate: -2 }}
-                    animate={{ opacity: 1, y: 0, rotate: 0 }}
-                    transition={{ duration: 0.8 }}
-                    className="hidden h-72 w-48 flex-shrink-0 overflow-hidden rounded-xl border-4 border-white/10 shadow-2xl md:block"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.5 }}
+                    className="hidden h-64 w-44 flex-shrink-0 overflow-hidden rounded-lg border border-white/10 shadow-2xl md:block"
                 >
                     <img
                         src={featured.coverUrl}
@@ -39,50 +39,30 @@ const HeroSection = ({ featured }) => {
                 </motion.div>
 
                 {/* Text Info */}
-                <div className="space-y-4 text-white md:mb-0 md:flex-1 md:space-y-6">
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.2 }}
-                        className="flex items-center gap-2"
-                    >
-                        <span className="rounded bg-blue-600 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider">
-                            Trending Now
+                <div className="space-y-3 text-white md:flex-1">
+                    <div className="flex items-center gap-2">
+                        <span className="rounded bg-amber-700 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white">
+                            Trending
                         </span>
-                        <div className="flex items-center gap-1 text-sm text-yellow-400">
-                            <Star size={14} fill="currentColor" />
-                            <span className="font-semibold">
+                        <div className="flex items-center gap-1 text-sm text-amber-400">
+                            <Star size={12} fill="currentColor" />
+                            <span className="font-medium">
                                 {featured.averageRating
                                     ? featured.averageRating.toFixed(1)
                                     : 'N/A'}
                             </span>
                         </div>
-                    </motion.div>
+                    </div>
 
-                    <motion.h1
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.3 }}
-                        className="text-4xl font-black leading-tight tracking-tight md:text-6xl"
-                    >
+                    <h1 className="text-3xl font-bold leading-tight tracking-tight md:text-5xl">
                         {featured.title}
-                    </motion.h1>
+                    </h1>
 
-                    <motion.p
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.4 }}
-                        className="line-clamp-3 max-w-xl text-sm text-gray-300 md:text-lg"
-                    >
-                        {featured.synopsis || 'No Synopsis Available.'}
-                    </motion.p>
+                    <p className="line-clamp-2 max-w-lg text-sm leading-relaxed text-stone-300 md:text-base">
+                        {featured.synopsis || 'No synopsis available.'}
+                    </p>
 
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.5 }}
-                        className="flex items-center gap-3 pt-2"
-                    >
+                    <div className="flex items-center gap-3 pt-1">
                         <button
                             onClick={() =>
                                 navigate(`/novel/${featured.slug}/read/1`)
@@ -91,14 +71,14 @@ const HeroSection = ({ featured }) => {
                                 !featured.chapterCount ||
                                 featured.chapterCount === 0
                             }
-                            className={`flex items-center gap-2 rounded-full px-8 py-3 font-bold transition active:scale-95 ${
+                            className={`flex items-center gap-2 rounded-full px-6 py-2.5 text-sm font-medium transition ${
                                 !featured.chapterCount ||
                                 featured.chapterCount === 0
-                                    ? 'cursor-not-allowed bg-gray-500 text-gray-300'
-                                    : 'bg-white text-black hover:bg-gray-200'
+                                    ? 'cursor-not-allowed bg-stone-600 text-stone-300'
+                                    : 'bg-white text-stone-900 hover:bg-stone-100'
                             }`}
                         >
-                            <Play size={18} fill="currentColor" />
+                            <Play size={14} fill="currentColor" />
                             {!featured.chapterCount ||
                             featured.chapterCount === 0
                                 ? 'No Chapters'
@@ -106,11 +86,11 @@ const HeroSection = ({ featured }) => {
                         </button>
                         <button
                             onClick={() => navigate(`/novel/${featured.slug}`)}
-                            className="rounded-full border border-white/10 bg-white/10 p-3 backdrop-blur transition hover:bg-white/20"
+                            className="rounded-full border border-white/10 bg-white/5 p-2.5 text-white transition hover:bg-white/10"
                         >
-                            <Info size={20} />
+                            <Info size={16} />
                         </button>
-                    </motion.div>
+                    </div>
                 </div>
             </div>
         </div>

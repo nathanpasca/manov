@@ -1,12 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import {
     BookOpen,
-    Search,
-    User,
-    LogOut,
     Sun,
     Moon,
     Menu,
@@ -19,12 +16,10 @@ const Navbar = () => {
     const location = useLocation();
     const navigate = useNavigate();
 
-    // State untuk Theme & Mobile Menu
     const [isDark, setIsDark] = useState(true);
     const [isScrolled, setIsScrolled] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-    // Logic Toggle Theme
     useEffect(() => {
         if (localStorage.getItem('theme') === 'light') {
             setIsDark(false);
@@ -47,39 +42,31 @@ const Navbar = () => {
         }
     };
 
-    // Logic Scroll Effect
     useEffect(() => {
         const handleScroll = () => setIsScrolled(window.scrollY > 20);
         window.addEventListener('scroll', handleScroll);
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
-    // JANGAN TAMPILKAN NAVBAR DI READER PAGE (Biar immersive)
     if (location.pathname.includes('/read/')) return null;
-
-    // Cek apakah halaman ini butuh navbar transparan (Immersive)
-    // User requested to fix overlap, so we disable immersive mode for now to ensure robustness.
-    const isImmersive = false;
 
     return (
         <>
-            <motion.nav
-                initial={{ y: -100 }}
-                animate={{ y: 0 }}
+            <nav
                 className={`fixed left-0 right-0 top-0 z-50 border-b transition-all duration-300 ${
-                    isScrolled || !isImmersive
-                        ? 'border-gray-200 bg-white/80 py-3 shadow-lg backdrop-blur-xl dark:border-white/10 dark:bg-[#0a0a0a]/80'
+                    isScrolled
+                        ? 'border-stone-200 bg-white/90 py-3 backdrop-blur-xl dark:border-white/5 dark:bg-[#1c1917]/90'
                         : 'border-transparent bg-transparent py-5'
                 }`}
             >
                 <div className="mx-auto flex max-w-7xl items-center justify-between px-6">
                     {/* LOGO */}
-                    <Link to="/" className="group flex items-center gap-2">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white shadow-lg shadow-blue-500/30 transition-transform group-hover:scale-110">
-                            <BookOpen size={18} />
+                    <Link to="/" className="group flex items-center gap-2.5">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-stone-800 text-white transition-transform group-hover:scale-105 dark:bg-stone-700">
+                            <BookOpen size={16} />
                         </div>
-                        <span className="text-lg font-bold tracking-tight text-gray-900 dark:text-white">
-                            Manov<span className="text-blue-500">.</span>
+                        <span className="text-lg font-semibold tracking-tight text-stone-900 dark:text-stone-100">
+                            Manov
                         </span>
                     </Link>
 
@@ -87,19 +74,19 @@ const Navbar = () => {
                     <div className="hidden items-center gap-6 md:flex">
                         <Link
                             to="/"
-                            className={`text-sm font-medium transition ${!isImmersive || isScrolled ? 'text-gray-600 hover:text-blue-500 dark:text-gray-300' : 'text-white/80 hover:text-white'}`}
+                            className="text-sm font-medium text-stone-600 transition hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100"
                         >
                             Home
                         </Link>
                         <Link
                             to="/library"
-                            className={`text-sm font-medium transition ${!isImmersive || isScrolled ? 'text-gray-600 hover:text-blue-500 dark:text-gray-300' : 'text-white/80 hover:text-white'}`}
+                            className="text-sm font-medium text-stone-600 transition hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100"
                         >
                             Library
                         </Link>
                         <Link
                             to="/about"
-                            className={`text-sm font-medium transition ${!isImmersive || isScrolled ? 'text-gray-600 hover:text-blue-500 dark:text-gray-300' : 'text-white/80 hover:text-white'}`}
+                            className="text-sm font-medium text-stone-600 transition hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100"
                         >
                             About
                         </Link>
@@ -107,61 +94,51 @@ const Navbar = () => {
                         {/* Theme Toggle */}
                         <button
                             onClick={toggleTheme}
-                            className={`rounded-full p-2 transition ${
-                                !isImmersive || isScrolled
-                                    ? 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/10 dark:text-yellow-400 dark:hover:bg-white/20'
-                                    : 'bg-white/10 text-white hover:bg-white/20'
-                            }`}
+                            className="rounded-full p-2 text-stone-500 transition hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-white/5"
                         >
-                            {isDark ? <Sun size={18} /> : <Moon size={18} />}
+                            {isDark ? <Sun size={16} /> : <Moon size={16} />}
                         </button>
 
                         {/* Auth Buttons */}
                         {user ? (
-                            <div
-                                className={`flex items-center gap-4 border-l pl-4 ${!isImmersive || isScrolled ? 'border-gray-200 dark:border-white/10' : 'border-white/20'}`}
-                            >
+                            <div className="flex items-center gap-4 border-l border-stone-200 pl-4 dark:border-white/5">
                                 {user.role === 'ADMIN' && (
                                     <Link
                                         to="/admin"
-                                        className="flex items-center gap-1 text-sm font-medium text-purple-500 hover:text-purple-400"
+                                        className="flex items-center gap-1 text-sm font-medium text-stone-500 transition hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100"
                                     >
-                                        <LayoutDashboard size={16} /> Admin
+                                        <LayoutDashboard size={14} /> Admin
                                     </Link>
                                 )}
 
                                 <div className="flex items-center gap-2">
-                                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 text-xs font-bold text-white shadow-lg">
+                                    <div className="flex h-7 w-7 items-center justify-center rounded-full bg-stone-200 text-xs font-semibold text-stone-700 dark:bg-stone-700 dark:text-stone-200">
                                         {user.username.charAt(0).toUpperCase()}
                                     </div>
-                                    <span
-                                        className={`text-sm font-medium ${!isImmersive || isScrolled ? 'dark:text-white' : 'text-white'}`}
-                                    >
+                                    <span className="text-sm font-medium text-stone-700 dark:text-stone-200">
                                         {user.username}
                                     </span>
                                 </div>
 
                                 <button
                                     onClick={logout}
-                                    className={`transition ${!isImmersive || isScrolled ? 'text-gray-400 hover:text-red-500' : 'text-white/60 hover:text-red-400'}`}
+                                    className="text-stone-400 transition hover:text-red-600"
                                     title="Logout"
                                 >
-                                    <LogOut size={18} />
+                                    <X size={16} />
                                 </button>
                             </div>
                         ) : (
-                            <div
-                                className={`flex items-center gap-3 border-l pl-4 ${!isImmersive || isScrolled ? 'border-gray-200 dark:border-white/10' : 'border-white/20'}`}
-                            >
+                            <div className="flex items-center gap-3 border-l border-stone-200 pl-4 dark:border-white/5">
                                 <Link
                                     to="/login"
-                                    className={`text-sm font-medium hover:text-blue-500 ${!isImmersive || isScrolled ? 'text-gray-600 dark:text-white' : 'text-white'}`}
+                                    className="text-sm font-medium text-stone-600 transition hover:text-stone-900 dark:text-stone-300"
                                 >
                                     Sign In
                                 </Link>
                                 <Link
                                     to="/register"
-                                    className="rounded-full bg-white px-4 py-2 text-sm font-bold text-black shadow-lg shadow-white/10 transition hover:bg-gray-200"
+                                    className="rounded-full bg-stone-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-stone-700"
                                 >
                                     Get Started
                                 </Link>
@@ -171,127 +148,95 @@ const Navbar = () => {
 
                     {/* MOBILE TOGGLE */}
                     <button
-                        className={`md:hidden ${!isImmersive || isScrolled ? 'text-gray-900 dark:text-white' : 'text-white'}`}
+                        className="text-stone-800 dark:text-stone-100 md:hidden"
                         onClick={() => setMobileMenuOpen(true)}
                     >
-                        <Menu size={24} />
+                        <Menu size={22} />
                     </button>
                 </div>
-            </motion.nav>
-
-            {/* SPACER REMOVED - Handled by Page Padding */}
+            </nav>
 
             {/* MOBILE MENU OVERLAY */}
             <AnimatePresence>
                 {mobileMenuOpen && (
                     <>
-                        {/* Backdrop */}
-                        <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
+                        <div
                             onClick={() => setMobileMenuOpen(false)}
-                            className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm md:hidden"
+                            className="fixed inset-0 z-[60] bg-black/40 backdrop-blur-sm md:hidden"
                         />
 
-                        {/* Menu Panel */}
-                        <motion.div
-                            initial={{ x: '100%' }}
-                            animate={{ x: 0 }}
-                            exit={{ x: '100%' }}
-                            transition={{
-                                type: 'spring',
-                                damping: 25,
-                                stiffness: 200,
-                            }}
-                            className="fixed bottom-0 right-0 top-0 z-[70] flex w-[280px] flex-col border-l border-gray-100 bg-white p-6 shadow-2xl md:hidden dark:border-white/10 dark:bg-[#0a0a0a]"
-                        >
+                        <div className="fixed bottom-0 right-0 top-0 z-[70] flex w-[280px] flex-col border-l border-stone-100 bg-white p-6 shadow-2xl md:hidden dark:border-white/5 dark:bg-[#1c1917]">
                             <div className="mb-8 flex items-center justify-between">
-                                <span className="flex items-center gap-2 text-xl font-bold dark:text-white">
-                                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white">
-                                        <BookOpen size={18} />
+                                <span className="flex items-center gap-2 text-lg font-semibold text-stone-900 dark:text-stone-100">
+                                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-stone-800 text-white">
+                                        <BookOpen size={14} />
                                     </div>
                                     Menu
                                 </span>
                                 <button
                                     onClick={() => setMobileMenuOpen(false)}
-                                    className="rounded-full p-2 transition hover:bg-gray-100 dark:text-white dark:hover:bg-white/10"
+                                    className="rounded-full p-2 text-stone-500 transition hover:bg-stone-100 dark:hover:bg-white/5"
                                 >
-                                    <X size={24} />
+                                    <X size={20} />
                                 </button>
                             </div>
 
-                            <div className="flex flex-col gap-2">
+                            <div className="flex flex-col gap-1">
                                 <Link
                                     to="/"
                                     onClick={() => setMobileMenuOpen(false)}
-                                    className="flex items-center gap-3 rounded-xl px-4 py-3 font-medium text-gray-700 transition hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-white/5"
+                                    className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-stone-700 transition hover:bg-stone-50 dark:text-stone-300 dark:hover:bg-white/5"
                                 >
-                                    <BookOpen
-                                        size={20}
-                                        className="text-blue-500"
-                                    />{' '}
+                                    <BookOpen size={18} className="text-stone-400" />{' '}
                                     Home
                                 </Link>
                                 <Link
                                     to="/library"
                                     onClick={() => setMobileMenuOpen(false)}
-                                    className="flex items-center gap-3 rounded-xl px-4 py-3 font-medium text-gray-700 transition hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-white/5"
+                                    className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-stone-700 transition hover:bg-stone-50 dark:text-stone-300 dark:hover:bg-white/5"
                                 >
-                                    <BookOpen
-                                        size={20}
-                                        className="text-purple-500"
-                                    />{' '}
+                                    <BookOpen size={18} className="text-stone-400" />{' '}
                                     My Library
                                 </Link>
                                 <Link
                                     to="/about"
                                     onClick={() => setMobileMenuOpen(false)}
-                                    className="flex items-center gap-3 rounded-xl px-4 py-3 font-medium text-gray-700 transition hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-white/5"
+                                    className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-stone-700 transition hover:bg-stone-50 dark:text-stone-300 dark:hover:bg-white/5"
                                 >
-                                    <BookOpen
-                                        size={20}
-                                        className="text-green-500"
-                                    />{' '}
+                                    <BookOpen size={18} className="text-stone-400" />{' '}
                                     About
                                 </Link>
 
-                                <div className="my-2 h-px bg-gray-100 dark:bg-white/5"></div>
+                                <div className="my-2 h-px bg-stone-100 dark:bg-white/5"></div>
 
                                 <button
-                                    onClick={toggleTheme}
-                                    className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left font-medium text-gray-700 transition hover:bg-gray-50 dark:text-gray-200 dark:hover:bg-white/5"
+                                    onClick={() => {
+                                        toggleTheme();
+                                        setMobileMenuOpen(false);
+                                    }}
+                                    className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-medium text-stone-700 transition hover:bg-stone-50 dark:text-stone-300 dark:hover:bg-white/5"
                                 >
                                     {isDark ? (
-                                        <Sun
-                                            size={20}
-                                            className="text-yellow-500"
-                                        />
+                                        <Sun size={18} className="text-stone-400" />
                                     ) : (
-                                        <Moon
-                                            size={20}
-                                            className="text-gray-500"
-                                        />
+                                        <Moon size={18} className="text-stone-400" />
                                     )}
                                     {isDark ? 'Light Mode' : 'Dark Mode'}
                                 </button>
 
-                                <div className="my-2 h-px bg-gray-100 dark:bg-white/5"></div>
+                                <div className="my-2 h-px bg-stone-100 dark:bg-white/5"></div>
 
                                 {user ? (
                                     <>
                                         <div className="mb-2 flex items-center gap-3 px-4 py-3">
-                                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 font-bold text-white shadow-lg">
+                                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-stone-200 text-sm font-semibold text-stone-700 dark:bg-stone-700 dark:text-stone-200">
                                                 {user.username
                                                     .charAt(0)
                                                     .toUpperCase()}
                                             </div>
                                             <div>
-                                                <p className="font-bold dark:text-white">
+                                                <p className="text-sm font-semibold text-stone-900 dark:text-stone-100">
                                                     {user.username}
-                                                </p>
-                                                <p className="text-xs text-gray-500">
-                                                    Member
                                                 </p>
                                             </div>
                                         </div>
@@ -302,9 +247,9 @@ const Navbar = () => {
                                                 onClick={() =>
                                                     setMobileMenuOpen(false)
                                                 }
-                                                className="mb-2 flex items-center gap-3 rounded-xl bg-purple-50 px-4 py-3 font-bold text-purple-600 transition dark:bg-purple-500/10 dark:text-purple-400"
+                                                className="mb-1 flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-stone-700 transition hover:bg-stone-50 dark:text-stone-300 dark:hover:bg-white/5"
                                             >
-                                                <LayoutDashboard size={20} />{' '}
+                                                <LayoutDashboard size={18} className="text-stone-400" />{' '}
                                                 Admin Dashboard
                                             </Link>
                                         )}
@@ -314,19 +259,19 @@ const Navbar = () => {
                                                 logout();
                                                 setMobileMenuOpen(false);
                                             }}
-                                            className="flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left font-medium text-red-500 transition hover:bg-red-50 dark:hover:bg-red-500/10"
+                                            className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm font-medium text-red-600 transition hover:bg-red-50 dark:hover:bg-red-500/10"
                                         >
-                                            <LogOut size={20} /> Logout
+                                            <X size={18} /> Logout
                                         </button>
                                     </>
                                 ) : (
-                                    <div className="mt-4 grid grid-cols-2 gap-3">
+                                    <div className="mt-2 grid grid-cols-2 gap-3">
                                         <Link
                                             to="/login"
                                             onClick={() =>
                                                 setMobileMenuOpen(false)
                                             }
-                                            className="rounded-xl border border-gray-200 px-4 py-3 text-center font-bold transition hover:bg-gray-50 dark:border-white/10 dark:text-white dark:hover:bg-white/5"
+                                            className="rounded-lg border border-stone-200 px-4 py-2.5 text-center text-sm font-medium text-stone-700 transition hover:bg-stone-50 dark:border-white/10 dark:text-stone-200 dark:hover:bg-white/5"
                                         >
                                             Sign In
                                         </Link>
@@ -335,14 +280,14 @@ const Navbar = () => {
                                             onClick={() =>
                                                 setMobileMenuOpen(false)
                                             }
-                                            className="rounded-xl bg-blue-600 px-4 py-3 text-center font-bold text-white shadow-lg shadow-blue-500/30 transition hover:bg-blue-700"
+                                            className="rounded-lg bg-stone-900 px-4 py-2.5 text-center text-sm font-medium text-white transition hover:bg-stone-700"
                                         >
                                             Register
                                         </Link>
                                     </div>
                                 )}
                             </div>
-                        </motion.div>
+                        </div>
                     </>
                 )}
             </AnimatePresence>

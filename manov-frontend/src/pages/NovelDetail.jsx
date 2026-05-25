@@ -293,7 +293,7 @@ const NovelDetail = () => {
                             transition={{ delay: 0.2 }}
                             className="mb-3 flex flex-wrap items-center gap-3"
                         >
-                            <span className="rounded-full bg-blue-600 px-3 py-1 text-xs font-bold uppercase tracking-wider shadow-lg shadow-blue-500/30">
+                            <span className="rounded-full bg-stone-800 px-3 py-1 text-xs font-bold uppercase tracking-wider">
                                 {novel.status}
                             </span>
                             <div className="flex items-center gap-1 rounded-full border border-white/10 bg-black/30 px-3 py-1 font-medium text-yellow-400 backdrop-blur-sm">
@@ -353,7 +353,7 @@ const NovelDetail = () => {
                                 disabled={bookmarkLoading}
                                 className={`flex items-center gap-2 rounded-full border px-6 py-3 font-medium backdrop-blur-md transition ${
                                     isBookmarked
-                                        ? 'border-blue-500 bg-blue-600 text-white hover:bg-blue-700' // Style Active
+                                        ? 'border-stone-700 bg-stone-800 text-white hover:bg-stone-700' // Style Active
                                         : 'border-white/20 bg-white/10 text-white hover:bg-white/20' // Style Inactive
                                 }`}
                             >
@@ -391,7 +391,7 @@ const NovelDetail = () => {
                         className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm md:p-8 dark:border-white/10 dark:bg-white/5"
                     >
                         <h3 className="mb-4 flex items-center gap-2 text-xl font-bold dark:text-white">
-                            <BookOpen className="text-blue-500" size={24} />{' '}
+                            <BookOpen className="text-stone-500" size={24} />{' '}
                             Synopsis
                         </h3>
                         <div className="prose prose-gray dark:prose-invert max-w-none leading-relaxed text-gray-600 dark:text-gray-300">
@@ -459,7 +459,7 @@ const NovelDetail = () => {
                                         className={`group relative rounded-xl border p-4 transition-all duration-300 ${
                                             isLocked
                                                 ? 'cursor-not-allowed border-gray-100 bg-gray-50 opacity-70 dark:border-white/5 dark:bg-white/5'
-                                                : 'cursor-pointer border-gray-100 bg-white hover:border-blue-500/30 hover:shadow-lg hover:shadow-blue-500/5 dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10'
+                                                : 'cursor-pointer border-gray-100 bg-white hover:border-stone-300 hover:shadow-md dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10'
                                         }`}
                                     >
                                         <div className="mb-1 flex items-start justify-between">
@@ -467,7 +467,7 @@ const NovelDetail = () => {
                                                 className={`text-xs font-bold uppercase tracking-wider transition-colors ${
                                                     isLocked
                                                         ? 'text-gray-400 dark:text-gray-500'
-                                                        : 'text-gray-400 group-hover:text-blue-500 dark:text-gray-400'
+                                                        : 'text-gray-400 group-hover:text-stone-600 dark:text-gray-400'
                                                 }`}
                                             >
                                                 CH {ch.chapterNum}
@@ -479,7 +479,7 @@ const NovelDetail = () => {
                                                     {publishedDate.toLocaleDateString()}
                                                 </span>
                                             ) : (
-                                                <span className="rounded bg-green-50 px-1.5 py-0.5 text-[10px] font-medium text-green-600 dark:bg-green-500/10 dark:text-green-400">
+                                                <span className="rounded bg-stone-100 px-1.5 py-0.5 text-[10px] font-medium text-stone-600 dark:bg-white/5 dark:text-stone-400">
                                                     Free
                                                 </span>
                                             )}
@@ -489,7 +489,7 @@ const NovelDetail = () => {
                                             className={`line-clamp-1 font-medium transition-colors ${
                                                 isLocked
                                                     ? 'text-gray-400 dark:text-gray-500'
-                                                    : 'text-gray-800 group-hover:text-blue-600 dark:text-gray-200 dark:group-hover:text-blue-400'
+                                                    : 'text-gray-800 group-hover:text-stone-600 dark:text-gray-200 dark:group-hover:text-stone-400'
                                             }`}
                                         >
                                             {title}
@@ -610,7 +610,7 @@ const NovelDetail = () => {
                                                 `/admin/edit-novel/${novel.slug}`
                                             )
                                         }
-                                        className="w-full rounded-lg bg-blue-600 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
+                                        className="w-full rounded-lg bg-stone-900 py-2 text-sm font-medium text-white transition hover:bg-stone-700"
                                     >
                                         Edit Metadata
                                     </button>

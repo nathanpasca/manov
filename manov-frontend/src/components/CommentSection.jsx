@@ -111,7 +111,7 @@ const CommentSection = ({ targetId, type = 'novel' }) => {
     return (
         <div className="mx-auto mt-10 max-w-4xl">
             <h3 className="mb-6 flex items-center gap-2 text-xl font-bold dark:text-white">
-                <MessageSquare size={24} className="text-blue-500" />
+                <MessageSquare size={24} className="text-stone-500" />
                 Comments{' '}
                 <span className="text-sm font-normal text-gray-500">
                     ({comments.length})
@@ -132,7 +132,7 @@ const CommentSection = ({ targetId, type = 'novel' }) => {
                 <button
                     type="submit"
                     disabled={!user || submitting || !newComment.trim()}
-                    className="absolute bottom-3 right-3 rounded-lg bg-blue-600 p-2 text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="absolute bottom-3 right-3 rounded-lg bg-stone-900 p-2 text-white transition hover:bg-stone-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                     <Send size={18} />
                 </button>

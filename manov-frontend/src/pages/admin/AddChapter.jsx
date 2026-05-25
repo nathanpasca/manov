@@ -96,7 +96,7 @@ const AddChapter = () => {
                         <h1 className="text-2xl font-bold">Add Chapter</h1>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
                             Adding to:{' '}
-                            <span className="font-bold text-blue-500">
+                            <span className="font-bold text-stone-600">
                                 {novel?.title}
                             </span>
                         </p>
@@ -162,7 +162,7 @@ const AddChapter = () => {
                         <button
                             type="submit"
                             disabled={saving}
-                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-4 font-bold text-white shadow-lg shadow-blue-500/30 transition hover:bg-blue-700 disabled:opacity-50"
+                            className="flex w-full items-center justify-center gap-2 rounded-xl bg-stone-900 py-4 font-medium text-white transition hover:bg-stone-700 disabled:opacity-50"
                         >
                             {saving ? (
                                 <Loader className="animate-spin" size={20} />

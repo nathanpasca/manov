@@ -8,14 +8,13 @@ import {
     ArrowLeft,
     ArrowRight,
     Edit,
-    BookOpen,
     X,
     Type,
-    Moon,
     Sun,
+    Moon,
     Coffee,
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { smartParser } from '../utils/smartParser';
 import CommentSection from '../components/CommentSection';
 import SEO from '../components/SEO';
@@ -103,32 +102,32 @@ const Reader = () => {
     const getThemeColors = () => {
         switch (settings.theme) {
             case 'dark':
-                return 'bg-[#0a0a0a] text-gray-300';
+                return 'bg-[#1c1917] text-stone-300';
             case 'sepia':
                 return 'bg-[#f4ecd8] text-[#5b4636]';
             default:
-                return 'bg-gray-50 text-gray-800';
+                return 'bg-[#faf8f5] text-stone-800';
         }
     };
 
     const getNavbarColors = () => {
         switch (settings.theme) {
             case 'dark':
-                return 'bg-black/50 border-white/5 text-gray-200';
+                return 'bg-[#1c1917]/80 border-white/5 text-stone-200';
             case 'sepia':
                 return 'bg-[#f4ecd8]/80 border-[#eaddc5] text-[#5b4636]';
             default:
-                return 'bg-white/70 border-gray-200/50 text-gray-800';
+                return 'bg-[#faf8f5]/80 border-stone-200/50 text-stone-800';
         }
     };
 
     if (!chapter && !loading)
         return (
-            <div className="flex min-h-screen flex-col items-center justify-center gap-4 text-red-500">
+            <div className="flex min-h-screen flex-col items-center justify-center gap-4 text-red-600">
                 <p className="text-lg font-medium">Chapter not found</p>
                 <button
                     onClick={() => navigate(`/novel/${slug}`)}
-                    className="text-blue-500 hover:underline"
+                    className="text-stone-600 hover:underline dark:text-stone-400"
                 >
                     Back to Novel
                 </button>
@@ -136,7 +135,7 @@ const Reader = () => {
         );
 
     return (
-        <div className="flex min-h-screen flex-col bg-[#f8f9fa] font-serif text-gray-900 transition-colors duration-300 dark:bg-[#0a0a0a] dark:text-gray-300">
+        <div className={`flex min-h-screen flex-col ${getThemeColors()} transition-colors duration-300`}>
             <SEO
                 title={
                     chapter
@@ -147,24 +146,21 @@ const Reader = () => {
             />
 
             {/* NAVBAR */}
-            <motion.div
-                initial={{ y: -100 }}
-                animate={{ y: 0 }}
-                transition={{ duration: 0.5 }}
-                className={`fixed top-0 z-50 flex w-full items-center justify-between border-b p-4 backdrop-blur-md transition-colors duration-500 ${getNavbarColors()}`}
+            <div
+                className={`fixed top-0 z-50 flex w-full items-center justify-between border-b p-3 backdrop-blur-md transition-colors duration-500 ${getNavbarColors()}`}
             >
-                <div className="flex items-center gap-4 overflow-hidden">
+                <div className="flex items-center gap-3 overflow-hidden">
                     <button
                         onClick={() => navigate(`/novel/${slug}`)}
-                        className="flex-shrink-0 rounded-full p-2 transition hover:bg-black/5 dark:hover:bg-white/10"
+                        className="flex-shrink-0 rounded-full p-2 transition hover:bg-black/5 dark:hover:bg-white/5"
                     >
-                        <ArrowLeft size={20} />
+                        <ArrowLeft size={18} />
                     </button>
                     <div className="flex min-w-0 flex-col">
-                        <h1 className="truncate text-sm font-bold opacity-90">
+                        <h1 className="truncate text-sm font-semibold opacity-90">
                             {loading ? 'Loading...' : chapter?.title}
                         </h1>
-                        <span className="truncate text-xs opacity-60">
+                        <span className="truncate text-xs opacity-50">
                             Chapter {chapterNum}
                         </span>
                     </div>
@@ -175,50 +171,46 @@ const Reader = () => {
                         onClick={() =>
                             navigate(`/admin/edit/${slug}/${chapterNum}`)
                         }
-                        className="rounded-full p-2 opacity-60 transition hover:bg-black/5 hover:opacity-100 dark:hover:bg-white/10"
+                        className="rounded-full p-2 opacity-50 transition hover:bg-black/5 hover:opacity-100 dark:hover:bg-white/5"
                         title="Edit Chapter"
                     >
-                        <Edit size={18} />
+                        <Edit size={16} />
                     </button>
 
                     <button
                         onClick={() => setShowSettings(!showSettings)}
-                        className={`rounded-full p-2 transition ${showSettings ? 'bg-black/10 dark:bg-white/10' : 'hover:bg-black/5 dark:hover:bg-white/10'}`}
+                        className={`rounded-full p-2 transition ${showSettings ? 'bg-black/5 dark:bg-white/10' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
                     >
-                        <Settings size={20} />
+                        <Settings size={18} />
                     </button>
                 </div>
-            </motion.div>
+            </div>
 
             {/* SETTINGS PANEL */}
             <AnimatePresence>
                 {showSettings && (
-                    <motion.div
+                    <div
                         ref={settingsRef}
-                        initial={{ opacity: 0, y: -20, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -20, scale: 0.95 }}
-                        transition={{ duration: 0.2 }}
-                        className="fixed right-4 top-20 z-50 w-80 rounded-2xl border border-gray-100 bg-white p-6 text-gray-800 shadow-2xl ring-1 ring-black/5 dark:border-white/10 dark:bg-[#1a1a1a] dark:text-gray-100"
+                        className="fixed right-3 top-14 z-50 w-72 rounded-2xl border border-stone-100 bg-white p-5 text-stone-800 shadow-xl dark:border-white/5 dark:bg-[#292524] dark:text-stone-100"
                     >
-                        <div className="mb-6 flex items-center justify-between">
-                            <h3 className="text-sm font-bold uppercase tracking-wider opacity-60">
+                        <div className="mb-5 flex items-center justify-between">
+                            <h3 className="text-xs font-semibold uppercase tracking-wider opacity-50">
                                 Reader Settings
                             </h3>
                             <button
                                 onClick={() => setShowSettings(false)}
                                 className="opacity-40 transition hover:opacity-100"
                             >
-                                <X size={16} />
+                                <X size={14} />
                             </button>
                         </div>
 
                         {/* Theme Colors */}
-                        <div className="mb-8 space-y-3">
-                            <label className="flex items-center gap-2 text-xs font-medium opacity-60">
-                                <Sun size={12} /> Theme
+                        <div className="mb-6 space-y-2">
+                            <label className="flex items-center gap-2 text-xs font-medium opacity-50">
+                                <Sun size={11} /> Theme
                             </label>
-                            <div className="grid grid-cols-3 gap-3">
+                            <div className="grid grid-cols-3 gap-2">
                                 <button
                                     onClick={() =>
                                         setSettings({
@@ -226,16 +218,14 @@ const Reader = () => {
                                             theme: 'light',
                                         })
                                     }
-                                    className={`flex h-12 flex-col items-center justify-center gap-1 rounded-xl border transition-all ${
+                                    className={`flex h-10 flex-col items-center justify-center gap-0.5 rounded-lg border text-[10px] font-medium transition ${
                                         settings.theme === 'light'
-                                            ? 'border-transparent bg-gray-50 text-gray-900 ring-2 ring-blue-500'
-                                            : 'border-gray-200 hover:bg-gray-50 dark:border-white/10 dark:hover:bg-white/5'
+                                            ? 'border-stone-800 bg-stone-50 text-stone-900 dark:border-stone-200 dark:bg-stone-700'
+                                            : 'border-stone-200 hover:bg-stone-50 dark:border-white/10 dark:hover:bg-white/5'
                                     }`}
                                 >
-                                    <div className="h-4 w-4 rounded-full border border-gray-300 bg-white shadow-sm"></div>
-                                    <span className="text-[10px] font-medium">
-                                        Light
-                                    </span>
+                                    <div className="h-3 w-3 rounded-full border border-stone-300 bg-white"></div>
+                                    Light
                                 </button>
                                 <button
                                     onClick={() =>
@@ -244,16 +234,14 @@ const Reader = () => {
                                             theme: 'sepia',
                                         })
                                     }
-                                    className={`flex h-12 flex-col items-center justify-center gap-1 rounded-xl border transition-all ${
+                                    className={`flex h-10 flex-col items-center justify-center gap-0.5 rounded-lg border text-[10px] font-medium transition ${
                                         settings.theme === 'sepia'
-                                            ? 'border-transparent bg-[#f4ecd8] text-[#5b4636] ring-2 ring-yellow-600'
-                                            : 'border-gray-200 hover:bg-gray-50 dark:border-white/10 dark:hover:bg-white/5'
+                                            ? 'border-amber-700 bg-[#f4ecd8] text-[#5b4636]'
+                                            : 'border-stone-200 hover:bg-stone-50 dark:border-white/10 dark:hover:bg-white/5'
                                     }`}
                                 >
-                                    <div className="h-4 w-4 rounded-full border border-[#eaddc5] bg-[#f4ecd8] shadow-sm"></div>
-                                    <span className="text-[10px] font-medium">
-                                        Sepia
-                                    </span>
+                                    <div className="h-3 w-3 rounded-full border border-[#eaddc5] bg-[#f4ecd8]"></div>
+                                    Sepia
                                 </button>
                                 <button
                                     onClick={() =>
@@ -262,26 +250,24 @@ const Reader = () => {
                                             theme: 'dark',
                                         })
                                     }
-                                    className={`flex h-12 flex-col items-center justify-center gap-1 rounded-xl border transition-all ${
+                                    className={`flex h-10 flex-col items-center justify-center gap-0.5 rounded-lg border text-[10px] font-medium transition ${
                                         settings.theme === 'dark'
-                                            ? 'border-transparent bg-gray-900 text-gray-100 ring-2 ring-gray-400'
-                                            : 'border-gray-200 hover:bg-gray-50 dark:border-white/10 dark:hover:bg-white/5'
+                                            ? 'border-stone-600 bg-stone-900 text-stone-100'
+                                            : 'border-stone-200 hover:bg-stone-50 dark:border-white/10 dark:hover:bg-white/5'
                                     }`}
                                 >
-                                    <div className="h-4 w-4 rounded-full border border-gray-700 bg-gray-900 shadow-sm"></div>
-                                    <span className="text-[10px] font-medium">
-                                        Dark
-                                    </span>
+                                    <div className="h-3 w-3 rounded-full border border-stone-600 bg-stone-900"></div>
+                                    Dark
                                 </button>
                             </div>
                         </div>
 
                         {/* Font Family */}
-                        <div className="mb-8 space-y-3">
-                            <label className="flex items-center gap-2 text-xs font-medium opacity-60">
-                                <Type size={12} /> Typeface
+                        <div className="mb-6 space-y-2">
+                            <label className="flex items-center gap-2 text-xs font-medium opacity-50">
+                                <Type size={11} /> Typeface
                             </label>
-                            <div className="flex rounded-xl bg-gray-100 p-1 dark:bg-white/5">
+                            <div className="flex rounded-lg bg-stone-100 p-0.5 dark:bg-white/5">
                                 <button
                                     onClick={() =>
                                         setSettings({
@@ -289,10 +275,10 @@ const Reader = () => {
                                             fontFamily: 'font-sans',
                                         })
                                     }
-                                    className={`flex-1 rounded-lg py-2 text-xs font-medium transition-all ${
+                                    className={`flex-1 rounded-md py-1.5 text-xs font-medium transition ${
                                         settings.fontFamily === 'font-sans'
-                                            ? 'bg-white text-black shadow-sm dark:bg-white/10 dark:text-white'
-                                            : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
+                                            ? 'bg-white text-stone-900 shadow-sm dark:bg-white/10 dark:text-white'
+                                            : 'text-stone-500 dark:text-stone-400'
                                     }`}
                                 >
                                     Sans Serif
@@ -304,10 +290,10 @@ const Reader = () => {
                                             fontFamily: 'font-serif',
                                         })
                                     }
-                                    className={`flex-1 rounded-lg py-2 text-xs font-medium transition-all ${
+                                    className={`flex-1 rounded-md py-1.5 text-xs font-medium transition ${
                                         settings.fontFamily === 'font-serif'
-                                            ? 'bg-white text-black shadow-sm dark:bg-white/10 dark:text-white'
-                                            : 'text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200'
+                                            ? 'bg-white text-stone-900 shadow-sm dark:bg-white/10 dark:text-white'
+                                            : 'text-stone-500 dark:text-stone-400'
                                     }`}
                                 >
                                     Serif
@@ -316,12 +302,12 @@ const Reader = () => {
                         </div>
 
                         {/* Font Size */}
-                        <div className="space-y-3">
+                        <div className="space-y-2">
                             <div className="flex items-center justify-between">
-                                <label className="text-xs font-medium opacity-60">
+                                <label className="text-xs font-medium opacity-50">
                                     Size
                                 </label>
-                                <span className="rounded bg-gray-100 px-2 py-0.5 text-xs font-bold dark:bg-white/10">
+                                <span className="rounded bg-stone-100 px-2 py-0.5 text-xs font-semibold dark:bg-white/10">
                                     {settings.fontSize}px
                                 </span>
                             </div>
@@ -337,19 +323,19 @@ const Reader = () => {
                                         fontSize: parseInt(e.target.value),
                                     })
                                 }
-                                className="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-gray-200 accent-blue-600 dark:bg-white/10"
+                                className="h-1 w-full cursor-pointer appearance-none rounded bg-stone-200 accent-stone-700 dark:bg-white/10"
                             />
-                            <div className="flex justify-between text-[10px] font-medium opacity-40">
+                            <div className="flex justify-between text-[10px] font-medium opacity-30">
                                 <span>Aa</span>
                                 <span>Aa</span>
                             </div>
                         </div>
-                    </motion.div>
+                    </div>
                 )}
             </AnimatePresence>
 
             {/* CONTENT AREA */}
-            <div className="mx-auto w-full max-w-3xl flex-grow px-6 pb-40 pt-32 sm:px-8 md:px-12">
+            <div className="mx-auto w-full max-w-2xl flex-grow px-5 pb-40 pt-24 sm:px-8">
                 {loading ? (
                     <div className="animate-pulse space-y-8 opacity-20">
                         <div className="mx-auto mb-16 h-4 w-3/4 rounded bg-current"></div>
@@ -362,10 +348,7 @@ const Reader = () => {
                         ))}
                     </div>
                 ) : (
-                    <motion.article
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6 }}
+                    <article
                         className={`${settings.fontFamily} ${settings.textAlign} transition-all duration-300 ease-in-out`}
                         style={{
                             fontSize: `${settings.fontSize}px`,
@@ -405,7 +388,7 @@ const Reader = () => {
                                                 ),
                                                 a: ({ node, ...props }) => (
                                                     <a
-                                                        className="text-blue-500 underline decoration-blue-300 underline-offset-4 transition hover:text-blue-600"
+                                                        className="text-stone-600 underline decoration-stone-300 underline-offset-4 transition hover:text-stone-900 dark:text-stone-400"
                                                         {...props}
                                                     />
                                                 ),
@@ -417,12 +400,12 @@ const Reader = () => {
                                 )}
                             </div>
                         ))}
-                    </motion.article>
+                    </article>
                 )}
 
                 {/* COMMENTS SECTION */}
                 {!loading && chapter && (
-                    <div className="mt-16 border-t border-gray-200 pt-10 dark:border-white/10">
+                    <div className="mt-16 border-t border-stone-200 pt-10 dark:border-white/5">
                         <CommentSection
                             targetId={chapter.chapterId}
                             type="chapter"
@@ -432,31 +415,28 @@ const Reader = () => {
             </div>
 
             {/* FOOTER NAVIGATION */}
-            <motion.div
-                initial={{ y: 100 }}
-                animate={{ y: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-                className={`fixed bottom-0 z-40 w-full border-t p-4 backdrop-blur-md transition-colors duration-500 ${getNavbarColors()}`}
+            <div
+                className={`fixed bottom-0 z-40 w-full border-t p-3 backdrop-blur-md transition-colors duration-500 ${getNavbarColors()}`}
             >
-                <div className="mx-auto flex max-w-3xl items-center justify-between">
+                <div className="mx-auto flex max-w-2xl items-center justify-between">
                     <button
                         onClick={handlePrev}
                         disabled={!chapter?.prevChapterNum}
-                        className={`flex items-center gap-2 rounded-full px-6 py-3 text-sm font-medium transition ${
+                        className={`flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium transition ${
                             !chapter?.prevChapterNum
                                 ? 'cursor-not-allowed opacity-30'
-                                : 'hover:bg-black/5 active:scale-95 dark:hover:bg-white/10'
+                                : 'hover:bg-black/5 active:scale-95 dark:hover:bg-white/5'
                         }`}
                     >
-                        <ArrowLeft size={18} />
+                        <ArrowLeft size={16} />
                         <span className="hidden sm:inline">Previous</span>
                     </button>
 
                     <div className="flex flex-col items-center">
-                        <span className="mb-1 text-xs font-bold uppercase tracking-wider opacity-40">
+                        <span className="mb-0.5 text-[10px] font-bold uppercase tracking-wider opacity-30">
                             Chapter
                         </span>
-                        <span className="text-xl font-black leading-none opacity-80">
+                        <span className="text-lg font-bold leading-none opacity-70">
                             {chapterNum}
                         </span>
                     </div>
@@ -464,17 +444,17 @@ const Reader = () => {
                     <button
                         onClick={handleNext}
                         disabled={!chapter?.nextChapterNum}
-                        className={`flex items-center gap-2 rounded-full px-6 py-3 text-sm font-medium transition ${
+                        className={`flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-medium transition ${
                             !chapter?.nextChapterNum
                                 ? 'cursor-not-allowed opacity-30'
-                                : 'hover:bg-black/5 active:scale-95 dark:hover:bg-white/10'
+                                : 'hover:bg-black/5 active:scale-95 dark:hover:bg-white/5'
                         }`}
                     >
                         <span className="hidden sm:inline">Next</span>
-                        <ArrowRight size={18} />
+                        <ArrowRight size={16} />
                     </button>
                 </div>
-            </motion.div>
+            </div>
         </div>
     );
 };

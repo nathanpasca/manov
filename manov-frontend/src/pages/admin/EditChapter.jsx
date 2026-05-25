@@ -99,7 +99,7 @@ const EditChapter = () => {
                 <button
                     onClick={handleSave}
                     disabled={saving}
-                    className="flex items-center gap-2 rounded-full bg-blue-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-blue-500/30 transition hover:bg-blue-700 active:scale-95 disabled:opacity-50"
+                    className="flex items-center gap-2 rounded-full bg-stone-900 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-stone-700 active:scale-95 disabled:opacity-50"
                 >
                     {saving ? (
                         <Loader className="animate-spin" size={16} />

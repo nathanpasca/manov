@@ -242,7 +242,7 @@ const AddNovel = () => {
                                                     selectedGenres.includes(
                                                         genre.id
                                                     )
-                                                        ? 'border-blue-600 bg-blue-600 text-white'
+                                                        ? 'border-stone-800 bg-stone-900 text-white'
                                                         : 'border-transparent bg-gray-100 text-gray-600 hover:border-gray-300 dark:bg-white/5 dark:text-gray-400 dark:hover:border-white/20'
                                                 }`}
                                             >
@@ -255,7 +255,7 @@ const AddNovel = () => {
                                 <button
                                     type="submit"
                                     disabled={loading}
-                                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-4 font-bold text-white shadow-lg shadow-blue-500/30 transition hover:bg-blue-700 disabled:opacity-50"
+                                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-stone-900 py-4 font-medium text-white transition hover:bg-stone-700 disabled:opacity-50"
                                 >
                                     {loading ? (
                                         <Loader
@@ -292,7 +292,7 @@ const AddNovel = () => {
                                             </span>
                                         </div>
                                     )}
-                                    <div className="absolute right-2 top-2 rounded-md bg-blue-600 px-2 py-1 text-[10px] font-bold text-white shadow-lg">
+                                    <div className="absolute right-2 top-2 rounded-md bg-stone-800 px-2 py-1 text-[10px] font-bold text-white">
                                         {formData.status}
                                     </div>
                                 </div>

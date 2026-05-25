@@ -165,7 +165,7 @@ const EditNovelMetadata = () => {
                                     </label>
                                     <input
                                         type="text"
-                                        className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-blue-500 outline-none transition focus:ring-2 focus:ring-blue-500/50 dark:border-white/10 dark:bg-black/20 dark:text-white"
+                                        className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 font-mono text-sm text-stone-600 outline-none transition focus:ring-1 focus:ring-stone-400 dark:border-white/10 dark:bg-black/20 dark:text-white"
                                         value={formData.slug}
                                         onChange={(e) =>
                                             setFormData({
@@ -297,7 +297,7 @@ const EditNovelMetadata = () => {
                                                     selectedGenres.includes(
                                                         genre.id
                                                     )
-                                                        ? 'border-blue-600 bg-blue-600 text-white'
+                                                        ? 'border-stone-800 bg-stone-900 text-white'
                                                         : 'border-transparent bg-gray-100 text-gray-600 hover:border-gray-300 dark:bg-white/5 dark:text-gray-400 dark:hover:border-white/20'
                                                 }`}
                                             >
@@ -310,7 +310,7 @@ const EditNovelMetadata = () => {
                                 <button
                                     type="submit"
                                     disabled={saving}
-                                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-4 font-bold text-white shadow-lg shadow-blue-500/30 transition hover:bg-blue-700 disabled:opacity-50"
+                                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-stone-900 py-4 font-medium text-white transition hover:bg-stone-700 disabled:opacity-50"
                                 >
                                     {saving ? (
                                         <Loader
@@ -347,7 +347,7 @@ const EditNovelMetadata = () => {
                                             </span>
                                         </div>
                                     )}
-                                    <div className="absolute right-2 top-2 rounded-md bg-blue-600 px-2 py-1 text-[10px] font-bold text-white shadow-lg">
+                                    <div className="absolute right-2 top-2 rounded-md bg-stone-800 px-2 py-1 text-[10px] font-bold text-white">
                                         {formData.status}
                                     </div>
                                 </div>
@@ -375,7 +375,7 @@ const EditNovelMetadata = () => {
                                                 `/admin/add-chapter/${slug}`
                                             )
                                         }
-                                        className="flex items-center gap-1 rounded-lg bg-blue-100 px-2 py-1 text-xs font-bold text-blue-600 transition hover:bg-blue-200 dark:bg-blue-500/20 dark:text-blue-300 dark:hover:bg-blue-500/30"
+                                        className="flex items-center gap-1 rounded-lg bg-stone-100 px-2 py-1 text-xs font-bold text-stone-700 transition hover:bg-stone-200 dark:bg-white/5 dark:text-stone-300 dark:hover:bg-white/10"
                                     >
                                         <Plus size={12} /> Add
                                     </button>
@@ -414,7 +414,7 @@ const EditNovelMetadata = () => {
                                                                         `/admin/edit/${slug}/${chapter.chapterNum}`
                                                                     )
                                                                 }
-                                                                className="rounded-md p-1.5 text-gray-400 transition hover:bg-blue-50 hover:text-blue-500 dark:hover:bg-blue-500/10"
+                                                                className="rounded-md p-1.5 text-gray-400 transition hover:bg-stone-50 hover:text-stone-600 dark:hover:bg-white/5"
                                                             >
                                                                 <Edit
                                                                     size={14}

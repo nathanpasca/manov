@@ -76,7 +76,7 @@ const ManageGenres = () => {
                     </button>
                     <div>
                         <h1 className="flex items-center gap-2 text-2xl font-bold">
-                            <Tag className="text-blue-500" /> Manage Genres
+                            <Tag className="text-stone-500" /> Manage Genres
                         </h1>
                         <p className="text-sm text-gray-500 dark:text-gray-400">
                             Add or remove novel genres
@@ -102,7 +102,7 @@ const ManageGenres = () => {
                                 <button
                                     type="submit"
                                     disabled={adding || !newGenre}
-                                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 py-3 font-bold text-white shadow-lg shadow-blue-500/30 transition hover:bg-blue-700 disabled:opacity-50"
+                                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-stone-900 py-3 font-medium text-white transition hover:bg-stone-700 disabled:opacity-50"
                                 >
                                     {adding ? (
                                         <Loader

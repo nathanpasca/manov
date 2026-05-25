@@ -5,17 +5,15 @@ import HeroSection from '../components/HeroSection';
 import SearchBar from '../components/SearchBar';
 import NovelCard from '../components/NovelCard';
 import SkeletonCard from '../components/SkeletonCard';
-import { motion } from 'framer-motion';
 import SEO from '../components/SEO';
 import { Helmet } from 'react-helmet-async';
-import { BookOpen, Search, Filter } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Clock, ArrowRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const Home = () => {
     const { user } = useAuth();
-    const [history, setHistory] = useState([]); // State History
+    const [history, setHistory] = useState([]);
     const [novels, setNovels] = useState([]);
     const navigate = useNavigate();
 
@@ -27,9 +25,8 @@ const Home = () => {
     const [hasMore, setHasMore] = useState(true);
     const LIMIT = 12;
 
-    // Ambil data dari Backend API
     useEffect(() => {
-        document.title = 'Manov'; // Set Title Home
+        document.title = 'Manov';
         const fetchNovels = async () => {
             try {
                 if (page === 0) setLoading(true);
@@ -46,7 +43,6 @@ const Home = () => {
                     setNovels((prev) => [...prev, ...res.data]);
                 }
 
-                // Jika login, ambil history (cukup sekali di awal)
                 if (user && page === 0) {
                     const resHistory = await userService.getHistory();
                     setHistory(resHistory.data);
@@ -61,7 +57,6 @@ const Home = () => {
         fetchNovels();
     }, [user, page]);
 
-    // Ambil Genres
     const [genres, setGenres] = useState([]);
     useEffect(() => {
         const fetchGenres = async () => {
@@ -75,7 +70,6 @@ const Home = () => {
         fetchGenres();
     }, []);
 
-    // Logic Search & Filter
     const filteredNovels = novels.filter((n) => {
         const matchesSearch = n.title
             .toLowerCase()
@@ -86,14 +80,13 @@ const Home = () => {
         return matchesSearch && matchesFilter;
     });
 
-    // Ambil novel pertama untuk dijadikan Hero (Featured)
     const featuredNovel = novels.length > 0 ? novels[0] : null;
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-20 pt-24 font-sans text-gray-900 transition-colors duration-300 dark:bg-[#0a0a0a] dark:text-gray-100">
+        <div className="min-h-screen bg-[#faf8f5] pb-20 pt-24 font-sans text-stone-900 transition-colors duration-300 dark:bg-[#1c1917] dark:text-stone-100">
             <SEO
                 title="Home"
-                description="Manov - Your ultimate destination for AI-translated novels. Read unlimited chapters for free."
+                description="Manov — Read translated web novels. Free, unlimited chapters."
                 url={import.meta.env.VITE_FRONTEND_URL || 'https://manov.pascarz.site'}
             />
             <Helmet>
@@ -104,7 +97,7 @@ const Home = () => {
                         name: 'Manov',
                         url: import.meta.env.VITE_FRONTEND_URL || 'https://manov.pascarz.site',
                         description:
-                            'Your ultimate destination for AI-translated novels. Read unlimited chapters for free.',
+                            'Read translated web novels. Free, unlimited chapters.',
                         potentialAction: {
                             '@type': 'SearchAction',
                             target: {
@@ -142,11 +135,20 @@ const Home = () => {
                 )}
             </Helmet>
 
-            {/* 1. HERO SECTION (Passing Data Real) */}
             <HeroSection featured={featuredNovel} />
 
-            <div className="relative z-10 -mt-8 space-y-8">
-                {/* 2. SEARCH BAR */}
+            {/* Landing context for first-timers */}
+            {!user && (
+                <div className="mx-auto max-w-2xl px-6 pt-10 text-center">
+                    <p className="text-sm leading-relaxed text-stone-500 dark:text-stone-400">
+                        Manov is a place to read translated web novels.
+                        Chapters are translated automatically and available for
+                        free. No paywalls, just stories.
+                    </p>
+                </div>
+            )}
+
+            <div className="relative z-10 -mt-6 space-y-8 pt-6">
                 <SearchBar
                     onSearch={setSearchTerm}
                     activeFilter={activeFilter}
@@ -155,18 +157,16 @@ const Home = () => {
                 />
 
                 <div className="mx-auto max-w-6xl px-4 md:px-6">
-                    {/* --- SECTION CONTINUE READING (Muncul jika ada history) --- */}
                     {user && history.length > 0 && !searchTerm && (
-                        <div className="mb-10">
-                            <div className="mb-4 flex items-center gap-2 text-gray-800 dark:text-white">
-                                <Clock size={20} className="text-blue-500" />
-                                <h2 className="font-serif text-xl font-bold">
+                        <div className="mb-12">
+                            <div className="mb-4 flex items-center gap-2 text-stone-800 dark:text-stone-100">
+                                <Clock size={18} className="text-stone-400" />
+                                <h2 className="text-lg font-semibold">
                                     Continue Reading
                                 </h2>
                             </div>
 
-                            {/* Horizontal Scroll List */}
-                            <div className="no-scrollbar flex gap-4 overflow-x-auto pb-4">
+                            <div className="no-scrollbar flex gap-3 overflow-x-auto pb-4">
                                 {history.map((item) => (
                                     <div
                                         key={item.id}
@@ -175,24 +175,24 @@ const Home = () => {
                                                 `/novel/${item.slug}/read/${item.lastReadChapter}`
                                             )
                                         }
-                                        className="dark:bg-dark-card group flex w-72 flex-shrink-0 cursor-pointer items-center gap-3 rounded-xl border border-gray-100 bg-white p-3 shadow-sm transition hover:shadow-md dark:border-white/10"
+                                        className="group flex w-72 flex-shrink-0 cursor-pointer items-center gap-3 rounded-xl border border-stone-100 bg-white p-3 transition hover:border-stone-200 dark:border-white/5 dark:bg-white/5 dark:hover:border-white/10"
                                     >
-                                        <div className="h-16 w-12 flex-shrink-0 overflow-hidden rounded bg-gray-200">
+                                        <div className="h-16 w-12 flex-shrink-0 overflow-hidden rounded bg-stone-200">
                                             <img
                                                 src={item.coverUrl}
                                                 className="h-full w-full object-cover"
                                             />
                                         </div>
                                         <div className="min-w-0 flex-1">
-                                            <h4 className="truncate text-sm font-bold transition group-hover:text-blue-500">
+                                            <h4 className="truncate text-sm font-semibold transition group-hover:text-stone-600 dark:group-hover:text-stone-300">
                                                 {item.title}
                                             </h4>
-                                            <p className="mt-1 text-xs text-gray-500">
+                                            <p className="mt-1 text-xs text-stone-500">
                                                 Chapter {item.lastReadChapter}
                                             </p>
                                         </div>
-                                        <div className="rounded-full bg-gray-100 p-2 text-gray-400 transition group-hover:bg-blue-500 group-hover:text-white dark:bg-white/5">
-                                            <ArrowRight size={16} />
+                                        <div className="rounded-full bg-stone-100 p-2 text-stone-400 transition group-hover:bg-stone-200 group-hover:text-stone-600 dark:bg-white/5 dark:group-hover:bg-white/10">
+                                            <ArrowRight size={14} />
                                         </div>
                                     </div>
                                 ))}
@@ -200,25 +200,23 @@ const Home = () => {
                         </div>
                     )}
 
-                    {/* Section Header */}
                     <div className="mb-6 mt-8 flex items-center justify-between">
-                        <h2 className="font-serif text-2xl font-bold text-gray-800 dark:text-white">
+                        <h2 className="text-xl font-semibold text-stone-800 dark:text-stone-100">
                             Latest Updates
                         </h2>
-                        <button className="text-sm font-medium text-blue-500 hover:text-blue-400">
+                        <button className="text-sm font-medium text-stone-500 transition hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200">
                             View All
                         </button>
                     </div>
 
-                    {/* 3. BENTO GRID (Novel Cards) */}
                     {loading ? (
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                        <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4">
                             {[...Array(8)].map((_, i) => (
                                 <SkeletonCard key={i} />
                             ))}
                         </div>
                     ) : (
-                        <div className="grid auto-rows-[300px] grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                        <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4">
                             {filteredNovels.length > 0 ? (
                                 filteredNovels.map((novel, index) => (
                                     <NovelCard
@@ -228,19 +226,18 @@ const Home = () => {
                                     />
                                 ))
                             ) : (
-                                <div className="col-span-full py-20 text-center text-gray-500 dark:text-gray-400">
+                                <div className="col-span-full py-20 text-center text-stone-500 dark:text-stone-400">
                                     No novels found matching your criteria.
                                 </div>
                             )}
                         </div>
                     )}
 
-                    {/* LOAD MORE BUTTON */}
                     {hasMore && !loading && !searchTerm && (
-                        <div className="mt-10 flex justify-center">
+                        <div className="mt-12 flex justify-center">
                             <button
                                 onClick={() => setPage((prev) => prev + 1)}
-                                className="rounded-full border border-gray-200 bg-white px-8 py-3 font-bold text-gray-700 shadow-sm transition hover:bg-gray-50 dark:border-white/10 dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
+                                className="rounded-full border border-stone-200 bg-white px-8 py-2.5 text-sm font-medium text-stone-700 transition hover:bg-stone-50 dark:border-white/10 dark:bg-white/5 dark:text-stone-300 dark:hover:bg-white/10"
                             >
                                 Load More Novels
                             </button>
