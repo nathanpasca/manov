@@ -11,22 +11,22 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
 from app.config import settings
-from app.database import db
+from app.database import engine
 from app.middleware.rate_limit import limiter
 from app.routers import admin, auth, genres, novels, sitemap, social, user
 
 
-# --- LIFESPAN MANAGER (Cara modern connect DB di FastAPI) ---
+# --- LIFESPAN MANAGER ---
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: Connect DB
-    await db.connect()
-    print("✅ Database Connected")
+    from sqlmodel import SQLModel
+
+    async with engine.begin() as conn:
+        await conn.run_sync(SQLModel.metadata.create_all)
+    print("✅ Database tables created")
     yield
-    # Shutdown: Disconnect DB
-    if db.is_connected():
-        await db.disconnect()
-        print("❌ Database Disconnected")
+    await engine.dispose()
+    print("❌ Database engine disposed")
 
 
 app = FastAPI(

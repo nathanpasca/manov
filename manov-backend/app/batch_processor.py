@@ -2,7 +2,10 @@ import asyncio
 import json
 import os
 
-from app.database import db
+from sqlmodel import select
+
+from app.database import AsyncSessionLocal, engine
+from app.models import Chapter, ChapterTranslation, Novel
 from app.services.scraper_crawler import NovelCrawler
 from app.services.translator import LLMTranslator
 from app.utils.slug import generate_slug
@@ -52,7 +55,6 @@ def extract_novel_metadata(url: str):
             novel_title = novel_title.replace("69书吧", "").strip()
 
             # Extract Chapter Number from Title if possible
-            # Format: "冬日重现-第1章 异常死亡-69书吧"
             import re
 
             chapter_num = 1
@@ -85,219 +87,203 @@ async def retry_async_op(func, *args, retries=3, delay=2, **kwargs):
 
 
 async def main():
-    # 1. Extract Metadata
-    print("🚀 Starting Batch Processor...")
-    # Wrap sync call in thread
-    # NOTE: START_URL might be a specific chapter, but for initial metadata it's fine
-    metadata = await asyncio.to_thread(extract_novel_metadata, START_URL)
+    async with AsyncSessionLocal() as session:
+        # 1. Extract Metadata
+        print("🚀 Starting Batch Processor...")
+        metadata = await asyncio.to_thread(extract_novel_metadata, START_URL)
 
-    if not metadata:
-        print("❌ Failed to extract metadata. Exiting.")
-        return
+        if not metadata:
+            print("❌ Failed to extract metadata. Exiting.")
+            return
 
-    novel_title = metadata["title"]
-    novel_slug = generate_slug(novel_title)
+        novel_title = metadata["title"]
+        novel_slug = await generate_slug(novel_title, session)
 
-    print(f"📚 Target Novel: {novel_title}")
-    print(f"🔗 Slug: {novel_slug}")
+        print(f"📚 Target Novel: {novel_title}")
+        print(f"🔗 Slug: {novel_slug}")
 
-    # 2. Init Database & Translator
-    # Increase timeout to handle slow remote connection
-    await db.connect()
+        # 2. Init Database & Translator
+        translator = LLMTranslator()
 
-    translator = LLMTranslator()
-
-    # 3. Ensure Novel Entry Exists
-    novel = await retry_async_op(db.novel.find_unique, where={"slug": novel_slug})
-
-    # Fallback: Try matching by Original Title (in case user renamed slug/title in DB)
-    if not novel:
-        print(f"⚠️ Slug mismatch. Trying to find by Original Title: {metadata['original_title']}...")
+        # 3. Ensure Novel Entry Exists
         novel = await retry_async_op(
-            db.novel.find_first, where={"originalTitle": metadata["original_title"]}
+            session.scalar, select(Novel).where(Novel.slug == novel_slug)
         )
 
-    if not novel:
-        print(f"🆕 Creating new novel entry for '{novel_title}'...")
-        novel = await retry_async_op(
-            db.novel.create,
-            data={
-                "title": novel_title,
-                "slug": novel_slug,
-                "originalTitle": metadata["original_title"],
-                "author": "Unknown",
-                "status": "ONGOING",
-            },
-        )
-    else:
-        print(f"✅ Found existing novel: {novel.title} (ID: {novel.id})")
+        # Fallback: Try matching by Original Title
+        if not novel:
+            print(f"⚠️ Slug mismatch. Trying to find by Original Title: {metadata['original_title']}...")
+            novel = await retry_async_op(
+                session.scalar,
+                select(Novel).where(Novel.originalTitle == metadata["original_title"]),
+            )
 
-    # 3.5 Setup Novel Data Folder
-    novel_data_folder = os.path.join(RAW_DATA_FOLDER, novel.slug)
-    if not os.path.exists(novel_data_folder):
-        os.makedirs(novel_data_folder)
-    print(f"wb 📂 Data Folder: {novel_data_folder}")
-
-    # 4. Start Crawling (Sync Blocking)
-    print("\n🕷️  Starting Crawler (This might take a while)...")
-
-    # Check for last chapter in DB or Local Files to resume
-    crawler_start_url = START_URL
-    start_chapter_num = metadata.get("chapter_num", 1)
-
-    # A. Check Database
-    last_db_chapter = await retry_async_op(
-        db.chapter.find_first,
-        where={"novelId": novel.id},
-        order={"chapterNum": "desc"},
-    )
-
-    # B. Check Local Files
-    last_local_chapter_num = 0
-    last_local_url = None
-
-    if os.path.exists(novel_data_folder):
-        files = sorted([f for f in os.listdir(novel_data_folder) if f.endswith(".json")])
-        if files:
-            # Check the last few files to find the highest number
-            for f in reversed(files):
-                try:
-                    # Format: chapter_0001.json
-                    num = int(f.split("_")[1].split(".")[0])
-                    if num > last_local_chapter_num:
-                        last_local_chapter_num = num
-                        # Read URL from file
-                        with open(os.path.join(novel_data_folder, f), encoding="utf-8") as jf:
-                            d = json.load(jf)
-                            if "source_url" in d:
-                                last_local_url = d["source_url"]
-                                break  # Found the max file with URL
-                except Exception:
-                    pass
-
-    print(
-        f"📊 State Check: DB Last={last_db_chapter.chapterNum if last_db_chapter else 'None'} | Local Last={last_local_chapter_num}"
-    )
-
-    # Decision Logic: Use the furthest point
-    resume_candidate_url = None
-    resume_candidate_num = 0
-
-    if last_db_chapter and last_db_chapter.chapterNum >= last_local_chapter_num:
-        resume_candidate_num = last_db_chapter.chapterNum
-        resume_candidate_url = last_db_chapter.sourceUrl
-        print("👉 Resuming from DATABASE record.")
-    elif last_local_chapter_num > 0 and last_local_url:
-        resume_candidate_num = last_local_chapter_num
-        resume_candidate_url = last_local_url
-        print("👉 Resuming from LOCAL FILES (cached).")
-
-    if resume_candidate_url:
-        print(f"🔄 Auto-Resuming Crawler from Chapter {resume_candidate_num}...")
-        print(f"   URL: {resume_candidate_url}")
-        crawler_start_url = resume_candidate_url
-
-        # INTELLIGENT SYNC:
-        print("   🕵️  Verifying real chapter number from URL...")
-        resume_metadata = await asyncio.to_thread(extract_novel_metadata, crawler_start_url)
-        if resume_metadata and "chapter_num" in resume_metadata:
-            real_num = resume_metadata["chapter_num"]
-            print(f"   ✅ Real Chapter Number on Page: {real_num}")
-            start_chapter_num = real_num
+        if not novel:
+            print(f"🆕 Creating new novel entry for '{novel_title}'...")
+            novel = Novel(
+                title=novel_title,
+                slug=novel_slug,
+                originalTitle=metadata["original_title"],
+                author="Unknown",
+                status="ONGOING",
+            )
+            session.add(novel)
+            await session.commit()
+            await session.refresh(novel)
         else:
-            print("   ⚠️ Could not verify real number, falling back to candidate logic.")
-            start_chapter_num = resume_candidate_num
+            print(f"✅ Found existing novel: {novel.title} (ID: {novel.id})")
 
-    crawler = NovelCrawler(output_dir=novel_data_folder)
-    # Note: start_crawling is synchronous and handles the loop internally
-    # WRAP IN THREAD to avoid Playwright Async Loop Error
-    await asyncio.to_thread(
-        crawler.start_crawling,
-        crawler_start_url,
-        max_chapters=1,
-        start_counter=start_chapter_num,
-    )
+        # 3.5 Setup Novel Data Folder
+        novel_data_folder = os.path.join(RAW_DATA_FOLDER, novel.slug)
+        if not os.path.exists(novel_data_folder):
+            os.makedirs(novel_data_folder)
+        print(f"wb 📂 Data Folder: {novel_data_folder}")
 
-    # 5. Process & Translate (Async Loop)
-    print("\n📝 Processing & Translating Chapters...")
-    files = sorted(os.listdir(novel_data_folder))
+        # 4. Start Crawling (Sync Blocking)
+        print("\n🕷️  Starting Crawler (This might take a while)...")
 
-    for filename in files:
-        if not filename.endswith(".json"):
-            continue
+        # Check for last chapter in DB or Local Files to resume
+        crawler_start_url = START_URL
+        start_chapter_num = metadata.get("chapter_num", 1)
 
-        filepath = os.path.join(novel_data_folder, filename)
-
-        # Extract chapter number
-        try:
-            # Format: chapter_0001.json
-            chapter_num = int(filename.split("_")[1].split(".")[0])
-        except Exception:
-            continue
-
-        # Check existing in DB
-        existing_chapter = await retry_async_op(
-            db.chapter.find_unique,
-            where={
-                "novelId_chapterNum": {
-                    "novelId": novel.id,
-                    "chapterNum": chapter_num,
-                }
-            },
+        # A. Check Database
+        last_db_chapter = await retry_async_op(
+            session.scalar,
+            select(Chapter)
+            .where(Chapter.novelId == novel.id)
+            .order_by(Chapter.chapterNum.desc())
+            .limit(1),
         )
 
-        if existing_chapter:
-            print(f"⏭️  Chapter {chapter_num} exist. Skipping.")
-            continue
+        # B. Check Local Files
+        last_local_chapter_num = 0
+        last_local_url = None
 
-        print(f"🔨 Processing Chapter {chapter_num}...")
+        if os.path.exists(novel_data_folder):
+            files = sorted([f for f in os.listdir(novel_data_folder) if f.endswith(".json")])
+            if files:
+                for f in reversed(files):
+                    try:
+                        num = int(f.split("_")[1].split(".")[0])
+                        if num > last_local_chapter_num:
+                            last_local_chapter_num = num
+                            with open(os.path.join(novel_data_folder, f), encoding="utf-8") as jf:
+                                d = json.load(jf)
+                                if "source_url" in d:
+                                    last_local_url = d["source_url"]
+                                    break
+                    except Exception:
+                        pass
 
-        with open(filepath, encoding="utf-8") as f:
-            data = json.load(f)
+        print(
+            f"📊 State Check: DB Last={last_db_chapter.chapterNum if last_db_chapter else 'None'} | Local Last={last_local_chapter_num}"
+        )
 
-        raw_content = data["content"]
-        raw_title = data["title"]
-        source_url = data.get("source_url")
+        # Decision Logic: Use the furthest point
+        resume_candidate_url = None
+        resume_candidate_num = 0
 
-        # Translate
-        print("   🤖 Translating Title & Content...")
-        translated_title = await retry_async_op(translator.translate, raw_title)
-        translated_content = await retry_async_op(translator.translate, raw_content)
+        if last_db_chapter and last_db_chapter.chapterNum >= last_local_chapter_num:
+            resume_candidate_num = last_db_chapter.chapterNum
+            resume_candidate_url = last_db_chapter.sourceUrl
+            print("👉 Resuming from DATABASE record.")
+        elif last_local_chapter_num > 0 and last_local_url:
+            resume_candidate_num = last_local_chapter_num
+            resume_candidate_url = last_local_url
+            print("👉 Resuming from LOCAL FILES (cached).")
 
-        # Save to DB
-        print("   💾 Saving to Postgres...")
+        if resume_candidate_url:
+            print(f"🔄 Auto-Resuming Crawler from Chapter {resume_candidate_num}...")
+            print(f"   URL: {resume_candidate_url}")
+            crawler_start_url = resume_candidate_url
 
-        # Retry logic for creating chapter
-        try:
-            new_chapter = await retry_async_op(
-                db.chapter.create,
-                data={
-                    "novelId": novel.id,
-                    "chapterNum": chapter_num,
-                    "rawTitle": raw_title,
-                    "rawContent": raw_content,
-                    "sourceUrl": source_url,
-                },
+            print("   🕵️  Verifying real chapter number from URL...")
+            resume_metadata = await asyncio.to_thread(extract_novel_metadata, crawler_start_url)
+            if resume_metadata and "chapter_num" in resume_metadata:
+                real_num = resume_metadata["chapter_num"]
+                print(f"   ✅ Real Chapter Number on Page: {real_num}")
+                start_chapter_num = real_num
+            else:
+                print("   ⚠️ Could not verify real number, falling back to candidate logic.")
+                start_chapter_num = resume_candidate_num
+
+        crawler = NovelCrawler(output_dir=novel_data_folder)
+        await asyncio.to_thread(
+            crawler.start_crawling,
+            crawler_start_url,
+            max_chapters=1,
+            start_counter=start_chapter_num,
+        )
+
+        # 5. Process & Translate (Async Loop)
+        print("\n📝 Processing & Translating Chapters...")
+        files = sorted(os.listdir(novel_data_folder))
+
+        for filename in files:
+            if not filename.endswith(".json"):
+                continue
+
+            filepath = os.path.join(novel_data_folder, filename)
+
+            try:
+                chapter_num = int(filename.split("_")[1].split(".")[0])
+            except Exception:
+                continue
+
+            existing_chapter = await retry_async_op(
+                session.scalar,
+                select(Chapter).where(
+                    Chapter.novelId == novel.id,
+                    Chapter.chapterNum == chapter_num,
+                ),
             )
 
-            await retry_async_op(
-                db.chaptertranslation.create,
-                data={
-                    "chapterId": new_chapter.id,
-                    "language": "EN",
-                    "title": translated_title,
-                    "content": translated_content,
-                    # No publishedAt to keep it draft? Or set it.
-                    # 'publishedAt': datetime.now()
-                },
-            )
-        except Exception as e:
-            print(f"   ❌ FAILED to save Chapter {chapter_num}: {e}")
-            continue
+            if existing_chapter:
+                print(f"⏭️  Chapter {chapter_num} exist. Skipping.")
+                continue
 
-        print(f"✅ Chapter {chapter_num} Done!")
+            print(f"🔨 Processing Chapter {chapter_num}...")
 
-    await db.disconnect()
+            with open(filepath, encoding="utf-8") as f:
+                data = json.load(f)
+
+            raw_content = data["content"]
+            raw_title = data["title"]
+            source_url = data.get("source_url")
+
+            print("   🤖 Translating Title & Content...")
+            translated_title = await retry_async_op(translator.translate, raw_title)
+            translated_content = await retry_async_op(translator.translate, raw_content)
+
+            print("   💾 Saving to Postgres...")
+
+            try:
+                new_chapter = Chapter(
+                    novelId=novel.id,
+                    chapterNum=chapter_num,
+                    rawTitle=raw_title,
+                    rawContent=raw_content,
+                    sourceUrl=source_url,
+                )
+                session.add(new_chapter)
+                await session.commit()
+                await session.refresh(new_chapter)
+
+                translation = ChapterTranslation(
+                    chapterId=new_chapter.id,
+                    language="EN",
+                    title=translated_title,
+                    content=translated_content,
+                )
+                session.add(translation)
+                await session.commit()
+            except Exception as e:
+                print(f"   ❌ FAILED to save Chapter {chapter_num}: {e}")
+                continue
+
+            print(f"✅ Chapter {chapter_num} Done!")
+
+    await engine.dispose()
     print("\n🎉 Batch Processing Complete!")
 
 

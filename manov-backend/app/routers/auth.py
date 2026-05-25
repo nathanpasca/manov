@@ -1,8 +1,11 @@
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, EmailStr
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database import db
+from app.crud import create_user, get_user_by_email
+from app.database import get_session
 from app.middleware.rate_limit import limiter
+from app.models import User
 from app.utils.security import create_access_token, get_password_hash, verify_password
 
 router = APIRouter()
@@ -31,9 +34,9 @@ class Token(BaseModel):
 
 @router.post("/register", response_model=Token)
 @limiter.limit("5/minute")
-async def register(request: Request, req: UserRegister):
+async def register(request: Request, req: UserRegister, session: AsyncSession = Depends(get_session)):
     # 1. Cek Email Terdaftar
-    exists = await db.user.find_unique(where={"email": req.email})
+    exists = await get_user_by_email(session, req.email)
     if exists:
         raise HTTPException(status_code=400, detail="Email already registered")
 
@@ -41,15 +44,14 @@ async def register(request: Request, req: UserRegister):
     hashed_pwd = get_password_hash(req.password)
 
     # 3. Create User
-    new_user = await db.user.create(
-        data={
-            "username": req.username,
-            "email": req.email,
-            "password": hashed_pwd,
-            "role": "USER",
-            "coins": 100,  # Bonus pendaftaran 100 koin!
-        }
+    new_user = User(
+        username=req.username,
+        email=req.email,
+        password=hashed_pwd,
+        role="USER",
+        coins=100,  # Bonus pendaftaran 100 koin!
     )
+    await create_user(session, new_user)
 
     # 4. Auto Login (Generate Token)
     access_token = create_access_token(data={"sub": str(new_user.id), "role": new_user.role})
@@ -69,8 +71,8 @@ async def register(request: Request, req: UserRegister):
 
 @router.post("/login", response_model=Token)
 @limiter.limit("5/minute")
-async def login(request: Request, req: UserLogin):
-    user = await db.user.find_unique(where={"email": req.email})
+async def login(request: Request, req: UserLogin, session: AsyncSession = Depends(get_session)):
+    user = await get_user_by_email(session, req.email)
     if not user:
         raise HTTPException(status_code=400, detail="Incorrect email or password")
 

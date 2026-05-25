@@ -1,8 +1,12 @@
-from fastapi import APIRouter, BackgroundTasks, Depends, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import select
 
-from app.database import db
+from app.crud import create_chapter, create_novel, delete_chapter, delete_novel
+from app.database import get_session
 from app.middleware.rate_limit import limiter
+from app.models import Chapter, ChapterTranslation, Genre, Novel
 from app.services.processor import NovelProcessorService
 from app.utils.deps import get_current_admin
 from app.utils.slug import generate_slug
@@ -54,57 +58,65 @@ class CreateChapterRequest(BaseModel):
 
 
 @router.post("/novels")
-async def create_novel(req: CreateNovelRequest):
-    slug = await generate_slug(req.title)
+async def create_new_novel(req: CreateNovelRequest, session: AsyncSession = Depends(get_session)):
+    slug = await generate_slug(req.title, session)
 
-    novel = await db.novel.create(
-        data={
-            "slug": slug,
-            "title": req.title,
-            "originalTitle": req.originalTitle,
-            "author": req.author,
-            "coverUrl": req.coverUrl,
-            "synopsis": req.synopsis,
-            "status": req.status,
-            "genres": {"connect": [{"id": gid} for gid in req.genres]},
-        }
+    novel = Novel(
+        slug=slug,
+        title=req.title,
+        originalTitle=req.originalTitle,
+        author=req.author,
+        coverUrl=req.coverUrl,
+        synopsis=req.synopsis,
+        status=req.status,
     )
+
+    if req.genres:
+        genres = await session.scalars(select(Genre).where(Genre.id.in_(req.genres)))
+        novel.genres.extend(genres)
+
+    await create_novel(session, novel)
     return novel
 
 
 @router.post("/novels/{id}/chapters")
-async def create_chapter(id: int, req: CreateChapterRequest):
-    # Create Chapter
-    chapter = await db.chapter.create(
-        data={
-            "novelId": id,
-            "chapterNum": req.chapterNum,
-            "rawTitle": req.title,
-            "rawContent": req.content,  # Storing in rawContent too for consistency
-            "translations": {
-                "create": {
-                    "language": "EN",
-                    "title": req.title,
-                    "content": req.content,
-                }
-            },
-        }
+async def create_new_chapter(
+    id: int, req: CreateChapterRequest, session: AsyncSession = Depends(get_session)
+):
+    chapter = Chapter(
+        novelId=id,
+        chapterNum=req.chapterNum,
+        rawTitle=req.title,
+        rawContent=req.content,
     )
+
+    translation = ChapterTranslation(
+        language="EN",
+        title=req.title,
+        content=req.content,
+    )
+    chapter.translations.append(translation)
+
+    await create_chapter(session, chapter)
     return chapter
 
 
 @router.delete("/chapters/{id}")
-async def delete_chapter(id: int):
+async def delete_existing_chapter(id: int, session: AsyncSession = Depends(get_session)):
     """Delete a chapter and its translations (cascaded at DB level)."""
-    await db.chapter.delete(where={"id": id})
+    await delete_chapter(session, id)
     return {"message": "Chapter deleted"}
 
 
 @router.post("/scrape")
 @limiter.limit("3/minute")
-async def trigger_scrape(request: Request, req: ScrapeRequest, background_tasks: BackgroundTasks):
+async def trigger_scrape(
+    request: Request,
+    req: ScrapeRequest,
+    background_tasks: BackgroundTasks,
+):
     background_tasks.add_task(
-        processor.process_novel,  # Panggil fungsi yang baru diupdate
+        processor.process_novel,
         req.slug,
         req.url,
         req.title,
@@ -118,36 +130,52 @@ async def trigger_scrape(request: Request, req: ScrapeRequest, background_tasks:
 
 
 @router.put("/novels/{id}")
-async def update_novel_metadata(id: int, req: UpdateNovelRequest):
+async def update_novel_metadata(
+    id: int, req: UpdateNovelRequest, session: AsyncSession = Depends(get_session)
+):
     """Edit Judul, Cover, Sinopsis, Author"""
-    updated = await db.novel.update(
-        where={"id": id},
-        data={
-            "title": req.title,
-            "originalTitle": req.originalTitle,
-            "slug": req.slug,
-            "author": req.author,
-            "coverUrl": req.coverUrl,
-            "synopsis": req.synopsis,
-            "status": req.status,
-            "genres": {"set": [{"id": gid} for gid in req.genres]},
-        },
-    )
-    return updated
+    novel = await session.get(Novel, id)
+    if not novel:
+        raise HTTPException(status_code=404, detail="Novel not found")
+
+    novel.title = req.title
+    novel.originalTitle = req.originalTitle
+    novel.slug = req.slug
+    novel.author = req.author
+    novel.coverUrl = req.coverUrl
+    novel.synopsis = req.synopsis
+    novel.status = req.status
+
+    # Update genres
+    novel.genres.clear()
+    if req.genres:
+        genres = await session.scalars(select(Genre).where(Genre.id.in_(req.genres)))
+        novel.genres.extend(genres)
+
+    await session.commit()
+    await session.refresh(novel)
+    return novel
 
 
 @router.put("/chapters/{translation_id}")
-async def update_chapter_content(translation_id: int, req: UpdateChapterRequest):
+async def update_chapter_content(
+    translation_id: int, req: UpdateChapterRequest, session: AsyncSession = Depends(get_session)
+):
     """Edit Isi Terjemahan (Manual Fix)"""
-    updated = await db.chaptertranslation.update(
-        where={"id": translation_id},
-        data={"title": req.title, "content": req.content},
-    )
-    return updated
+    translation = await session.get(ChapterTranslation, translation_id)
+    if not translation:
+        raise HTTPException(status_code=404, detail="Translation not found")
+
+    translation.title = req.title
+    translation.content = req.content
+
+    await session.commit()
+    await session.refresh(translation)
+    return translation
 
 
 @router.delete("/novels/{id}")
-async def delete_novel(id: int):
+async def delete_existing_novel(id: int, session: AsyncSession = Depends(get_session)):
     """Delete a novel and ALL related data (cascaded at DB level)."""
-    await db.novel.delete(where={"id": id})
+    await delete_novel(session, id)
     return {"message": "Novel deleted successfully"}

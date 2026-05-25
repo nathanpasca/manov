@@ -1,7 +1,8 @@
 import asyncio
 
 from app.config import settings
-from app.database import db
+from app.database import AsyncSessionLocal
+from app.models import User
 from app.utils.security import get_password_hash
 
 
@@ -11,39 +12,39 @@ async def create_super_admin():
     if url:
         print(f"DEBUG: Using DATABASE_URL: {url.replace('password123', '****')}")
 
-    await db.connect()
+    async with AsyncSessionLocal() as session:
+        print("--- 👑 CREATING SUPER ADMIN ---")
 
-    print("--- 👑 CREATING SUPER ADMIN ---")
+        username = input("Username: ")
+        email = input("Email: ")
+        password = input("Password: ")
 
-    username = input("Username: ")
-    email = input("Email: ")
-    password = input("Password: ")
+        # Cek apakah email sudah ada
+        from sqlmodel import select
 
-    # Cek apakah email sudah ada
-    exists = await db.user.find_unique(where={"email": email})
-    if exists:
-        print("❌ Email sudah terdaftar!")
-        await db.disconnect()
-        return
+        result = await session.execute(select(User).where(User.email == email))
+        exists = result.scalar_one_or_none()
+        if exists:
+            print("❌ Email sudah terdaftar!")
+            return
 
-    # Hash Password
-    hashed_pwd = get_password_hash(password)
+        # Hash Password
+        hashed_pwd = get_password_hash(password)
 
-    # Create User dengan Role ADMIN
-    user = await db.user.create(
-        data={
-            "username": username,
-            "email": email,
-            "password": hashed_pwd,
-            "role": "ADMIN",  # <--- Kuncinya disini
-            "coins": 999999,  # Admin kita kasih koin unlimited buat testing
-        }
-    )
+        # Create User dengan Role ADMIN
+        user = User(
+            username=username,
+            email=email,
+            password=hashed_pwd,
+            role="ADMIN",
+            coins=999999,
+        )
+        session.add(user)
+        await session.commit()
+        await session.refresh(user)
 
-    print(f"✅ Sukses! Admin {user.username} telah dibuat.")
-    print("Sekarang kamu bisa login dan mendapatkan token untuk akses dashboard.")
-
-    await db.disconnect()
+        print(f"✅ Sukses! Admin {user.username} telah dibuat.")
+        print("Sekarang kamu bisa login dan mendapatkan token untuk akses dashboard.")
 
 
 if __name__ == "__main__":

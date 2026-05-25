@@ -2,9 +2,22 @@ from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+from sqlmodel import select
 
-from app.database import db
+from app.crud import (
+    create_comment,
+    delete_comment,
+    get_chapter_comments,
+    get_comment_by_id,
+    get_novel_comments,
+    get_ratings_by_novel,
+    upsert_rating,
+)
+from app.database import get_session
 from app.middleware.rate_limit import limiter
+from app.models import Comment, Novel
 from app.utils.deps import get_current_user
 
 router = APIRouter()
@@ -32,42 +45,31 @@ class CommentResponse(BaseModel):
 
 @router.post("/novels/{id}/rate")
 @limiter.limit("10/minute")
-async def rate_novel(request: Request, id: int, req: RatingRequest, user: dict = Depends(get_current_user)):
+async def rate_novel(
+    request: Request,
+    id: int,
+    req: RatingRequest,
+    user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
     if not 1 <= req.score <= 5:
         raise HTTPException(status_code=400, detail="Score must be between 1 and 5")
 
     # 1. Upsert Rating
-    # Prisma upsert butuh unique constraint
-    await db.rating.upsert(
-        where={
-            "userId_novelId": {
-                "userId": user["id"],
-                "novelId": id,
-            }
-        },
-        data={
-            "create": {
-                "userId": user["id"],
-                "novelId": id,
-                "score": req.score,
-            },
-            "update": {
-                "score": req.score,
-            },
-        },
-    )
+    await upsert_rating(session, user["id"], id, req.score)
 
-    # 2. Recalculate Average (Async/Background idealnya, tapi simple dulu)
-    ratings = await db.rating.find_many(where={"novelId": id})
+    # 2. Recalculate Average
+    ratings = await get_ratings_by_novel(session, id)
     total_score = sum(r.score for r in ratings)
     count = len(ratings)
     average = total_score / count if count > 0 else 0
 
     # 3. Update Novel Stats
-    await db.novel.update(
-        where={"id": id},
-        data={"averageRating": average, "ratingCount": count},
-    )
+    novel = await session.get(Novel, id)
+    if novel:
+        novel.averageRating = average
+        novel.ratingCount = count
+        await session.commit()
 
     return {"message": "Rating submitted", "average": average, "count": count}
 
@@ -76,14 +78,10 @@ async def rate_novel(request: Request, id: int, req: RatingRequest, user: dict =
 
 
 @router.get("/novels/{id}/comments", response_model=list[CommentResponse])
-async def get_novel_comments(id: int, skip: int = 0, limit: int = 10):
-    comments = await db.comment.find_many(
-        where={"novelId": id},
-        skip=skip,
-        take=limit,
-        order={"createdAt": "desc"},
-        include={"user": True},
-    )
+async def get_novel_comments_endpoint(
+    id: int, skip: int = 0, limit: int = 10, session: AsyncSession = Depends(get_session)
+):
+    comments = await get_novel_comments(session, id, skip=skip, limit=limit)
 
     return [
         {
@@ -99,15 +97,20 @@ async def get_novel_comments(id: int, skip: int = 0, limit: int = 10):
 
 @router.post("/novels/{id}/comments")
 @limiter.limit("10/minute")
-async def post_novel_comment(request: Request, id: int, req: CommentRequest, user: dict = Depends(get_current_user)):
-    comment = await db.comment.create(
-        data={
-            "userId": user["id"],
-            "novelId": id,
-            "content": req.content,
-        },
-        include={"user": True},
+async def post_novel_comment(
+    request: Request,
+    id: int,
+    req: CommentRequest,
+    user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    comment = Comment(userId=user["id"], novelId=id, content=req.content)
+    await create_comment(session, comment)
+    # Eager load user for response
+    result = await session.execute(
+        select(Comment).where(Comment.id == comment.id).options(selectinload(Comment.user))
     )
+    comment = result.scalar_one()
 
     return {
         "id": comment.id,
@@ -122,14 +125,10 @@ async def post_novel_comment(request: Request, id: int, req: CommentRequest, use
 
 
 @router.get("/chapters/{id}/comments", response_model=list[CommentResponse])
-async def get_chapter_comments(id: int, skip: int = 0, limit: int = 10):
-    comments = await db.comment.find_many(
-        where={"chapterId": id},
-        skip=skip,
-        take=limit,
-        order={"createdAt": "desc"},
-        include={"user": True},
-    )
+async def get_chapter_comments_endpoint(
+    id: int, skip: int = 0, limit: int = 10, session: AsyncSession = Depends(get_session)
+):
+    comments = await get_chapter_comments(session, id, skip=skip, limit=limit)
 
     return [
         {
@@ -146,16 +145,19 @@ async def get_chapter_comments(id: int, skip: int = 0, limit: int = 10):
 @router.post("/chapters/{id}/comments")
 @limiter.limit("10/minute")
 async def post_chapter_comment(
-    request: Request, id: int, req: CommentRequest, user: dict = Depends(get_current_user)
+    request: Request,
+    id: int,
+    req: CommentRequest,
+    user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
 ):
-    comment = await db.comment.create(
-        data={
-            "userId": user["id"],
-            "chapterId": id,
-            "content": req.content,
-        },
-        include={"user": True},
+    comment = Comment(userId=user["id"], chapterId=id, content=req.content)
+    await create_comment(session, comment)
+    # Eager load user for response
+    result = await session.execute(
+        select(Comment).where(Comment.id == comment.id).options(selectinload(Comment.user))
     )
+    comment = result.scalar_one()
 
     return {
         "id": comment.id,
@@ -170,18 +172,19 @@ async def post_chapter_comment(
 
 
 @router.delete("/comments/{id}")
-async def delete_comment(id: int, user: dict = Depends(get_current_user)):
+async def delete_comment_endpoint(
+    id: int, user: dict = Depends(get_current_user), session: AsyncSession = Depends(get_session)
+):
     # 1. Cari Comment
-    comment = await db.comment.find_unique(where={"id": id})
+    comment = await get_comment_by_id(session, id)
     if not comment:
         raise HTTPException(status_code=404, detail="Comment not found")
 
     # 2. Cek Owner (Hanya pemilik yang bisa hapus)
-    # TODO: Admin juga harusnya bisa hapus
     if comment.userId != user["id"]:
         raise HTTPException(status_code=403, detail="Not authorized to delete this comment")
 
     # 3. Hapus
-    await db.comment.delete(where={"id": id})
+    await delete_comment(session, id)
 
     return {"message": "Comment deleted"}

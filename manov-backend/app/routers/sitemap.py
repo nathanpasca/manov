@@ -1,17 +1,21 @@
 from datetime import datetime
 
-from fastapi import APIRouter, Response
+from fastapi import APIRouter, Depends, Response
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import select
 
 from app.config import settings
-from app.database import db
+from app.database import get_session
+from app.models import Novel
 
 router = APIRouter()
 
 
 @router.get("/sitemap.xml")
-async def get_sitemap():
+async def get_sitemap(session: AsyncSession = Depends(get_session)):
     # Ambil semua novel (hanya butuh slug dan updated_at)
-    novels = await db.novel.find_many(order={"updatedAt": "desc"})
+    result = await session.execute(select(Novel).order_by(Novel.updatedAt.desc()))
+    novels = result.scalars().all()
 
     # Base URL website dari environment variable
     base_url = settings.FRONTEND_URL

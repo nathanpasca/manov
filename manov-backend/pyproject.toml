@@ -11,7 +11,10 @@ dependencies = [
     "openai>=2.8.1",
     "passlib[bcrypt]>=1.7.4",
     "playwright>=1.56.0",
-    "prisma>=0.15.0",
+    "sqlmodel>=0.0.22",
+    "alembic>=1.13",
+    "asyncpg>=0.29",
+    "greenlet>=3.0",
     "pydantic-settings>=2.9.1",
     "python-jose[cryptography]>=3.5.0",
     "python-multipart>=0.0.20",
@@ -22,6 +25,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "aiosqlite>=0.21",
     "faker>=37.1.0",
     "httpx>=0.28.1",
     "mypy>=1.15.0",
