@@ -64,6 +64,30 @@ async def handler(session: AsyncSession = Depends(get_session)):
     return result.scalars().all()
 ```
 
+### Async SQLAlchemy — Lazy Loading Trap
+In async SQLAlchemy, accessing a relationship attribute that was **not** eagerly loaded triggers a synchronous DB call inside an async context, causing `MissingGreenlet`.
+
+**Always eager-load relationships that will be accessed in the request:**
+```python
+from sqlalchemy.orm import selectinload
+
+result = await session.execute(
+    select(Novel)
+    .where(Novel.id == id)
+    .options(selectinload(Novel.genres), selectinload(Novel.chapters))
+)
+novel = result.scalar_one_or_none()
+```
+
+### PostgreSQL + `datetime.utcnow()` Gotcha
+PostgreSQL `TIMESTAMP WITHOUT TIME ZONE` columns cannot store timezone-aware datetimes. `datetime.now(UTC)` returns a tz-aware object, which causes `asyncpg` to throw on every INSERT.
+
+The project's `utc_now()` helper strips tzinfo before returning:
+```python
+def utc_now() -> datetime:
+    return datetime.now(UTC).replace(tzinfo=None)
+```
+
 ### CRUD Helpers
 - Reusable queries live in `app/crud.py`.
 - Keep routers thin: routers call `crud` functions, handle HTTP concerns, and return schemas.
@@ -100,8 +124,39 @@ alembic revision --autogenerate -m "verify"
 # Run dev server
 uv run uvicorn app.main:app --reload
 
-# Create admin user
+# Create admin user (local)
 uv run python create_admin.py
+
+# Create admin user (Docker container — non-interactive)
+python -c "
+import asyncio
+from datetime import datetime
+from app.database import AsyncSessionLocal
+from app.models import User
+from app.utils.security import get_password_hash
+from sqlmodel import select
+
+async def main():
+    async with AsyncSessionLocal() as session:
+        email = 'admin@example.com'
+        result = await session.execute(select(User).where(User.email == email))
+        if result.scalar_one_or_none():
+            print('Email already exists')
+            return
+        user = User(
+            username='admin',
+            email=email,
+            password=get_password_hash('yourpassword'),
+            role='ADMIN',
+            coins=999999,
+            createdAt=datetime.utcnow(),
+        )
+        session.add(user)
+        await session.commit()
+        print('Admin created')
+
+asyncio.run(main())
+"
 ```
 
 ### Frontend
