@@ -1,6 +1,7 @@
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 from sqlmodel import select
 
 from app.crud import create_chapter, create_novel, delete_chapter, delete_novel
@@ -134,7 +135,10 @@ async def update_novel_metadata(
     id: int, req: UpdateNovelRequest, session: AsyncSession = Depends(get_session)
 ):
     """Edit Judul, Cover, Sinopsis, Author"""
-    novel = await session.get(Novel, id)
+    result = await session.execute(
+        select(Novel).where(Novel.id == id).options(selectinload(Novel.genres))
+    )
+    novel = result.scalar_one_or_none()
     if not novel:
         raise HTTPException(status_code=404, detail="Novel not found")
 
