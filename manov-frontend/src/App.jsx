@@ -8,6 +8,7 @@ import Navbar from './components/Navbar';
 import ScrollToTop from './components/ScrollToTop';
 import LoadingSpinner from './components/LoadingSpinner';
 import ProtectedRoute from './components/ProtectedRoute';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Lazy Load Pages
 const Home = React.lazy(() => import('./pages/Home'));
@@ -63,64 +64,66 @@ function App() {
                     <ScrollToTop />
                     <Navbar />
                     <Suspense fallback={<LoadingSpinner />}>
-                        <Routes>
-                            <Route path="/" element={<Home />} />
-                            <Route path="/about" element={<About />} />
+                        <ErrorBoundary>
+                            <Routes>
+                                <Route path="/" element={<Home />} />
+                                <Route path="/about" element={<About />} />
 
-                            {/* Rute Login */}
-                            <Route path="/login" element={<Login />} />
+                                {/* Rute Login */}
+                                <Route path="/login" element={<Login />} />
 
-                            {/* Rute Register */}
-                            <Route path="/register" element={<Register />} />
+                                {/* Rute Register */}
+                                <Route path="/register" element={<Register />} />
 
-                            {/* Rute Detail Novel */}
-                            <Route
-                                path="/novel/:slug"
-                                element={<NovelDetail />}
-                            />
-
-                            {/* Rute Library */}
-                            <Route path="/library" element={<Library />} />
-
-                            {/* Rute Baca */}
-                            <Route
-                                path="/novel/:slug/read/:chapterNum"
-                                element={<Reader />}
-                            />
-
-                            {/* Rute Admin */}
-                            <Route
-                                element={<ProtectedRoute adminOnly={true} />}
-                            >
+                                {/* Rute Detail Novel */}
                                 <Route
-                                    path="/admin"
-                                    element={<AdminDashboard />}
+                                    path="/novel/:slug"
+                                    element={<NovelDetail />}
                                 />
-                                <Route
-                                    path="/admin/genres"
-                                    element={<ManageGenres />}
-                                />
-                                <Route
-                                    path="/admin/add-novel"
-                                    element={<AddNovel />}
-                                />
-                                <Route
-                                    path="/admin/add-chapter/:slug"
-                                    element={<AddChapter />}
-                                />
-                                <Route
-                                    path="/admin/edit-novel/:slug"
-                                    element={<EditNovelMetadata />}
-                                />
-                                <Route
-                                    path="/admin/edit/:slug/:chapterNum"
-                                    element={<EditChapter />}
-                                />
-                            </Route>
 
-                            {/* 404 Route */}
-                            <Route path="*" element={<NotFound />} />
-                        </Routes>
+                                {/* Rute Library */}
+                                <Route path="/library" element={<Library />} />
+
+                                {/* Rute Baca */}
+                                <Route
+                                    path="/novel/:slug/read/:chapterNum"
+                                    element={<Reader />}
+                                />
+
+                                {/* Rute Admin */}
+                                <Route
+                                    element={<ProtectedRoute adminOnly={true} />}
+                                >
+                                    <Route
+                                        path="/admin"
+                                        element={<AdminDashboard />}
+                                    />
+                                    <Route
+                                        path="/admin/genres"
+                                        element={<ManageGenres />}
+                                    />
+                                    <Route
+                                        path="/admin/add-novel"
+                                        element={<AddNovel />}
+                                    />
+                                    <Route
+                                        path="/admin/add-chapter/:slug"
+                                        element={<AddChapter />}
+                                    />
+                                    <Route
+                                        path="/admin/edit-novel/:slug"
+                                        element={<EditNovelMetadata />}
+                                    />
+                                    <Route
+                                        path="/admin/edit/:slug/:chapterNum"
+                                        element={<EditChapter />}
+                                    />
+                                </Route>
+
+                                {/* 404 Route */}
+                                <Route path="*" element={<NotFound />} />
+                            </Routes>
+                        </ErrorBoundary>
                     </Suspense>
                 </Router>
             </HelmetProvider>

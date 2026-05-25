@@ -92,3 +92,40 @@ async def test_protected_route_without_token(client):
     """Accessing a protected route without a token should return 401."""
     response = await client.get("/api/user/library")
     assert response.status_code == 401
+
+
+@pytest.mark.anyio
+async def test_get_me(client, db_session):
+    """GET /api/auth/me should return current user info."""
+    from app.models import User
+    from app.utils.security import create_access_token, get_password_hash
+
+    user = User(
+        username="meuser",
+        email="me@example.com",
+        password=get_password_hash("secret123"),
+        role="USER",
+        coins=50,
+    )
+    db_session.add(user)
+    await db_session.commit()
+    await db_session.refresh(user)
+
+    token = create_access_token(data={"sub": str(user.id), "role": user.role})
+    response = await client.get(
+        "/api/auth/me",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["email"] == "me@example.com"
+    assert data["username"] == "meuser"
+    assert data["coins"] == 50
+
+
+@pytest.mark.anyio
+async def test_get_me_without_token(client):
+    """GET /api/auth/me without token should return 401."""
+    response = await client.get("/api/auth/me")
+    assert response.status_code == 401

@@ -10,6 +10,7 @@ const Library = () => {
     const { user, logout } = useAuth();
     const [library, setLibrary] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
 
     const fetchLibrary = async () => {
         try {
@@ -46,8 +47,6 @@ const Library = () => {
             </div>
         );
     }
-
-    const [searchTerm, setSearchTerm] = useState('');
 
     const filteredLibrary = library.filter((novel) =>
         novel.title.toLowerCase().includes(searchTerm.toLowerCase())

@@ -56,3 +56,7 @@ class NovelDetail(NovelList):
     updatedAt: datetime | None = None
     # Di detail novel, kita tampilkan list nomor chapter saja
     chapters: list[ChapterItem]
+
+
+class NovelHistory(NovelList):
+    lastReadChapter: int

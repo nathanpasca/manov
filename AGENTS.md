@@ -50,6 +50,8 @@ manov-frontend/
 - Use **camelCase field names** on models to match existing API contracts (e.g., `createdAt`, `chapterNum`).
 - Foreign keys use `ondelete="CASCADE"` where Prisma previously had `onDelete: Cascade`.
 - Many-to-many relations use an explicit `Link` table with `Relationship(link_model=...)`.
+- Foreign-key columns that are queried frequently have `index=True`.
+- `updatedAt` fields use `sa_column_kwargs={"onupdate": utc_now}` to auto-update on modification.
 
 ### Async Session Pattern
 ```python
@@ -70,6 +72,7 @@ async def handler(session: AsyncSession = Depends(get_session)):
 - Tests use a real **in-memory async SQLite** database (`aiosqlite`).
 - The `client` fixture in `tests/conftest.py` overrides `get_session` to inject the test DB.
 - No mocking of the database layer — tests exercise real SQLModel logic.
+- Coverage includes auth, novels, social (ratings/comments), and user (library/history) routers.
 
 ## Common Commands
 
@@ -90,6 +93,9 @@ uv run ruff check app/ tests/ --fix
 # Run migrations
 alembic revision --autogenerate -m "description"
 alembic upgrade head
+
+# Verify schema is fully captured (should produce empty migration)
+alembic revision --autogenerate -m "verify"
 
 # Run dev server
 uv run uvicorn app.main:app --reload
@@ -115,9 +121,16 @@ Copy `manov-backend/.env.example` to `.env` and fill in:
 - `DOCS_USERNAME` / `DOCS_PASSWORD` — Basic auth for `/docs`
 - `FRONTEND_URL` — CORS + sitemap base URL
 
+Also copy `manov-frontend/.env.example` to `.env` and fill in:
+
+- `VITE_API_URL` — Backend API base URL
+- `VITE_FRONTEND_URL` — Canonical frontend URL (used by SEO components and JSON-LD)
+
 ## Docker
 
 The backend Dockerfile runs Alembic migrations before starting Uvicorn:
 ```dockerfile
 CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"]
 ```
+
+`docker-compose.yml` does not override this `CMD`, so migrations run automatically in Docker Compose deployments.

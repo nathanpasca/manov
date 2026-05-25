@@ -1,7 +1,6 @@
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, Header, HTTPException
-from jose import jwt
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlmodel import select
@@ -15,34 +14,18 @@ from app.crud import (
     upsert_history,
 )
 from app.database import get_session
-from app.models import Chapter, Novel, User
+from app.models import Chapter, Novel
 from app.schemas import ChapterContent, Genre, NovelDetail, NovelList
-from app.utils.security import ALGORITHM, SECRET_KEY
+from app.utils.deps import get_current_user_optional
 
 router = APIRouter()
 
 
-# Helper untuk cek user opsional
 async def get_optional_user(
-    authorization: str | None = Header(None),
-    session: AsyncSession = Depends(get_session),
-):
-    if not authorization:
-        return None
-    try:
-        token = authorization.split(" ")[1]
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id = payload.get("sub")
-
-        if not user_id:
-            return None
-
-        # Verify user exists in DB to avoid ForeignKeyViolationError
-        user = await session.get(User, int(user_id))
-
-        return user.id if user else None
-    except Exception:
-        return None
+    user: dict | None = Depends(get_current_user_optional),
+) -> int | None:
+    """Return user id if authenticated, else None."""
+    return user["id"] if user else None
 
 
 @router.get("/genres", response_model=list[Genre])
@@ -59,23 +42,23 @@ async def get_all_novels(
     # Ambil semua novel dengan pagination
     novels = await get_novels(session, skip=skip, limit=limit)
 
-    # Manually map to schema to include chapterCount
+    # Map to schema (get_novels now returns tuples of (Novel, chapter_count))
     results = []
-    for n in novels:
+    for novel, chapter_count in novels:
         n_dict = {
-            "id": n.id,
-            "title": n.title,
-            "slug": n.slug,
-            "coverUrl": n.coverUrl,
-            "status": n.status,
-            "author": n.author,
-            "genres": [Genre(id=g.id, name=g.name) for g in n.genres],
-            "chapterCount": len(n.chapters) if n.chapters else 0,
-            "synopsis": n.synopsis,
-            "averageRating": n.averageRating,
-            "ratingCount": n.ratingCount,
+            "id": novel.id,
+            "title": novel.title,
+            "slug": novel.slug,
+            "coverUrl": novel.coverUrl,
+            "status": novel.status,
+            "author": novel.author,
+            "genres": [Genre(id=g.id, name=g.name) for g in novel.genres],
+            "chapterCount": chapter_count or 0,
+            "synopsis": novel.synopsis,
+            "averageRating": novel.averageRating,
+            "ratingCount": novel.ratingCount,
         }
-        results.append(n_dict)
+        results.append(NovelList.model_validate(n_dict))
 
     return results
 
@@ -149,7 +132,7 @@ async def get_chapter_content(
     next_chapter = await get_next_chapter(session, novel.id, chapter_num)
     prev_chapter = await get_prev_chapter(session, novel.id, chapter_num)
 
-    return {
+    return ChapterContent.model_validate({
         "id": translation.id,
         "chapterId": translation.chapterId,
         "chapterNum": chapter_num,
@@ -159,4 +142,4 @@ async def get_chapter_content(
         "nextChapterNum": next_chapter.chapterNum if next_chapter else None,
         "prevChapterNum": prev_chapter.chapterNum if prev_chapter else None,
         "novelTitle": novel.title,
-    }
+    })

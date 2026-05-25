@@ -10,7 +10,7 @@ from app.crud import (
     remove_from_library,
 )
 from app.database import get_session
-from app.schemas import NovelList
+from app.schemas import NovelHistory, NovelList
 from app.utils.deps import get_current_user
 
 router = APIRouter()
@@ -19,12 +19,12 @@ router = APIRouter()
 # --- GET LIBRARY ---
 @router.get("/library", response_model=list[NovelList])
 async def get_user_library_endpoint(user: dict = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
-    # Ambil data Library, include data Novel beserta Genres & Chapters
+    # Ambil data Library, include data Novel beserta Genres
     items = await get_user_library(session, user["id"])
 
-    # Flatten structure & Manual Map for chapterCount
+    # Flatten structure & map to schema
     results = []
-    for item in items:
+    for item, chapter_count in items:
         n = item.novel
         n_dict = {
             "id": n.id,
@@ -34,12 +34,12 @@ async def get_user_library_endpoint(user: dict = Depends(get_current_user), sess
             "status": n.status,
             "author": n.author,
             "genres": [{"id": g.id, "name": g.name} for g in n.genres],
-            "chapterCount": len(n.chapters) if n.chapters else 0,
+            "chapterCount": chapter_count or 0,
             "synopsis": n.synopsis,
             "averageRating": n.averageRating,
             "ratingCount": n.ratingCount,
         }
-        results.append(n_dict)
+        results.append(NovelList.model_validate(n_dict))
 
     return results
 
@@ -112,6 +112,6 @@ async def get_user_history_endpoint(user: dict = Depends(get_current_user), sess
             "chapters": [],
             "lastReadChapter": h.chapterNum,
         }
-        result.append(novel_data)
+        result.append(NovelHistory.model_validate(novel_data))
 
     return result

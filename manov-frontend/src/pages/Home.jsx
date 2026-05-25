@@ -94,7 +94,7 @@ const Home = () => {
             <SEO
                 title="Home"
                 description="Manov - Your ultimate destination for AI-translated novels. Read unlimited chapters for free."
-                url="https://manov.pascarz.site"
+                url={import.meta.env.VITE_FRONTEND_URL || 'https://manov.pascarz.site'}
             />
             <Helmet>
                 <script type="application/ld+json">
@@ -102,7 +102,7 @@ const Home = () => {
                         '@context': 'https://schema.org',
                         '@type': 'WebSite',
                         name: 'Manov',
-                        url: 'https://manov.pascarz.site',
+                        url: import.meta.env.VITE_FRONTEND_URL || 'https://manov.pascarz.site',
                         description:
                             'Your ultimate destination for AI-translated novels. Read unlimited chapters for free.',
                         potentialAction: {
@@ -110,7 +110,7 @@ const Home = () => {
                             target: {
                                 '@type': 'EntryPoint',
                                 urlTemplate:
-                                    'https://manov.pascarz.site/?search={search_term_string}',
+                                    `${import.meta.env.VITE_FRONTEND_URL || 'https://manov.pascarz.site'}/?search={search_term_string}`,
                             },
                             'query-input': 'required name=search_term_string',
                         },
@@ -129,7 +129,7 @@ const Home = () => {
                                     item: {
                                         '@type': 'Book',
                                         name: novel.title,
-                                        url: `https://manov.pascarz.site/novel/${novel.slug}`,
+                                        url: `${import.meta.env.VITE_FRONTEND_URL || 'https://manov.pascarz.site'}/novel/${novel.slug}`,
                                         image: novel.coverUrl,
                                         author: {
                                             '@type': 'Person',

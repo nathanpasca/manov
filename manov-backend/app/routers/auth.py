@@ -6,6 +6,7 @@ from app.crud import create_user, get_user_by_email
 from app.database import get_session
 from app.middleware.rate_limit import limiter
 from app.models import User
+from app.utils.deps import get_current_user
 from app.utils.security import create_access_token, get_password_hash, verify_password
 
 router = APIRouter()
@@ -91,4 +92,20 @@ async def login(request: Request, req: UserLogin, session: AsyncSession = Depend
             "coins": user.coins,
             "role": user.role,
         },
+    }
+
+
+@router.get("/me")
+async def get_me(user: dict = Depends(get_current_user), session: AsyncSession = Depends(get_session)):
+    from app.crud import get_user_by_id
+
+    db_user = await get_user_by_id(session, user["id"])
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return {
+        "id": db_user.id,
+        "username": db_user.username,
+        "email": db_user.email,
+        "role": db_user.role,
+        "coins": db_user.coins,
     }

@@ -1,5 +1,6 @@
 from datetime import datetime
 
+import nh3
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -12,7 +13,7 @@ from app.crud import (
     get_chapter_comments,
     get_comment_by_id,
     get_novel_comments,
-    get_ratings_by_novel,
+    get_novel_rating_stats,
     upsert_rating,
 )
 from app.database import get_session
@@ -58,11 +59,8 @@ async def rate_novel(
     # 1. Upsert Rating
     await upsert_rating(session, user["id"], id, req.score)
 
-    # 2. Recalculate Average
-    ratings = await get_ratings_by_novel(session, id)
-    total_score = sum(r.score for r in ratings)
-    count = len(ratings)
-    average = total_score / count if count > 0 else 0
+    # 2. Recalculate Average using SQL aggregates
+    average, count = await get_novel_rating_stats(session, id)
 
     # 3. Update Novel Stats
     novel = await session.get(Novel, id)
@@ -104,7 +102,8 @@ async def post_novel_comment(
     user: dict = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    comment = Comment(userId=user["id"], novelId=id, content=req.content)
+    clean_content = nh3.clean(req.content)
+    comment = Comment(userId=user["id"], novelId=id, content=clean_content)
     await create_comment(session, comment)
     # Eager load user for response
     result = await session.execute(
@@ -151,7 +150,8 @@ async def post_chapter_comment(
     user: dict = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    comment = Comment(userId=user["id"], chapterId=id, content=req.content)
+    clean_content = nh3.clean(req.content)
+    comment = Comment(userId=user["id"], chapterId=id, content=clean_content)
     await create_comment(session, comment)
     # Eager load user for response
     result = await session.execute(

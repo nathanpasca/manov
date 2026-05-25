@@ -44,7 +44,10 @@ class Novel(SQLModel, table=True):
     ratingCount: int = Field(default=0)
 
     createdAt: datetime = Field(default_factory=utc_now)
-    updatedAt: datetime = Field(default_factory=utc_now)
+    updatedAt: datetime = Field(
+        default_factory=utc_now,
+        sa_column_kwargs={"onupdate": utc_now},
+    )
 
     # Relations
     chapters: list["Chapter"] = Relationship(back_populates="novel")
@@ -76,7 +79,7 @@ class Chapter(SQLModel, table=True):
     __table_args__ = (UniqueConstraint("novelId", "chapterNum"),)
 
     id: int | None = Field(default=None, primary_key=True)
-    novelId: int = Field(foreign_key="novel.id", ondelete="CASCADE")
+    novelId: int = Field(foreign_key="novel.id", ondelete="CASCADE", index=True)
     chapterNum: int
 
     rawTitle: str | None = None
@@ -98,7 +101,7 @@ class ChapterTranslation(SQLModel, table=True):
     __table_args__ = (UniqueConstraint("chapterId", "language"),)
 
     id: int | None = Field(default=None, primary_key=True)
-    chapterId: int = Field(foreign_key="chapter.id", ondelete="CASCADE")
+    chapterId: int = Field(foreign_key="chapter.id", ondelete="CASCADE", index=True)
     language: str
 
     title: str
@@ -108,7 +111,10 @@ class ChapterTranslation(SQLModel, table=True):
     price: int = Field(default=0)
 
     createdAt: datetime = Field(default_factory=utc_now)
-    updatedAt: datetime = Field(default_factory=utc_now)
+    updatedAt: datetime = Field(
+        default_factory=utc_now,
+        sa_column_kwargs={"onupdate": utc_now},
+    )
 
     # Relations
     chapter: Chapter | None = Relationship(back_populates="translations")
@@ -146,8 +152,8 @@ class Library(SQLModel, table=True):
     __table_args__ = (UniqueConstraint("userId", "novelId"),)
 
     id: int | None = Field(default=None, primary_key=True)
-    userId: int = Field(foreign_key="user.id", ondelete="CASCADE")
-    novelId: int = Field(foreign_key="novel.id", ondelete="CASCADE")
+    userId: int = Field(foreign_key="user.id", ondelete="CASCADE", index=True)
+    novelId: int = Field(foreign_key="novel.id", ondelete="CASCADE", index=True)
     createdAt: datetime = Field(default_factory=utc_now)
 
     user: User | None = Relationship(back_populates="library")
@@ -161,8 +167,8 @@ class History(SQLModel, table=True):
     __table_args__ = (UniqueConstraint("userId", "novelId"),)
 
     id: int | None = Field(default=None, primary_key=True)
-    userId: int = Field(foreign_key="user.id", ondelete="CASCADE")
-    novelId: int = Field(foreign_key="novel.id", ondelete="CASCADE")
+    userId: int = Field(foreign_key="user.id", ondelete="CASCADE", index=True)
+    novelId: int = Field(foreign_key="novel.id", ondelete="CASCADE", index=True)
     chapterNum: int
     updatedAt: datetime = Field(default_factory=utc_now)
 
@@ -177,9 +183,9 @@ class UnlockedChapter(SQLModel, table=True):
     __table_args__ = (UniqueConstraint("userId", "translationId"),)
 
     id: int | None = Field(default=None, primary_key=True)
-    userId: int = Field(foreign_key="user.id", ondelete="CASCADE")
+    userId: int = Field(foreign_key="user.id", ondelete="CASCADE", index=True)
     translationId: int = Field(
-        foreign_key="chaptertranslation.id", ondelete="CASCADE"
+        foreign_key="chaptertranslation.id", ondelete="CASCADE", index=True
     )
     cost: int
     unlockedAt: datetime = Field(default_factory=utc_now)
@@ -197,8 +203,8 @@ class Rating(SQLModel, table=True):
     __table_args__ = (UniqueConstraint("userId", "novelId"),)
 
     id: int | None = Field(default=None, primary_key=True)
-    userId: int = Field(foreign_key="user.id", ondelete="CASCADE")
-    novelId: int = Field(foreign_key="novel.id", ondelete="CASCADE")
+    userId: int = Field(foreign_key="user.id", ondelete="CASCADE", index=True)
+    novelId: int = Field(foreign_key="novel.id", ondelete="CASCADE", index=True)
     score: int
     createdAt: datetime = Field(default_factory=utc_now)
 
@@ -211,15 +217,15 @@ class Rating(SQLModel, table=True):
 # ---------------------------------------------------------------------------
 class Comment(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
-    userId: int = Field(foreign_key="user.id", ondelete="CASCADE")
+    userId: int = Field(foreign_key="user.id", ondelete="CASCADE", index=True)
     content: str = Field(sa_column=Column(Text))
     createdAt: datetime = Field(default_factory=utc_now)
 
     novelId: int | None = Field(
-        default=None, foreign_key="novel.id", ondelete="CASCADE"
+        default=None, foreign_key="novel.id", ondelete="CASCADE", index=True
     )
     chapterId: int | None = Field(
-        default=None, foreign_key="chapter.id", ondelete="CASCADE"
+        default=None, foreign_key="chapter.id", ondelete="CASCADE", index=True
     )
 
     user: User | None = Relationship(back_populates="comments")

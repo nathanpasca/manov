@@ -21,6 +21,8 @@ import SEO from '../components/SEO';
 import { Helmet } from 'react-helmet-async';
 import toast from 'react-hot-toast';
 
+const SITE_URL = import.meta.env.VITE_FRONTEND_URL || 'https://manov.pascarz.site';
+
 const NovelDetail = () => {
     const { slug } = useParams();
     const navigate = useNavigate();
@@ -198,7 +200,7 @@ const NovelDetail = () => {
                 }
                 image={novel.coverUrl}
                 type="book"
-                url={`https://manov.pascarz.site/novel/${novel.slug}`}
+                url={`${SITE_URL}/novel/${novel.slug}`}
             />
             <Helmet>
                 {/* Book Schema */}
@@ -207,7 +209,7 @@ const NovelDetail = () => {
                         '@context': 'https://schema.org',
                         '@type': 'Book',
                         name: novel.title,
-                        url: `https://manov.pascarz.site/novel/${novel.slug}`,
+                        url: `${SITE_URL}/novel/${novel.slug}`,
                         author: {
                             '@type': 'Person',
                             name: novel.author || 'Unknown',
@@ -239,13 +241,13 @@ const NovelDetail = () => {
                                 '@type': 'ListItem',
                                 position: 1,
                                 name: 'Home',
-                                item: 'https://manov.pascarz.site',
+                                item: SITE_URL,
                             },
                             {
                                 '@type': 'ListItem',
                                 position: 2,
                                 name: novel.title,
-                                item: `https://manov.pascarz.site/novel/${novel.slug}`,
+                                item: `${SITE_URL}/novel/${novel.slug}`,
                             },
                         ],
                     })}

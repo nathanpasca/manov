@@ -31,15 +31,21 @@ async def get_novel_by_id(session: AsyncSession, novel_id: int) -> Novel | None:
 
 async def get_novels(
     session: AsyncSession, skip: int = 0, limit: int = 20
-) -> list[Novel]:
+) -> list[tuple[Novel, int]]:
+    chapter_count_subq = (
+        select(func.count(Chapter.id))
+        .where(Chapter.novelId == Novel.id)
+        .correlate(Novel)
+        .scalar_subquery()
+    )
     result = await session.execute(
-        select(Novel)
-        .options(selectinload(Novel.genres), selectinload(Novel.chapters))
+        select(Novel, chapter_count_subq.label("chapter_count"))
+        .options(selectinload(Novel.genres))
         .order_by(Novel.updatedAt.desc())
         .offset(skip)
         .limit(limit)
     )
-    return list(result.scalars().all())
+    return list(result.all())
 
 
 async def count_novels(session: AsyncSession) -> int:
@@ -232,15 +238,20 @@ async def get_library_entry(
     )
 
 
-async def get_user_library(session: AsyncSession, user_id: int) -> list[Library]:
+async def get_user_library(session: AsyncSession, user_id: int) -> list[tuple[Library, int]]:
+    chapter_count_subq = (
+        select(func.count(Chapter.id))
+        .where(Chapter.novelId == Novel.id)
+        .correlate(Novel)
+        .scalar_subquery()
+    )
     result = await session.execute(
-        select(Library)
+        select(Library, chapter_count_subq.label("chapter_count"))
         .where(Library.userId == user_id)
         .options(selectinload(Library.novel).selectinload(Novel.genres))
-        .options(selectinload(Library.novel).selectinload(Novel.chapters))
         .order_by(Library.createdAt.desc())
     )
-    return list(result.scalars().all())
+    return list(result.all())
 
 
 async def add_to_library(
@@ -327,11 +338,13 @@ async def upsert_rating(
     return rating
 
 
-async def get_ratings_by_novel(session: AsyncSession, novel_id: int) -> list[Rating]:
+async def get_novel_rating_stats(session: AsyncSession, novel_id: int) -> tuple[float, int]:
     result = await session.execute(
-        select(Rating).where(Rating.novelId == novel_id)
+        select(func.avg(Rating.score), func.count(Rating.id))
+        .where(Rating.novelId == novel_id)
     )
-    return list(result.scalars().all())
+    avg, count = result.one()
+    return (float(avg) if avg is not None else 0.0, int(count) if count is not None else 0)
 
 
 # ---------------------------------------------------------------------------

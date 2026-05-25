@@ -19,11 +19,7 @@ from app.routers import admin, auth, genres, novels, sitemap, social, user
 # --- LIFESPAN MANAGER ---
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    from sqlmodel import SQLModel
-
-    async with engine.begin() as conn:
-        await conn.run_sync(SQLModel.metadata.create_all)
-    print("✅ Database tables created")
+    print("✅ Manov API started")
     yield
     await engine.dispose()
     print("❌ Database engine disposed")

@@ -29,12 +29,22 @@ const Reader = () => {
     const [showSettings, setShowSettings] = useState(false);
     const settingsRef = useRef(null);
 
-    const [settings, setSettings] = useState({
-        fontSize: 18,
-        lineHeight: 1.8,
-        theme: 'light',
-        fontFamily: 'font-sans',
-        textAlign: 'text-left',
+    const [settings, setSettings] = useState(() => {
+        const saved = localStorage.getItem('manov-reader-settings');
+        if (saved) {
+            try {
+                return JSON.parse(saved);
+            } catch {
+                // fall through to defaults
+            }
+        }
+        return {
+            fontSize: 18,
+            lineHeight: 1.8,
+            theme: 'light',
+            fontFamily: 'font-sans',
+            textAlign: 'text-left',
+        };
     });
 
     // Close settings when clicking outside
@@ -51,6 +61,11 @@ const Reader = () => {
         return () =>
             document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+    // Persist reader settings
+    useEffect(() => {
+        localStorage.setItem('manov-reader-settings', JSON.stringify(settings));
+    }, [settings]);
 
     useEffect(() => {
         const fetchChapter = async () => {
