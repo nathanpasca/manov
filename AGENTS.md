@@ -181,6 +181,33 @@ Also copy `manov-frontend/.env.example` to `.env` and fill in:
 - `VITE_API_URL` — Backend API base URL
 - `VITE_FRONTEND_URL` — Canonical frontend URL (used by SEO components and JSON-LD)
 
+## Frontend Design
+
+### Palette: Warm Ink & Paper
+The frontend uses a warm, book-focused palette rather than a cold tech-blue SaaS look.
+
+| Token | Value | Usage |
+|---|---|---|
+| `--color-accent` | `#b45309` (amber/ochre) | Primary accent — buttons, active states, badges |
+| `--color-ink` | `#1c1917` | Dark mode background |
+| `--color-paper` | `#faf8f5` | Light mode background |
+| `--font-serif` | Merriweather | Headings, editorial moments |
+| `--font-sans` | Inter | UI, body text |
+
+**Rules:**
+- Only **one accent color** across the entire UI. No purple, pink, green, or yellow accents (except star ratings).
+- No gradient text, no glow shadows, no decorative watermarks.
+- Buttons are flat or subtly bordered — no `shadow-lg shadow-blue-500/30` style glows.
+- Dark mode is warm charcoal, not pure black.
+
+### Motion Policy
+- Avoid spring physics and bouncy animations on static content.
+- Prefer simple opacity fades (`transition-opacity`) or subtle transforms.
+- The Reader page should feel like turning a page, not launching an app.
+
+### OG Image
+`manov-frontend/public/og-image.png` is generated from the palette. Replace it with a custom design when ready.
+
 ## Docker
 
 The backend Dockerfile runs Alembic migrations before starting Uvicorn:
