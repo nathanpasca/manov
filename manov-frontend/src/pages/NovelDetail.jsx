@@ -19,6 +19,7 @@ import StarRating from '../components/StarRating';
 import CommentSection from '../components/CommentSection';
 import SEO from '../components/SEO';
 import { Helmet } from 'react-helmet-async';
+import ReactMarkdown from 'react-markdown';
 import toast from 'react-hot-toast';
 
 const SITE_URL = import.meta.env.VITE_FRONTEND_URL || 'https://manov.pascarz.site';
@@ -395,9 +396,40 @@ const NovelDetail = () => {
                             Synopsis
                         </h3>
                         <div className="prose prose-gray dark:prose-invert max-w-none leading-relaxed text-gray-600 dark:text-gray-300">
-                            <p>
-                                {novel.synopsis || 'No synopsis available yet.'}
-                            </p>
+                            {novel.synopsis ? (
+                                <ReactMarkdown
+                                    components={{
+                                        p: ({ node, ...props }) => (
+                                            <p
+                                                className="mb-4 leading-relaxed"
+                                                {...props}
+                                            />
+                                        ),
+                                        strong: ({ node, ...props }) => (
+                                            <span
+                                                className="font-bold"
+                                                {...props}
+                                            />
+                                        ),
+                                        em: ({ node, ...props }) => (
+                                            <span
+                                                className="italic"
+                                                {...props}
+                                            />
+                                        ),
+                                        a: ({ node, ...props }) => (
+                                            <a
+                                                className="text-stone-600 underline decoration-stone-300 underline-offset-4 transition hover:text-stone-900 dark:text-stone-400"
+                                                {...props}
+                                            />
+                                        ),
+                                    }}
+                                >
+                                    {novel.synopsis}
+                                </ReactMarkdown>
+                            ) : (
+                                <p>No synopsis available yet.</p>
+                            )}
                         </div>
                     </motion.div>
 

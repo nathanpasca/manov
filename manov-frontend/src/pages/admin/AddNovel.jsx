@@ -12,6 +12,7 @@ import {
     Loader,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import ReactMarkdown from 'react-markdown';
 
 const AddNovel = () => {
     const navigate = useNavigate();
@@ -302,10 +303,36 @@ const AddNovel = () => {
                                 <p className="mb-3 text-xs text-gray-500 dark:text-gray-400">
                                     {formData.author || 'Author Name'}
                                 </p>
-                                <p className="line-clamp-4 text-xs leading-relaxed text-gray-600 dark:text-gray-300">
-                                    {formData.synopsis ||
-                                        'Synopsis will appear here...'}
-                                </p>
+                                <div className="line-clamp-4 text-xs leading-relaxed text-gray-600 dark:text-gray-300">
+                                    {formData.synopsis ? (
+                                        <ReactMarkdown
+                                            components={{
+                                                p: ({ node, ...props }) => (
+                                                    <p
+                                                        className="mb-2 leading-relaxed"
+                                                        {...props}
+                                                    />
+                                                ),
+                                                strong: ({ node, ...props }) => (
+                                                    <span
+                                                        className="font-bold"
+                                                        {...props}
+                                                    />
+                                                ),
+                                                em: ({ node, ...props }) => (
+                                                    <span
+                                                        className="italic"
+                                                        {...props}
+                                                    />
+                                                ),
+                                            }}
+                                        >
+                                            {formData.synopsis}
+                                        </ReactMarkdown>
+                                    ) : (
+                                        <p>Synopsis will appear here...</p>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>
