@@ -13,8 +13,10 @@ import {
     Sun,
     Moon,
     Coffee,
+    List,
+    Lock,
 } from 'lucide-react';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { smartParser } from '../utils/smartParser';
 import CommentSection from '../components/CommentSection';
 import SEO from '../components/SEO';
@@ -27,6 +29,11 @@ const Reader = () => {
     const [loading, setLoading] = useState(true);
     const [showSettings, setShowSettings] = useState(false);
     const settingsRef = useRef(null);
+
+    const [showToc, setShowToc] = useState(false);
+    const [novelChapters, setNovelChapters] = useState([]);
+    const [tocLoading, setTocLoading] = useState(false);
+    const tocRef = useRef(null);
 
     const [settings, setSettings] = useState(() => {
         const saved = localStorage.getItem('manov-reader-settings');
@@ -55,11 +62,18 @@ const Reader = () => {
             ) {
                 setShowSettings(false);
             }
+            if (
+                tocRef.current &&
+                !tocRef.current.contains(event.target) &&
+                showToc
+            ) {
+                setShowToc(false);
+            }
         };
         document.addEventListener('mousedown', handleClickOutside);
         return () =>
             document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
+    }, [showToc]);
 
     // Persist reader settings
     useEffect(() => {
@@ -70,11 +84,15 @@ const Reader = () => {
         const fetchChapter = async () => {
             try {
                 setLoading(true);
-                const res = await novelService.getChapter(slug, chapterNum);
-                setChapter(res.data);
-                document.title = `${res.data.title} - Chapter ${chapterNum} | Manov`;
-                const blocks = smartParser(res.data.content);
+                const [chapterRes, novelRes] = await Promise.all([
+                    novelService.getChapter(slug, chapterNum),
+                    novelService.getBySlug(slug),
+                ]);
+                setChapter(chapterRes.data);
+                document.title = `${chapterRes.data.title} - Chapter ${chapterNum} | Manov`;
+                const blocks = smartParser(chapterRes.data.content);
                 setParsedBlocks(blocks);
+                setNovelChapters(novelRes.data.chapters || []);
             } catch (err) {
                 console.error('Gagal ambil chapter:', err);
                 toast.error('Gagal memuat chapter. Pastikan chapter tersedia.');
@@ -85,12 +103,17 @@ const Reader = () => {
         fetchChapter();
     }, [slug, chapterNum]);
 
-    // Keyboard navigation: ArrowLeft / ArrowRight
+    // Keyboard navigation: ArrowLeft / ArrowRight, T for TOC, Escape to close
     useEffect(() => {
         const handleKeyDown = (e) => {
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
             if (e.key === 'ArrowLeft') handlePrev();
             if (e.key === 'ArrowRight') handleNext();
+            if (e.key === 't' || e.key === 'T') setShowToc((prev) => !prev);
+            if (e.key === 'Escape') {
+                setShowToc(false);
+                setShowSettings(false);
+            }
         };
         document.addEventListener('keydown', handleKeyDown);
         return () => document.removeEventListener('keydown', handleKeyDown);
@@ -178,6 +201,14 @@ const Reader = () => {
                 </div>
 
                 <div className="flex flex-shrink-0 gap-2">
+                    <button
+                        onClick={() => setShowToc(!showToc)}
+                        className={`rounded-full p-2 transition ${showToc ? 'bg-black/5 dark:bg-white/10' : 'hover:bg-black/5 dark:hover:bg-white/5'}`}
+                        title="Table of Contents (T)"
+                    >
+                        <List size={18} />
+                    </button>
+
                     <button
                         onClick={() =>
                             navigate(`/admin/edit/${slug}/${chapterNum}`)
@@ -342,6 +373,100 @@ const Reader = () => {
                             </div>
                         </div>
                     </div>
+                )}
+            </AnimatePresence>
+
+            {/* TOC DRAWER */}
+            <AnimatePresence>
+                {showToc && (
+                    <>
+                        {/* Backdrop */}
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setShowToc(false)}
+                            className="fixed inset-0 z-[55] bg-black/30"
+                        />
+                        {/* Drawer */}
+                        <motion.div
+                            ref={tocRef}
+                            initial={{ x: '-100%' }}
+                            animate={{ x: 0 }}
+                            exit={{ x: '-100%' }}
+                            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                            className={`fixed left-0 top-0 z-[60] h-full w-full sm:w-80 border-r shadow-2xl overflow-hidden flex flex-col ${getThemeColors()} ${settings.theme === 'light' ? 'border-stone-200 bg-[#faf8f5]' : settings.theme === 'sepia' ? 'border-[#eaddc5] bg-[#f4ecd8]' : 'border-white/5 bg-[#1c1917]'}`}
+                        >
+                            <div className="flex items-center justify-between border-b p-4 backdrop-blur-md"
+                                style={{ borderColor: settings.theme === 'sepia' ? '#eaddc5' : undefined }}>
+                                <h3 className="text-xs font-semibold uppercase tracking-wider opacity-50">
+                                    Table of Contents
+                                </h3>
+                                <button
+                                    onClick={() => setShowToc(false)}
+                                    className="opacity-40 transition hover:opacity-100"
+                                >
+                                    <X size={16} />
+                                </button>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto p-3">
+                                {novelChapters.length === 0 ? (
+                                    <p className="px-3 py-6 text-center text-sm opacity-50">
+                                        No chapters available.
+                                    </p>
+                                ) : (
+                                    <div className="space-y-1">
+                                        {novelChapters.map((ch) => {
+                                            const translation = ch.translations.find(
+                                                (t) => t.language === 'EN'
+                                            );
+                                            const title = translation
+                                                ? translation.title
+                                                : `Chapter ${ch.chapterNum}`;
+                                            const publishedDate = translation?.publishedAt
+                                                ? new Date(translation.publishedAt)
+                                                : new Date(0);
+                                            const isLocked = publishedDate > new Date();
+                                            const isCurrent = ch.chapterNum === parseInt(chapterNum);
+
+                                            return (
+                                                <div
+                                                    key={ch.chapterNum}
+                                                    onClick={() => {
+                                                        if (!isLocked) {
+                                                            navigate(`/novel/${slug}/read/${ch.chapterNum}`);
+                                                            setShowToc(false);
+                                                            window.scrollTo(0, 0);
+                                                        }
+                                                    }}
+                                                    className={`group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition ${
+                                                        isCurrent
+                                                            ? settings.theme === 'sepia'
+                                                                ? 'bg-[#eaddc5] font-semibold'
+                                                                : 'bg-black/5 font-semibold dark:bg-white/10'
+                                                            : isLocked
+                                                              ? 'cursor-not-allowed opacity-40'
+                                                              : 'cursor-pointer hover:bg-black/5 dark:hover:bg-white/5'
+                                                    }`}
+                                                >
+                                                    <span className={`w-8 flex-shrink-0 font-mono text-xs ${isCurrent ? 'opacity-100' : 'opacity-40'}`}>
+                                                        {ch.chapterNum}
+                                                    </span>
+                                                    <span className="truncate">
+                                                        {title}
+                                                    </span>
+                                                    {isLocked && (
+                                                        <Lock size={12} className="ml-auto flex-shrink-0 opacity-40" />
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        </motion.div>
+                    </>
                 )}
             </AnimatePresence>
 

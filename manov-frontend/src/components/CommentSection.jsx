@@ -12,6 +12,10 @@ const CommentSection = ({ targetId, type = 'novel' }) => {
     const [newComment, setNewComment] = useState('');
     const [loading, setLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    const [hasMore, setHasMore] = useState(false);
+    const [loadingMore, setLoadingMore] = useState(false);
+
+    const LIMIT = 10;
 
     // Determine endpoint based on type
     const endpoint =
@@ -19,20 +23,39 @@ const CommentSection = ({ targetId, type = 'novel' }) => {
             ? `/novels/${targetId}/comments`
             : `/chapters/${targetId}/comments`;
 
-    const fetchComments = async () => {
+    const fetchComments = async (skip = 0, limit = LIMIT) => {
         try {
-            setLoading(true);
-            const res = await socialService.getComments(endpoint);
-            setComments(res.data);
+            const res = await socialService.getComments(endpoint, skip, limit);
+            return res.data;
         } catch (err) {
             console.error('Failed to load comments', err);
-        } finally {
-            setLoading(false);
+            return [];
         }
     };
 
+    const loadInitial = async () => {
+        setLoading(true);
+        const data = await fetchComments(0, LIMIT);
+        setComments(data);
+        setHasMore(data.length === LIMIT);
+        setLoading(false);
+    };
+
+    const handleLoadMore = async () => {
+        if (loadingMore) return;
+        setLoadingMore(true);
+        const data = await fetchComments(comments.length, LIMIT);
+        if (data.length > 0) {
+            setComments((prev) => [...prev, ...data]);
+            setHasMore(data.length === LIMIT);
+        } else {
+            setHasMore(false);
+        }
+        setLoadingMore(false);
+    };
+
     useEffect(() => {
-        if (targetId) fetchComments();
+        if (targetId) loadInitial();
     }, [targetId, type]);
 
     const handleSubmit = async (e) => {
@@ -145,44 +168,59 @@ const CommentSection = ({ targetId, type = 'novel' }) => {
                         Loading comments...
                     </p>
                 ) : comments.length > 0 ? (
-                    comments.map((comment) => (
-                        <div key={comment.id} className="group flex gap-4">
-                            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 font-bold text-white shadow-md">
-                                {comment.username.charAt(0).toUpperCase()}
-                            </div>
-                            <div className="flex-1">
-                                <div className="mb-1 flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <span className="font-bold text-gray-900 dark:text-white">
-                                            {comment.username}
-                                        </span>
-                                        <span className="text-xs text-gray-500">
-                                            {formatDistanceToNow(
-                                                new Date(comment.createdAt),
-                                                { addSuffix: true }
-                                            )}
-                                        </span>
-                                    </div>
-
-                                    {/* DELETE BUTTON (Only for owner) */}
-                                    {user && user.id === comment.userId && (
-                                        <button
-                                            onClick={() =>
-                                                handleDelete(comment.id)
-                                            }
-                                            className="p-1 text-gray-400 opacity-0 transition-all hover:text-red-500 group-hover:opacity-100"
-                                            title="Delete comment"
-                                        >
-                                            <Trash2 size={14} />
-                                        </button>
-                                    )}
+                    <>
+                        {comments.map((comment) => (
+                            <div key={comment.id} className="group flex gap-4">
+                                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 font-bold text-white shadow-md">
+                                    {comment.username.charAt(0).toUpperCase()}
                                 </div>
-                                <p className="text-sm leading-relaxed text-gray-700 dark:text-gray-300">
-                                    {comment.content}
-                                </p>
+                                <div className="flex-1">
+                                    <div className="mb-1 flex items-center justify-between">
+                                        <div className="flex items-center gap-2">
+                                            <span className="font-bold text-gray-900 dark:text-white">
+                                                {comment.username}
+                                            </span>
+                                            <span className="text-xs text-gray-500">
+                                                {formatDistanceToNow(
+                                                    new Date(comment.createdAt),
+                                                    { addSuffix: true }
+                                                )}
+                                            </span>
+                                        </div>
+
+                                        {/* DELETE BUTTON (Only for owner) */}
+                                        {user && user.id === comment.userId && (
+                                            <button
+                                                onClick={() =>
+                                                    handleDelete(comment.id)
+                                                }
+                                                className="p-1 text-gray-400 opacity-0 transition-all hover:text-red-500 group-hover:opacity-100"
+                                                title="Delete comment"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        )}
+                                    </div>
+                                    <p className="text-sm leading-relaxed text-gray-700 dark:text-gray-300">
+                                        {comment.content}
+                                    </p>
+                                </div>
                             </div>
-                        </div>
-                    ))
+                        ))}
+                        {hasMore && (
+                            <div className="flex justify-center pt-2">
+                                <button
+                                    onClick={handleLoadMore}
+                                    disabled={loadingMore}
+                                    className="rounded-full border border-gray-200 bg-white px-6 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-50 disabled:opacity-50 dark:border-white/10 dark:bg-white/5 dark:text-gray-300 dark:hover:bg-white/10"
+                                >
+                                    {loadingMore
+                                        ? 'Loading...'
+                                        : 'Load more comments'}
+                                </button>
+                            </div>
+                        )}
+                    </>
                 ) : (
                     <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 py-10 text-center dark:border-white/10 dark:bg-white/5">
                         <p className="text-gray-500">
