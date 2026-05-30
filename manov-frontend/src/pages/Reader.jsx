@@ -85,6 +85,17 @@ const Reader = () => {
         fetchChapter();
     }, [slug, chapterNum]);
 
+    // Keyboard navigation: ArrowLeft / ArrowRight
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+            if (e.key === 'ArrowLeft') handlePrev();
+            if (e.key === 'ArrowRight') handleNext();
+        };
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [chapter]);
+
     const handlePrev = () => {
         if (chapter?.prevChapterNum) {
             navigate(`/novel/${slug}/read/${chapter.prevChapterNum}`);

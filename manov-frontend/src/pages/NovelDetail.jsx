@@ -36,6 +36,7 @@ const NovelDetail = () => {
     const [isBookmarked, setIsBookmarked] = useState(false);
     const [bookmarkLoading, setBookmarkLoading] = useState(false);
     const [userRating, setUserRating] = useState(0);
+    const [lastReadChapter, setLastReadChapter] = useState(null);
 
     useEffect(() => {
         const initData = async () => {
@@ -46,7 +47,7 @@ const NovelDetail = () => {
                 setNovel(res.data);
                 document.title = `${res.data.title} | Manov`;
 
-                // Jika user login, cek bookmark & rating
+                // Jika user login, cek bookmark, rating, & reading history
                 if (user && res.data) {
                     const statusRes = await userService.checkLibraryStatus(res.data.id);
                     setIsBookmarked(statusRes.data.isBookmarked);
@@ -54,6 +55,19 @@ const NovelDetail = () => {
                     // Set User Rating dari backend
                     if (statusRes.data.userRating) {
                         setUserRating(statusRes.data.userRating);
+                    }
+
+                    // Cek reading history untuk resume
+                    try {
+                        const historyRes = await userService.getHistory();
+                        const novelHistory = historyRes.data.find(
+                            (h) => h.novelId === res.data.id
+                        );
+                        if (novelHistory) {
+                            setLastReadChapter(novelHistory.lastReadChapter);
+                        }
+                    } catch (e) {
+                        // ignore history fetch errors
                     }
                 }
             } catch (err) {
@@ -103,6 +117,41 @@ const NovelDetail = () => {
             toast.success('Rating submitted!');
         } catch (err) {
             toast.error('Failed to submit rating');
+        }
+    };
+
+    const handleShare = async () => {
+        const url = `${SITE_URL}/novel/${slug}`;
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: novel?.title || 'Manov Novel',
+                    text: novel?.synopsis?.slice(0, 100) || '',
+                    url,
+                });
+            } catch (err) {
+                // user cancelled share
+            }
+        } else {
+            try {
+                await navigator.clipboard.writeText(url);
+                toast.success('Link copied to clipboard');
+            } catch {
+                toast.error('Failed to copy link');
+            }
+        }
+    };
+
+    const getStatusColor = (status) => {
+        switch (status) {
+            case 'ONGOING':
+                return 'bg-emerald-600 text-white';
+            case 'COMPLETED':
+                return 'bg-blue-600 text-white';
+            case 'HIATUS':
+                return 'bg-amber-500 text-white';
+            default:
+                return 'bg-stone-800 text-white';
         }
     };
 
@@ -294,7 +343,7 @@ const NovelDetail = () => {
                             transition={{ delay: 0.2 }}
                             className="mb-3 flex flex-wrap items-center gap-3"
                         >
-                            <span className="rounded-full bg-stone-800 px-3 py-1 text-xs font-bold uppercase tracking-wider">
+                            <span className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${getStatusColor(novel.status)}`}>
                                 {novel.status}
                             </span>
                             <div className="flex items-center gap-1 rounded-full border border-white/10 bg-black/30 px-3 py-1 font-medium text-yellow-400 backdrop-blur-sm">
@@ -334,9 +383,10 @@ const NovelDetail = () => {
                             className="flex flex-wrap gap-3"
                         >
                             <button
-                                onClick={() =>
-                                    navigate(`/novel/${slug}/read/1`)
-                                }
+                                onClick={() => {
+                                    const targetChapter = lastReadChapter || 1;
+                                    navigate(`/novel/${slug}/read/${targetChapter}`);
+                                }}
                                 disabled={novel.chapters.length === 0}
                                 className={`flex items-center gap-2 rounded-full px-8 py-3 font-bold shadow-xl transition ${
                                     novel.chapters.length === 0
@@ -345,9 +395,11 @@ const NovelDetail = () => {
                                 }`}
                             >
                                 <Play size={20} fill="currentColor" />
-                                {novel.chapters.length > 0
-                                    ? 'Start Reading'
-                                    : 'No Chapters'}
+                                {novel.chapters.length === 0
+                                    ? 'No Chapters'
+                                    : lastReadChapter
+                                      ? `Resume Chapter ${lastReadChapter}`
+                                      : 'Start Reading'}
                             </button>
                             <button
                                 onClick={handleBookmark}
@@ -372,7 +424,10 @@ const NovelDetail = () => {
                                     </>
                                 )}
                             </button>
-                            <button className="rounded-full border border-white/20 bg-white/10 p-3 text-white backdrop-blur-md transition hover:bg-white/20">
+                            <button
+                                onClick={handleShare}
+                                className="rounded-full border border-white/20 bg-white/10 p-3 text-white backdrop-blur-md transition hover:bg-white/20"
+                            >
                                 <Share2 size={20} />
                             </button>
                         </motion.div>
@@ -616,6 +671,9 @@ const NovelDetail = () => {
                                     novel.genres.map((genre) => (
                                         <span
                                             key={genre.id}
+                                            onClick={() =>
+                                                navigate(`/?genre=${encodeURIComponent(genre.name)}`)
+                                            }
                                             className="cursor-pointer rounded-lg bg-gray-100 px-3 py-1 text-xs text-gray-600 transition hover:bg-gray-200 dark:bg-white/10 dark:text-gray-300 dark:hover:bg-white/20"
                                         >
                                             {genre.name}

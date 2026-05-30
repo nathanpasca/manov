@@ -9,17 +9,26 @@ import SEO from '../components/SEO';
 import { Helmet } from 'react-helmet-async';
 import { useAuth } from '../context/AuthContext';
 import { Clock, ArrowRight } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 const Home = () => {
     const { user } = useAuth();
     const [history, setHistory] = useState([]);
     const [novels, setNovels] = useState([]);
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
 
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [activeFilter, setActiveFilter] = useState('All');
+
+    // Read genre from URL query param on mount
+    useEffect(() => {
+        const genreFromUrl = searchParams.get('genre');
+        if (genreFromUrl) {
+            setActiveFilter(genreFromUrl);
+        }
+    }, []);
 
     const [page, setPage] = useState(0);
     const [hasMore, setHasMore] = useState(true);
