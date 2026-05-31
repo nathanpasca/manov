@@ -96,30 +96,46 @@ const ReviewSection = ({ novelId }) => {
 
             {/* Write Review Form */}
             {!userReview && (
-                <form onSubmit={handleSubmit} className="mb-8 rounded-xl border border-stone-100 bg-white p-5 dark:border-white/5 dark:bg-white/5">
-                    <p className="mb-3 text-sm font-medium text-stone-700 dark:text-stone-300">
-                        Write a review
-                    </p>
-                    <div className="mb-4 flex justify-center">
-                        <StarRating rating={score} onRate={setScore} size={28} />
-                    </div>
-                    <div className="relative">
-                        <textarea
-                            value={content}
-                            onChange={(e) => setContent(e.target.value)}
-                            placeholder="Share your thoughts about this novel..."
-                            disabled={!user || submitting}
-                            className="h-28 w-full resize-none rounded-lg border border-stone-200 bg-stone-50 p-4 pr-14 text-sm transition focus:outline-none focus:ring-1 focus:ring-stone-300 dark:border-white/10 dark:bg-white/5 dark:text-white"
-                        />
-                        <button
-                            type="submit"
-                            disabled={!user || submitting || score < 1 || !content.trim()}
-                            className="absolute bottom-3 right-3 rounded-lg bg-stone-900 p-2 text-white transition hover:bg-stone-700 disabled:cursor-not-allowed disabled:opacity-50"
-                        >
-                            <Send size={16} />
-                        </button>
-                    </div>
-                </form>
+                <div className="mb-8 rounded-xl border border-stone-100 bg-white p-5 dark:border-white/5 dark:bg-white/5">
+                    {!user ? (
+                        <div className="flex flex-col items-center gap-3 py-4 text-center">
+                            <p className="text-sm text-stone-500 dark:text-stone-400">
+                                Please sign in to write a review and rate this novel.
+                            </p>
+                            <a
+                                href="/login"
+                                className="rounded-full bg-stone-900 px-5 py-2 text-sm font-medium text-white transition hover:bg-stone-700"
+                            >
+                                Sign In
+                            </a>
+                        </div>
+                    ) : (
+                        <form onSubmit={handleSubmit}>
+                            <p className="mb-3 text-sm font-medium text-stone-700 dark:text-stone-300">
+                                Write a review
+                            </p>
+                            <div className="mb-4 flex justify-center">
+                                <StarRating rating={score} onRate={setScore} size={28} />
+                            </div>
+                            <div className="relative">
+                                <textarea
+                                    value={content}
+                                    onChange={(e) => setContent(e.target.value)}
+                                    placeholder="Share your thoughts about this novel..."
+                                    disabled={submitting}
+                                    className="h-28 w-full resize-none rounded-lg border border-stone-200 bg-stone-50 p-4 pr-14 text-sm transition focus:outline-none focus:ring-1 focus:ring-stone-300 dark:border-white/10 dark:bg-white/5 dark:text-white"
+                                />
+                                <button
+                                    type="submit"
+                                    disabled={submitting || score < 1 || !content.trim()}
+                                    className="absolute bottom-3 right-3 rounded-lg bg-stone-900 p-2 text-white transition hover:bg-stone-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                >
+                                    <Send size={16} />
+                                </button>
+                            </div>
+                        </form>
+                    )}
+                </div>
             )}
 
             {/* Review List */}

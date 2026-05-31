@@ -680,16 +680,25 @@ const NovelDetail = () => {
                                 </div>
                             )}
 
-                            <button
-                                onClick={() => {
-                                    document
-                                        .getElementById('reviews-section')
-                                        ?.scrollIntoView({ behavior: 'smooth' });
-                                }}
-                                className="mt-3 w-full rounded-lg bg-stone-900 py-2 text-sm font-medium text-white transition hover:bg-stone-700"
-                            >
-                                {userRating > 0 ? 'Edit Review' : 'Write a Review'}
-                            </button>
+                            {user ? (
+                                <button
+                                    onClick={() => {
+                                        document
+                                            .getElementById('reviews-section')
+                                            ?.scrollIntoView({ behavior: 'smooth' });
+                                    }}
+                                    className="mt-3 w-full rounded-lg bg-stone-900 py-2 text-sm font-medium text-white transition hover:bg-stone-700"
+                                >
+                                    {userRating > 0 ? 'Edit Review' : 'Write a Review'}
+                                </button>
+                            ) : (
+                                <a
+                                    href="/login"
+                                    className="mt-3 block w-full rounded-lg border border-stone-200 bg-white py-2 text-center text-sm font-medium text-stone-700 transition hover:bg-stone-50 dark:border-white/10 dark:bg-white/5 dark:text-stone-300 dark:hover:bg-white/10"
+                                >
+                                    Sign in to review
+                                </a>
+                            )}
                         </div>
 
                         <div className="mt-8 border-t border-gray-100 pt-6 dark:border-white/10">
