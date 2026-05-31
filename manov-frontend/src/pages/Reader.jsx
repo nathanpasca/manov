@@ -20,6 +20,9 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { smartParser } from '../utils/smartParser';
 import CommentSection from '../components/CommentSection';
 import SEO from '../components/SEO';
+import { Helmet } from 'react-helmet-async';
+
+const SITE_URL = import.meta.env.VITE_FRONTEND_URL || 'https://manov.pascarz.site';
 
 const Reader = () => {
     const { slug, chapterNum } = useParams();
@@ -241,8 +244,75 @@ const Reader = () => {
                         ? `Chapter ${chapter.chapterNum}: ${chapter.title}`
                         : 'Reading...'
                 }
-                description={`Read Chapter ${chapterNum} of ${chapter ? chapter.novelTitle : 'this novel'} on Manov.`}
+                description={
+                    chapter
+                        ? `Read Chapter ${chapter.chapterNum} — "${chapter.title}" of ${chapter.novelTitle} on Manov. Free, AI-translated web novel chapter.`
+                        : `Read Chapter ${chapterNum} of this novel on Manov. Free web novel reader.`
+                }
+                image={chapter?.coverUrl}
+                type="article"
+                url={`${SITE_URL}/novel/${slug}/read/${chapterNum}`}
+                author={chapter?.novelAuthor}
             />
+            {chapter && (
+                <Helmet>
+                    <script type="application/ld+json">
+                        {JSON.stringify({
+                            '@context': 'https://schema.org',
+                            '@type': 'Article',
+                            headline: `${chapter.title} — Chapter ${chapter.chapterNum}`,
+                            description: `Read Chapter ${chapter.chapterNum} of ${chapter.novelTitle} on Manov.`,
+                            image: chapter.coverUrl,
+                            author: {
+                                '@type': 'Person',
+                                name: chapter.novelAuthor || 'Unknown',
+                            },
+                            publisher: {
+                                '@type': 'Organization',
+                                name: 'Manov',
+                                logo: {
+                                    '@type': 'ImageObject',
+                                    url: `${SITE_URL}/android-chrome-192x192.png`,
+                                },
+                            },
+                            url: `${SITE_URL}/novel/${slug}/read/${chapterNum}`,
+                            isPartOf: {
+                                '@type': 'Book',
+                                name: chapter.novelTitle,
+                                url: `${SITE_URL}/novel/${slug}`,
+                            },
+                            articleSection: 'Web Novel',
+                            inLanguage: 'en',
+                        })}
+                    </script>
+                    <script type="application/ld+json">
+                        {JSON.stringify({
+                            '@context': 'https://schema.org',
+                            '@type': 'BreadcrumbList',
+                            itemListElement: [
+                                {
+                                    '@type': 'ListItem',
+                                    position: 1,
+                                    name: 'Home',
+                                    item: SITE_URL,
+                                },
+                                {
+                                    '@type': 'ListItem',
+                                    position: 2,
+                                    name: chapter.novelTitle,
+                                    item: `${SITE_URL}/novel/${slug}`,
+                                },
+                                {
+                                    '@type': 'ListItem',
+                                    position: 3,
+                                    name: `Chapter ${chapter.chapterNum}: ${chapter.title}`,
+                                    item: `${SITE_URL}/novel/${slug}/read/${chapterNum}`,
+                                },
+                            ],
+                        })}
+                    </script>
+                </Helmet>
+            )}
 
             {/* NAVBAR */}
             <div

@@ -1,10 +1,16 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import ArchitectureSteps from '../components/ArchitectureSlideshow';
+import SEO from '../components/SEO';
 
 const About = () => {
     return (
         <div className="min-h-screen bg-gray-50 pb-24 pt-28 font-sans text-gray-900 transition-colors duration-300 dark:bg-[#0a0a0a] dark:text-gray-100">
+            <SEO
+                title="About"
+                description="Learn about Manov — a free web novel reader with AI-translated chapters. Built for readers who hate waiting for translations."
+                url={`${import.meta.env.VITE_FRONTEND_URL || 'https://manov.pascarz.site'}/about`}
+            />
             <div className="mx-auto max-w-3xl px-6">
                 {/* Header */}
                 <motion.div

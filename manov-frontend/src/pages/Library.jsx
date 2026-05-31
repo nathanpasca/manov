@@ -4,6 +4,7 @@ import { BookOpen, BookmarkX } from 'lucide-react';
 import NovelCard from '../components/NovelCard';
 import { useAuth } from '../context/AuthContext';
 import { userService } from '../services';
+import SEO from '../components/SEO';
 
 const Library = () => {
     const { user, logout } = useAuth();
@@ -53,6 +54,11 @@ const Library = () => {
 
     return (
         <div className="min-h-screen bg-[#faf8f5] px-4 pb-20 pt-24 font-sans transition-colors duration-300 md:px-8 dark:bg-[#1c1917] dark:text-stone-100">
+            <SEO
+                title="My Library"
+                description="Your personal library of saved web novels on Manov."
+                noindex={true}
+            />
             <div className="mx-auto max-w-7xl">
                 <div className="mb-8 flex flex-col justify-between gap-6 md:flex-row md:items-center">
                     <div className="flex items-center gap-4">

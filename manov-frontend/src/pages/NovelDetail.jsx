@@ -255,6 +255,10 @@ const NovelDetail = () => {
                 image={novel.coverUrl}
                 type="book"
                 url={`${SITE_URL}/novel/${novel.slug}`}
+                author={novel.author || undefined}
+                tags={novel.genres?.map((g) => g.name) || []}
+                publishedAt={novel.createdAt}
+                modifiedAt={novel.updatedAt}
             />
             <Helmet>
                 {/* Book Schema */}
