@@ -85,7 +85,7 @@ const ReviewSection = ({ novelId }) => {
     const userReview = reviews.find((r) => user && r.userId === user.id);
 
     return (
-        <div className="mx-auto mt-10 max-w-4xl">
+        <div id="reviews-section" className="mx-auto mt-10 max-w-4xl">
             <h3 className="mb-6 flex items-center gap-2 text-xl font-bold dark:text-white">
                 <Star size={22} className="text-yellow-500" />
                 Reviews{' '}

@@ -595,14 +595,14 @@ const NovelDetail = () => {
                         )}
                     </div>
 
-                    {/* COMMENTS SECTION */}
-                    <div className="border-t border-gray-200 pt-10 dark:border-white/10">
-                        <CommentSection targetId={novel.id} type="novel" />
-                    </div>
-
                     {/* REVIEWS SECTION */}
                     <div className="border-t border-gray-200 pt-10 dark:border-white/10">
                         <ReviewSection novelId={novel.id} />
+                    </div>
+
+                    {/* COMMENTS SECTION */}
+                    <div className="border-t border-gray-200 pt-10 dark:border-white/10">
+                        <CommentSection targetId={novel.id} type="novel" />
                     </div>
                 </div>
 
@@ -652,23 +652,44 @@ const NovelDetail = () => {
                             </div>
                         </div>
 
-                        {/* RATING WIDGET */}
+                        {/* RATING & REVIEWS SUMMARY */}
                         <div className="mt-8 border-t border-gray-100 pt-6 dark:border-white/10">
                             <h4 className="mb-3 text-xs font-bold uppercase tracking-wider text-gray-400">
-                                Rate this Novel
+                                Rating
                             </h4>
-                            <div className="flex justify-center rounded-xl bg-gray-50 py-4 dark:bg-white/5">
+                            <div className="flex items-center justify-center gap-2 rounded-xl bg-gray-50 py-4 dark:bg-white/5">
+                                <span className="text-2xl font-bold text-gray-900 dark:text-white">
+                                    {novel.averageRating
+                                        ? novel.averageRating.toFixed(1)
+                                        : '0.0'}
+                                </span>
                                 <StarRating
-                                    rating={userRating}
-                                    onRate={handleRate}
-                                    size={28}
+                                    rating={Math.round(novel.averageRating || 0)}
+                                    readOnly
+                                    size={16}
                                 />
+                                <span className="text-xs text-gray-400">
+                                    ({novel.ratingCount || 0})
+                                </span>
                             </div>
-                            <p className="mt-2 text-center text-xs text-gray-400">
-                                {userRating > 0
-                                    ? 'Thanks for rating!'
-                                    : 'Click to rate'}
-                            </p>
+
+                            {user && userRating > 0 && (
+                                <div className="mt-3 flex items-center justify-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+                                    <span>Your rating:</span>
+                                    <StarRating rating={userRating} readOnly size={12} />
+                                </div>
+                            )}
+
+                            <button
+                                onClick={() => {
+                                    document
+                                        .getElementById('reviews-section')
+                                        ?.scrollIntoView({ behavior: 'smooth' });
+                                }}
+                                className="mt-3 w-full rounded-lg bg-stone-900 py-2 text-sm font-medium text-white transition hover:bg-stone-700"
+                            >
+                                {userRating > 0 ? 'Edit Review' : 'Write a Review'}
+                            </button>
                         </div>
 
                         <div className="mt-8 border-t border-gray-100 pt-6 dark:border-white/10">
