@@ -11,6 +11,7 @@ from app.crud import (
     get_novels,
     get_prev_chapter,
     get_translation_by_chapter_and_language,
+    search_novels,
     upsert_history,
 )
 from app.database import get_session
@@ -37,10 +38,28 @@ async def get_all_genres(session: AsyncSession = Depends(get_session)):
 
 @router.get("/novels", response_model=list[NovelList])
 async def get_all_novels(
-    skip: int = 0, limit: int = 20, session: AsyncSession = Depends(get_session)
+    q: str | None = None,
+    skip: int = 0,
+    limit: int = 20,
+    sort_by: str = "updatedAt",
+    sort_order: str = "desc",
+    status: str | None = None,
+    genre_id: int | None = None,
+    session: AsyncSession = Depends(get_session),
 ):
-    # Ambil semua novel dengan pagination
-    novels = await get_novels(session, skip=skip, limit=limit)
+    # --- Search mode ---
+    if q and len(q.strip()) >= 2:
+        novels = await search_novels(session, query=q.strip(), skip=skip, limit=limit)
+    else:
+        novels = await get_novels(
+            session,
+            skip=skip,
+            limit=limit,
+            sort_by=sort_by,
+            sort_order=sort_order,
+            status=status,
+            genre_id=genre_id,
+        )
 
     # Map to schema (get_novels now returns tuples of (Novel, chapter_count))
     results = []
@@ -69,6 +88,48 @@ async def get_novels_count(session: AsyncSession = Depends(get_session)):
 
     count = await count_novels(session)
     return {"count": count}
+
+
+@router.get("/novels/trending", response_model=list[NovelList])
+async def get_trending_novels(
+    limit: int = 10, session: AsyncSession = Depends(get_session)
+):
+    """Return top novels by view count."""
+    from app.crud import get_trending_novels
+
+    novels = await get_trending_novels(session, limit=limit)
+    results = []
+    for novel, chapter_count in novels:
+        n_dict = {
+            "id": novel.id,
+            "title": novel.title,
+            "slug": novel.slug,
+            "coverUrl": novel.coverUrl,
+            "status": novel.status,
+            "author": novel.author,
+            "genres": [Genre(id=g.id, name=g.name) for g in novel.genres],
+            "chapterCount": chapter_count or 0,
+            "synopsis": novel.synopsis,
+            "averageRating": novel.averageRating,
+            "ratingCount": novel.ratingCount,
+        }
+        results.append(NovelList.model_validate(n_dict))
+    return results
+
+
+@router.post("/novels/{slug}/track-view")
+async def track_novel_view(
+    slug: str, session: AsyncSession = Depends(get_session)
+):
+    """Increment view count for a novel."""
+    from app.crud import get_novel_by_slug, increment_view_count
+
+    novel = await get_novel_by_slug(session, slug)
+    if not novel:
+        raise HTTPException(status_code=404, detail="Novel not found")
+
+    await increment_view_count(session, novel.id)
+    return {"message": "View tracked"}
 
 
 @router.get("/novels/{slug}", response_model=NovelDetail)

@@ -17,6 +17,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import StarRating from '../components/StarRating';
 import CommentSection from '../components/CommentSection';
+import ReviewSection from '../components/ReviewSection';
 import SEO from '../components/SEO';
 import { Helmet } from 'react-helmet-async';
 import ReactMarkdown from 'react-markdown';
@@ -46,6 +47,9 @@ const NovelDetail = () => {
                 const res = await novelService.getBySlug(slug);
                 setNovel(res.data);
                 document.title = `${res.data.title} | Manov`;
+
+                // Track view count (fire and forget)
+                novelService.trackView(slug).catch(() => {});
 
                 // Jika user login, cek bookmark, rating, & reading history
                 if (user && res.data) {
@@ -594,6 +598,11 @@ const NovelDetail = () => {
                     {/* COMMENTS SECTION */}
                     <div className="border-t border-gray-200 pt-10 dark:border-white/10">
                         <CommentSection targetId={novel.id} type="novel" />
+                    </div>
+
+                    {/* REVIEWS SECTION */}
+                    <div className="border-t border-gray-200 pt-10 dark:border-white/10">
+                        <ReviewSection novelId={novel.id} />
                     </div>
                 </div>
 

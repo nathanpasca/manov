@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
-import { novelService } from '../services';
+import { novelService, userService } from '../services';
 import toast from 'react-hot-toast';
 import {
     Settings,
@@ -34,6 +34,7 @@ const Reader = () => {
     const [novelChapters, setNovelChapters] = useState([]);
     const [tocLoading, setTocLoading] = useState(false);
     const tocRef = useRef(null);
+    const [novelId, setNovelId] = useState(null);
 
     const [settings, setSettings] = useState(() => {
         const saved = localStorage.getItem('manov-reader-settings');
@@ -89,6 +90,7 @@ const Reader = () => {
                     novelService.getBySlug(slug),
                 ]);
                 setChapter(chapterRes.data);
+                setNovelId(novelRes.data.id);
                 document.title = `${chapterRes.data.title} - Chapter ${chapterNum} | Manov`;
                 const blocks = smartParser(chapterRes.data.content);
                 setParsedBlocks(blocks);
@@ -102,6 +104,69 @@ const Reader = () => {
         };
         fetchChapter();
     }, [slug, chapterNum]);
+
+    // Scroll progress tracking
+    const saveProgressTimeout = useRef(null);
+    const lastProgress = useRef(0);
+
+    const calculateProgress = useCallback(() => {
+        const scrollTop = window.scrollY;
+        const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+        if (docHeight <= 0) return 0;
+        return Math.min(100, Math.round((scrollTop / docHeight) * 100));
+    }, []);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            const progress = calculateProgress();
+            // Debounce save to backend (every 5 seconds max)
+            if (saveProgressTimeout.current) {
+                clearTimeout(saveProgressTimeout.current);
+            }
+            saveProgressTimeout.current = setTimeout(() => {
+                if (novelId && Math.abs(progress - lastProgress.current) >= 5) {
+                    lastProgress.current = progress;
+                    userService
+                        .updateProgress({
+                            novelId,
+                            chapterNum: parseInt(chapterNum),
+                            scrollPosition: window.scrollY,
+                            progressPercent: progress,
+                        })
+                        .catch(() => {});
+                }
+            }, 3000);
+        };
+
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+            if (saveProgressTimeout.current) {
+                clearTimeout(saveProgressTimeout.current);
+            }
+        };
+    }, [novelId, chapterNum, calculateProgress]);
+
+    // Save progress on unload
+    useEffect(() => {
+        const handleBeforeUnload = () => {
+            if (novelId) {
+                const progress = calculateProgress();
+                const data = JSON.stringify({
+                    novelId,
+                    chapterNum: parseInt(chapterNum),
+                    scrollPosition: window.scrollY,
+                    progressPercent: progress,
+                });
+                navigator.sendBeacon?.(
+                    `${import.meta.env.VITE_API_URL || 'http://localhost:8000/api'}/user/history/progress`,
+                    new Blob([data], { type: 'application/json' })
+                );
+            }
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [novelId, chapterNum, calculateProgress]);
 
     // Keyboard navigation: ArrowLeft / ArrowRight, T for TOC, Escape to close
     useEffect(() => {

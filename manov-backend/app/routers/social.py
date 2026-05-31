@@ -9,16 +9,23 @@ from sqlmodel import select
 
 from app.crud import (
     create_comment,
+    create_review,
     delete_comment,
+    delete_review,
     get_chapter_comments,
     get_comment_by_id,
     get_novel_comments,
     get_novel_rating_stats,
+    get_novel_review_stats,
+    get_review_by_id,
+    get_review_by_user_and_novel,
+    get_reviews_by_novel,
+    update_review,
     upsert_rating,
 )
 from app.database import get_session
 from app.middleware.rate_limit import limiter
-from app.models import Comment, Novel
+from app.models import Comment, Novel, Review
 from app.utils.deps import get_current_user
 
 router = APIRouter()
@@ -31,12 +38,29 @@ class RatingRequest(BaseModel):
 
 class CommentRequest(BaseModel):
     content: str = Field(..., max_length=5000)
+    parentId: int | None = None
 
 
 class CommentResponse(BaseModel):
     id: int
     userId: int
     username: str
+    content: str
+    createdAt: datetime
+    parentId: int | None = None
+    depth: int = 0
+
+
+class ReviewRequest(BaseModel):
+    score: int = Field(..., ge=1, le=5)
+    content: str = Field(..., max_length=5000)
+
+
+class ReviewResponse(BaseModel):
+    id: int
+    userId: int
+    username: str
+    score: int
     content: str
     createdAt: datetime
 
@@ -88,6 +112,8 @@ async def get_novel_comments_endpoint(
             "username": c.user.username,
             "content": c.content,
             "createdAt": c.createdAt,
+            "parentId": c.parentId,
+            "depth": c.depth,
         }
         for c in comments
     ]
@@ -103,7 +129,9 @@ async def post_novel_comment(
     session: AsyncSession = Depends(get_session),
 ):
     clean_content = nh3.clean(req.content)
-    comment = Comment(userId=user["id"], novelId=id, content=clean_content)
+    comment = Comment(
+        userId=user["id"], novelId=id, content=clean_content, parentId=req.parentId
+    )
     await create_comment(session, comment)
     # Eager load user for response
     result = await session.execute(
@@ -117,6 +145,8 @@ async def post_novel_comment(
         "username": comment.user.username,
         "content": comment.content,
         "createdAt": comment.createdAt,
+        "parentId": comment.parentId,
+        "depth": comment.depth,
     }
 
 
@@ -136,6 +166,8 @@ async def get_chapter_comments_endpoint(
             "username": c.user.username,
             "content": c.content,
             "createdAt": c.createdAt,
+            "parentId": c.parentId,
+            "depth": c.depth,
         }
         for c in comments
     ]
@@ -151,7 +183,9 @@ async def post_chapter_comment(
     session: AsyncSession = Depends(get_session),
 ):
     clean_content = nh3.clean(req.content)
-    comment = Comment(userId=user["id"], chapterId=id, content=clean_content)
+    comment = Comment(
+        userId=user["id"], chapterId=id, content=clean_content, parentId=req.parentId
+    )
     await create_comment(session, comment)
     # Eager load user for response
     result = await session.execute(
@@ -165,6 +199,8 @@ async def post_chapter_comment(
         "username": comment.user.username,
         "content": comment.content,
         "createdAt": comment.createdAt,
+        "parentId": comment.parentId,
+        "depth": comment.depth,
     }
 
 
@@ -188,3 +224,114 @@ async def delete_comment_endpoint(
     await delete_comment(session, id)
 
     return {"message": "Comment deleted"}
+
+
+# --- REVIEWS ---
+
+
+@router.get("/novels/{id}/reviews", response_model=list[ReviewResponse])
+async def get_novel_reviews(
+    id: int, skip: int = 0, limit: int = 10, session: AsyncSession = Depends(get_session)
+):
+    reviews = await get_reviews_by_novel(session, id, skip=skip, limit=limit)
+    return [
+        {
+            "id": review.id,
+            "userId": review.userId,
+            "username": username,
+            "score": review.score,
+            "content": review.content,
+            "createdAt": review.createdAt,
+        }
+        for review, username in reviews
+    ]
+
+
+@router.post("/novels/{id}/reviews")
+@limiter.limit("5/minute")
+async def post_novel_review(
+    request: Request,
+    id: int,
+    req: ReviewRequest,
+    user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    # Upsert: if user already reviewed this novel, update it
+    existing = await get_review_by_user_and_novel(session, user["id"], id)
+    if existing:
+        await update_review(session, existing, req.score, nh3.clean(req.content))
+        review = existing
+    else:
+        review = Review(
+            userId=user["id"],
+            novelId=id,
+            score=req.score,
+            content=nh3.clean(req.content),
+        )
+        await create_review(session, review)
+
+    # Update novel average review stats
+    avg, count = await get_novel_review_stats(session, id)
+    novel = await session.get(Novel, id)
+    if novel:
+        # Update both rating and review stats (they converge)
+        novel.averageRating = avg
+        novel.ratingCount = count
+        await session.commit()
+
+    return {
+        "message": "Review submitted",
+        "id": review.id,
+        "score": review.score,
+        "content": review.content,
+    }
+
+
+@router.put("/reviews/{id}")
+async def update_review_endpoint(
+    id: int,
+    req: ReviewRequest,
+    user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    review = await get_review_by_id(session, id)
+    if not review:
+        raise HTTPException(status_code=404, detail="Review not found")
+    if review.userId != user["id"]:
+        raise HTTPException(status_code=403, detail="Not authorized to update this review")
+
+    await update_review(session, review, req.score, nh3.clean(req.content))
+
+    # Update novel stats
+    avg, count = await get_novel_review_stats(session, review.novelId)
+    novel = await session.get(Novel, review.novelId)
+    if novel:
+        novel.averageRating = avg
+        novel.ratingCount = count
+        await session.commit()
+
+    return {"message": "Review updated", "id": review.id}
+
+
+@router.delete("/reviews/{id}")
+async def delete_review_endpoint(
+    id: int, user: dict = Depends(get_current_user), session: AsyncSession = Depends(get_session)
+):
+    review = await get_review_by_id(session, id)
+    if not review:
+        raise HTTPException(status_code=404, detail="Review not found")
+    if review.userId != user["id"]:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this review")
+
+    novel_id = review.novelId
+    await delete_review(session, id)
+
+    # Update novel stats
+    avg, count = await get_novel_review_stats(session, novel_id)
+    novel = await session.get(Novel, novel_id)
+    if novel:
+        novel.averageRating = avg
+        novel.ratingCount = count
+        await session.commit()
+
+    return {"message": "Review deleted"}

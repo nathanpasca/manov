@@ -42,6 +42,7 @@ class Novel(SQLModel, table=True):
 
     averageRating: float = Field(default=0.0)
     ratingCount: int = Field(default=0)
+    viewCount: int = Field(default=0)
 
     createdAt: datetime = Field(default_factory=utc_now)
     updatedAt: datetime = Field(
@@ -58,6 +59,8 @@ class Novel(SQLModel, table=True):
     )
     ratings: list["Rating"] = Relationship(back_populates="novel")
     comments: list["Comment"] = Relationship(back_populates="novel")
+    reviews: list["Review"] = Relationship(back_populates="novel")
+    notifications: list["Notification"] = Relationship(back_populates="novel")
 
 
 # ---------------------------------------------------------------------------
@@ -92,6 +95,7 @@ class Chapter(SQLModel, table=True):
         back_populates="chapter"
     )
     comments: list["Comment"] = Relationship(back_populates="chapter")
+    notifications: list["Notification"] = Relationship(back_populates="chapter")
 
 
 # ---------------------------------------------------------------------------
@@ -135,6 +139,9 @@ class User(SQLModel, table=True):
     role: str = Field(default="USER")
     coins: int = Field(default=0)
 
+    resetTokenHash: str | None = Field(default=None, index=True)
+    resetTokenExpires: datetime | None = Field(default=None)
+
     createdAt: datetime = Field(default_factory=utc_now)
 
     # Relations
@@ -143,6 +150,8 @@ class User(SQLModel, table=True):
     unlocked: list["UnlockedChapter"] = Relationship(back_populates="user")
     ratings: list["Rating"] = Relationship(back_populates="user")
     comments: list["Comment"] = Relationship(back_populates="user")
+    reviews: list["Review"] = Relationship(back_populates="user")
+    notifications: list["Notification"] = Relationship(back_populates="user")
 
 
 # ---------------------------------------------------------------------------
@@ -170,6 +179,8 @@ class History(SQLModel, table=True):
     userId: int = Field(foreign_key="user.id", ondelete="CASCADE", index=True)
     novelId: int = Field(foreign_key="novel.id", ondelete="CASCADE", index=True)
     chapterNum: int
+    scrollPosition: float | None = Field(default=None)
+    progressPercent: int = Field(default=0)
     updatedAt: datetime = Field(default_factory=utc_now)
 
     user: User | None = Relationship(back_populates="history")
@@ -213,6 +224,27 @@ class Rating(SQLModel, table=True):
 
 
 # ---------------------------------------------------------------------------
+# Review
+# ---------------------------------------------------------------------------
+class Review(SQLModel, table=True):
+    __table_args__ = (UniqueConstraint("userId", "novelId"),)
+
+    id: int | None = Field(default=None, primary_key=True)
+    userId: int = Field(foreign_key="user.id", ondelete="CASCADE", index=True)
+    novelId: int = Field(foreign_key="novel.id", ondelete="CASCADE", index=True)
+    score: int
+    content: str = Field(sa_column=Column(Text))
+    createdAt: datetime = Field(default_factory=utc_now)
+    updatedAt: datetime = Field(
+        default_factory=utc_now,
+        sa_column_kwargs={"onupdate": utc_now},
+    )
+
+    user: User | None = Relationship(back_populates="reviews")
+    novel: Novel | None = Relationship(back_populates="reviews")
+
+
+# ---------------------------------------------------------------------------
 # Comment
 # ---------------------------------------------------------------------------
 class Comment(SQLModel, table=True):
@@ -227,7 +259,33 @@ class Comment(SQLModel, table=True):
     chapterId: int | None = Field(
         default=None, foreign_key="chapter.id", ondelete="CASCADE", index=True
     )
+    parentId: int | None = Field(
+        default=None, foreign_key="comment.id", ondelete="CASCADE", index=True
+    )
+    depth: int = Field(default=0)
 
     user: User | None = Relationship(back_populates="comments")
     novel: Novel | None = Relationship(back_populates="comments")
     chapter: Chapter | None = Relationship(back_populates="comments")
+
+
+# ---------------------------------------------------------------------------
+# Notification
+# ---------------------------------------------------------------------------
+class Notification(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    userId: int = Field(foreign_key="user.id", ondelete="CASCADE", index=True)
+    type: str
+    message: str
+    novelId: int | None = Field(
+        default=None, foreign_key="novel.id", ondelete="CASCADE", index=True
+    )
+    chapterId: int | None = Field(
+        default=None, foreign_key="chapter.id", ondelete="CASCADE", index=True
+    )
+    isRead: bool = Field(default=False)
+    createdAt: datetime = Field(default_factory=utc_now)
+
+    user: User | None = Relationship(back_populates="notifications")
+    novel: Novel | None = Relationship(back_populates="notifications")
+    chapter: Chapter | None = Relationship(back_populates="notifications")

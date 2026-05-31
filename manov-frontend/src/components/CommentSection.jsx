@@ -1,10 +1,103 @@
 import React, { useState, useEffect } from 'react';
 
 import { useAuth } from '../context/AuthContext';
-import { MessageSquare, Send, User, Trash2 } from 'lucide-react';
+import { MessageSquare, Send, Trash2, CornerDownRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { socialService } from '../services';
+
+const CommentItem = ({
+    comment,
+    user,
+    onDelete,
+    onReply,
+    replyingTo,
+    setReplyingTo,
+    replyContent,
+    setReplyContent,
+    onSubmitReply,
+    depth = 0,
+}) => {
+    const isReplying = replyingTo === comment.id;
+    const maxDepth = 3;
+
+    return (
+        <div className={`${depth > 0 ? 'ml-8 border-l-2 border-stone-100 pl-4 dark:border-white/5' : ''}`}>
+            <div className="group flex gap-3">
+                <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-stone-500 to-stone-700 text-xs font-bold text-white shadow-sm">
+                    {comment.username?.charAt(0).toUpperCase() || '?'}
+                </div>
+                <div className="flex-1 min-w-0">
+                    <div className="mb-1 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-stone-900 dark:text-white">
+                                {comment.username}
+                            </span>
+                            <span className="text-[11px] text-stone-400">
+                                {formatDistanceToNow(
+                                    new Date(comment.createdAt),
+                                    { addSuffix: true }
+                                )}
+                            </span>
+                        </div>
+
+                        {user && user.id === comment.userId && (
+                            <button
+                                onClick={() => onDelete(comment.id)}
+                                className="p-1 text-stone-400 opacity-0 transition-all hover:text-red-500 group-hover:opacity-100"
+                                title="Delete comment"
+                            >
+                                <Trash2 size={13} />
+                            </button>
+                        )}
+                    </div>
+                    <p className="text-sm leading-relaxed text-stone-700 dark:text-stone-300">
+                        {comment.content}
+                    </p>
+
+                    {/* Reply button */}
+                    {user && depth < maxDepth && (
+                        <button
+                            onClick={() => {
+                                setReplyingTo(isReplying ? null : comment.id);
+                                setReplyContent('');
+                            }}
+                            className="mt-2 text-xs font-medium text-stone-500 transition hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200"
+                        >
+                            {isReplying ? 'Cancel' : 'Reply'}
+                        </button>
+                    )}
+
+                    {/* Reply form */}
+                    {isReplying && (
+                        <form
+                            onSubmit={(e) => {
+                                e.preventDefault();
+                                onSubmitReply(comment.id);
+                            }}
+                            className="relative mt-3"
+                        >
+                            <textarea
+                                value={replyContent}
+                                onChange={(e) => setReplyContent(e.target.value)}
+                                placeholder="Write a reply..."
+                                autoFocus
+                                className="h-20 w-full resize-none rounded-lg border border-stone-200 bg-white p-3 pr-12 text-sm transition focus:outline-none focus:ring-1 focus:ring-stone-300 dark:border-white/10 dark:bg-white/5 dark:text-white"
+                            />
+                            <button
+                                type="submit"
+                                disabled={!replyContent.trim()}
+                                className="absolute bottom-2.5 right-2.5 rounded-md bg-stone-900 p-1.5 text-white transition hover:bg-stone-700 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                <Send size={14} />
+                            </button>
+                        </form>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const CommentSection = ({ targetId, type = 'novel' }) => {
     const { user } = useAuth();
@@ -14,10 +107,11 @@ const CommentSection = ({ targetId, type = 'novel' }) => {
     const [submitting, setSubmitting] = useState(false);
     const [hasMore, setHasMore] = useState(false);
     const [loadingMore, setLoadingMore] = useState(false);
+    const [replyingTo, setReplyingTo] = useState(null);
+    const [replyContent, setReplyContent] = useState('');
 
     const LIMIT = 10;
 
-    // Determine endpoint based on type
     const endpoint =
         type === 'novel'
             ? `/novels/${targetId}/comments`
@@ -69,8 +163,6 @@ const CommentSection = ({ targetId, type = 'novel' }) => {
         try {
             setSubmitting(true);
             const res = await socialService.postComment(endpoint, newComment);
-
-            // Add new comment to top
             setComments([res.data, ...comments]);
             setNewComment('');
             toast.success('Comment posted!');
@@ -82,17 +174,40 @@ const CommentSection = ({ targetId, type = 'novel' }) => {
         }
     };
 
+    const handleReplySubmit = async (parentId) => {
+        if (!replyContent.trim()) return;
+        if (!user) {
+            toast.error('Please login to reply');
+            return;
+        }
+
+        try {
+            const res = await socialService.postComment(
+                endpoint,
+                replyContent,
+                parentId
+            );
+            setComments([res.data, ...comments]);
+            setReplyContent('');
+            setReplyingTo(null);
+            toast.success('Reply posted!');
+        } catch (err) {
+            console.error('Failed to post reply', err);
+            toast.error('Failed to post reply');
+        }
+    };
+
     const handleDelete = (commentId) => {
         toast(
             (t) => (
                 <div
-                    className={`${t.visible ? 'animate-enter' : 'animate-leave'} flex min-w-[200px] flex-col gap-3 rounded-2xl border border-gray-100 bg-white p-4 text-gray-900 shadow-xl dark:border-white/10 dark:bg-gray-800 dark:text-white`}
+                    className={`${t.visible ? 'animate-enter' : 'animate-leave'} flex min-w-[200px] flex-col gap-3 rounded-2xl border border-stone-100 bg-white p-4 text-stone-900 shadow-xl dark:border-white/10 dark:bg-[#1c1917] dark:text-white`}
                 >
                     <span className="font-medium">Delete this comment?</span>
                     <div className="flex justify-end gap-2">
                         <button
                             onClick={() => toast.dismiss(t.id)}
-                            className="rounded-lg px-3 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/10"
+                            className="rounded-lg px-3 py-1.5 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-white/10"
                         >
                             Cancel
                         </button>
@@ -122,7 +237,6 @@ const CommentSection = ({ targetId, type = 'novel' }) => {
 
     const confirmDelete = async (commentId) => {
         try {
-            const token = localStorage.getItem('token');
             await socialService.deleteComment(commentId);
             setComments(comments.filter((c) => c.id !== commentId));
             toast.success('Comment deleted');
@@ -131,12 +245,16 @@ const CommentSection = ({ targetId, type = 'novel' }) => {
         }
     };
 
+    // Build comment tree
+    const topLevel = comments.filter((c) => !c.parentId);
+    const replies = comments.filter((c) => c.parentId);
+
     return (
         <div className="mx-auto mt-10 max-w-4xl">
             <h3 className="mb-6 flex items-center gap-2 text-xl font-bold dark:text-white">
-                <MessageSquare size={24} className="text-stone-500" />
+                <MessageSquare size={22} className="text-stone-500" />
                 Comments{' '}
-                <span className="text-sm font-normal text-gray-500">
+                <span className="text-sm font-normal text-stone-500">
                     ({comments.length})
                 </span>
             </h3>
@@ -150,7 +268,7 @@ const CommentSection = ({ targetId, type = 'novel' }) => {
                         user ? 'Write a comment...' : 'Please login to comment'
                     }
                     disabled={!user || submitting}
-                    className="h-24 w-full resize-none rounded-xl border border-gray-200 bg-gray-50 p-4 pr-14 transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/50 dark:border-white/10 dark:bg-white/5 dark:text-white"
+                    className="h-24 w-full resize-none rounded-xl border border-stone-200 bg-white p-4 pr-14 text-sm transition focus:outline-none focus:ring-1 focus:ring-stone-300 dark:border-white/10 dark:bg-white/5 dark:text-white"
                 />
                 <button
                     type="submit"
@@ -164,47 +282,41 @@ const CommentSection = ({ targetId, type = 'novel' }) => {
             {/* Comment List */}
             <div className="space-y-6">
                 {loading ? (
-                    <p className="text-center text-gray-500">
+                    <p className="text-center text-stone-500">
                         Loading comments...
                     </p>
-                ) : comments.length > 0 ? (
+                ) : topLevel.length > 0 ? (
                     <>
-                        {comments.map((comment) => (
-                            <div key={comment.id} className="group flex gap-4">
-                                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 font-bold text-white shadow-md">
-                                    {comment.username.charAt(0).toUpperCase()}
-                                </div>
-                                <div className="flex-1">
-                                    <div className="mb-1 flex items-center justify-between">
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-bold text-gray-900 dark:text-white">
-                                                {comment.username}
-                                            </span>
-                                            <span className="text-xs text-gray-500">
-                                                {formatDistanceToNow(
-                                                    new Date(comment.createdAt),
-                                                    { addSuffix: true }
-                                                )}
-                                            </span>
-                                        </div>
-
-                                        {/* DELETE BUTTON (Only for owner) */}
-                                        {user && user.id === comment.userId && (
-                                            <button
-                                                onClick={() =>
-                                                    handleDelete(comment.id)
-                                                }
-                                                className="p-1 text-gray-400 opacity-0 transition-all hover:text-red-500 group-hover:opacity-100"
-                                                title="Delete comment"
-                                            >
-                                                <Trash2 size={14} />
-                                            </button>
-                                        )}
-                                    </div>
-                                    <p className="text-sm leading-relaxed text-gray-700 dark:text-gray-300">
-                                        {comment.content}
-                                    </p>
-                                </div>
+                        {topLevel.map((comment) => (
+                            <div key={comment.id} className="space-y-4">
+                                <CommentItem
+                                    comment={comment}
+                                    user={user}
+                                    onDelete={handleDelete}
+                                    replyingTo={replyingTo}
+                                    setReplyingTo={setReplyingTo}
+                                    replyContent={replyContent}
+                                    setReplyContent={setReplyContent}
+                                    onSubmitReply={handleReplySubmit}
+                                    depth={0}
+                                />
+                                {/* Render replies to this comment */}
+                                {replies
+                                    .filter((r) => r.parentId === comment.id)
+                                    .map((reply) => (
+                                        <CommentItem
+                                            key={reply.id}
+                                            comment={reply}
+                                            user={user}
+                                            onDelete={handleDelete}
+                                            replyingTo={replyingTo}
+                                            setReplyingTo={setReplyingTo}
+                                            replyContent={replyContent}
+                                            setReplyContent={setReplyContent}
+                                            onSubmitReply={handleReplySubmit}
+                                            depth={1}
+                                        />
+                                    ))}
                             </div>
                         ))}
                         {hasMore && (
@@ -212,7 +324,7 @@ const CommentSection = ({ targetId, type = 'novel' }) => {
                                 <button
                                     onClick={handleLoadMore}
                                     disabled={loadingMore}
-                                    className="rounded-full border border-gray-200 bg-white px-6 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-50 disabled:opacity-50 dark:border-white/10 dark:bg-white/5 dark:text-gray-300 dark:hover:bg-white/10"
+                                    className="rounded-full border border-stone-200 bg-white px-6 py-2 text-sm font-medium text-stone-600 transition hover:bg-stone-50 disabled:opacity-50 dark:border-white/10 dark:bg-white/5 dark:text-stone-300 dark:hover:bg-white/10"
                                 >
                                     {loadingMore
                                         ? 'Loading...'
@@ -222,8 +334,8 @@ const CommentSection = ({ targetId, type = 'novel' }) => {
                         )}
                     </>
                 ) : (
-                    <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 py-10 text-center dark:border-white/10 dark:bg-white/5">
-                        <p className="text-gray-500">
+                    <div className="rounded-2xl border border-dashed border-stone-200 bg-stone-50 py-10 text-center dark:border-white/10 dark:bg-white/5">
+                        <p className="text-stone-500">
                             No comments yet. Be the first to share your
                             thoughts!
                         </p>

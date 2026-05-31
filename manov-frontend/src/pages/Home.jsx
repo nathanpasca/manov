@@ -8,19 +8,23 @@ import SkeletonCard from '../components/SkeletonCard';
 import SEO from '../components/SEO';
 import { Helmet } from 'react-helmet-async';
 import { useAuth } from '../context/AuthContext';
-import { Clock, ArrowRight } from 'lucide-react';
+import { Clock, ArrowRight, Flame } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 const Home = () => {
     const { user } = useAuth();
     const [history, setHistory] = useState([]);
     const [novels, setNovels] = useState([]);
+    const [trending, setTrending] = useState([]);
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
 
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [activeFilter, setActiveFilter] = useState('All');
+    const [sortBy, setSortBy] = useState('updatedAt');
+    const [sortOrder, setSortOrder] = useState('desc');
+    const [statusFilter, setStatusFilter] = useState('All');
 
     // Read genre from URL query param on mount
     useEffect(() => {
@@ -40,7 +44,24 @@ const Home = () => {
             try {
                 if (page === 0) setLoading(true);
 
-                const res = await novelService.getAll(page * LIMIT, LIMIT);
+                const genre = genres.find((g) => g.name === activeFilter);
+                const params = {
+                    skip: page * LIMIT,
+                    limit: LIMIT,
+                    sort_by: sortBy,
+                    sort_order: sortOrder,
+                };
+                if (searchTerm.trim().length >= 2) {
+                    params.q = searchTerm.trim();
+                }
+                if (statusFilter !== 'All') {
+                    params.status = statusFilter;
+                }
+                if (genre) {
+                    params.genre_id = genre.id;
+                }
+
+                const res = await novelService.getAll(params);
 
                 if (res.data.length < LIMIT) {
                     setHasMore(false);
@@ -64,7 +85,7 @@ const Home = () => {
             }
         };
         fetchNovels();
-    }, [user, page]);
+    }, [user, page, searchTerm, sortBy, sortOrder, statusFilter, activeFilter]);
 
     const [genres, setGenres] = useState([]);
     useEffect(() => {
@@ -79,15 +100,18 @@ const Home = () => {
         fetchGenres();
     }, []);
 
-    const filteredNovels = novels.filter((n) => {
-        const matchesSearch = n.title
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase());
-        const matchesFilter =
-            activeFilter === 'All' ||
-            (n.genres && n.genres.some((g) => g.name === activeFilter));
-        return matchesSearch && matchesFilter;
-    });
+    // Fetch trending novels
+    useEffect(() => {
+        const fetchTrending = async () => {
+            try {
+                const res = await novelService.getTrending();
+                setTrending(res.data);
+            } catch (err) {
+                console.error('Gagal ambil trending:', err);
+            }
+        };
+        fetchTrending();
+    }, []);
 
     const featuredNovel = novels.length > 0 ? novels[0] : null;
 
@@ -163,9 +187,22 @@ const Home = () => {
                     activeFilter={activeFilter}
                     onFilterChange={setActiveFilter}
                     genres={genres}
+                    sortBy={sortBy}
+                    sortOrder={sortOrder}
+                    onSortChange={(by, order) => {
+                        setSortBy(by);
+                        setSortOrder(order);
+                        setPage(0);
+                    }}
+                    statusFilter={statusFilter}
+                    onStatusChange={(s) => {
+                        setStatusFilter(s);
+                        setPage(0);
+                    }}
                 />
 
                 <div className="mx-auto max-w-6xl px-4 md:px-6">
+                    {/* Continue Reading */}
                     {user && history.length > 0 && !searchTerm && (
                         <div className="mb-12">
                             <div className="mb-4 flex items-center gap-2 text-stone-800 dark:text-stone-100">
@@ -199,6 +236,17 @@ const Home = () => {
                                             <p className="mt-1 text-xs text-stone-500">
                                                 Chapter {item.lastReadChapter}
                                             </p>
+                                            {/* Progress bar */}
+                                            {item.progressPercent > 0 && (
+                                                <div className="mt-1.5 h-1 w-full overflow-hidden rounded-full bg-stone-200 dark:bg-white/10">
+                                                    <div
+                                                        className="h-full rounded-full bg-stone-600 dark:bg-stone-400"
+                                                        style={{
+                                                            width: `${item.progressPercent}%`,
+                                                        }}
+                                                    />
+                                                </div>
+                                            )}
                                         </div>
                                         <div className="rounded-full bg-stone-100 p-2 text-stone-400 transition group-hover:bg-stone-200 group-hover:text-stone-600 dark:bg-white/5 dark:group-hover:bg-white/10">
                                             <ArrowRight size={14} />
@@ -209,9 +257,43 @@ const Home = () => {
                         </div>
                     )}
 
+                    {/* Trending Section */}
+                    {trending.length > 0 && !searchTerm && (
+                        <div className="mb-12">
+                            <div className="mb-4 flex items-center gap-2 text-stone-800 dark:text-stone-100">
+                                <Flame size={18} className="text-orange-500" />
+                                <h2 className="text-lg font-semibold">
+                                    Trending Now
+                                </h2>
+                            </div>
+                            <div className="no-scrollbar flex gap-4 overflow-x-auto pb-4">
+                                {trending.map((novel) => (
+                                    <div
+                                        key={novel.id}
+                                        onClick={() =>
+                                            navigate(`/novel/${novel.slug}`)
+                                        }
+                                        className="w-40 flex-shrink-0 cursor-pointer"
+                                    >
+                                        <div className="aspect-[2/3] overflow-hidden rounded-xl border border-stone-100 bg-white transition hover:shadow-lg dark:border-white/5 dark:bg-stone-800">
+                                            <img
+                                                src={novel.coverUrl}
+                                                alt={novel.title}
+                                                className="h-full w-full object-cover"
+                                            />
+                                        </div>
+                                        <h3 className="mt-2 line-clamp-2 text-xs font-semibold text-stone-800 dark:text-stone-100">
+                                            {novel.title}
+                                        </h3>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     <div className="mb-6 mt-8 flex items-center justify-between">
                         <h2 className="text-xl font-semibold text-stone-800 dark:text-stone-100">
-                            Latest Updates
+                            {searchTerm ? 'Search Results' : 'Latest Updates'}
                         </h2>
                         <button className="text-sm font-medium text-stone-500 transition hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200">
                             View All
@@ -226,8 +308,8 @@ const Home = () => {
                         </div>
                     ) : (
                         <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4">
-                            {filteredNovels.length > 0 ? (
-                                filteredNovels.map((novel, index) => (
+                            {novels.length > 0 ? (
+                                novels.map((novel, index) => (
                                     <NovelCard
                                         key={novel.id}
                                         novel={novel}

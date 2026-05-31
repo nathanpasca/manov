@@ -102,15 +102,24 @@ const Login = () => {
                     </button>
                 </form>
 
-                <p className="mt-6 text-center text-sm text-stone-500">
-                    Don&apos;t have an account?{' '}
+                <div className="mt-6 space-y-2 text-center text-sm text-stone-500"
+                >
+                    <p>
+                        Don&apos;t have an account?{' '}
+                        <Link
+                            to="/register"
+                            className="font-medium text-stone-800 underline underline-offset-2 hover:text-stone-600 dark:text-stone-300"
+                        >
+                            Create one
+                        </Link>
+                    </p>
                     <Link
-                        to="/register"
-                        className="font-medium text-stone-800 underline underline-offset-2 hover:text-stone-600 dark:text-stone-300"
+                        to="/forgot-password"
+                        className="inline-block text-xs text-stone-500 transition hover:text-stone-800 dark:text-stone-400"
                     >
-                        Create one
+                        Forgot password?
                     </Link>
-                </p>
+                </div>
             </div>
         </div>
     );

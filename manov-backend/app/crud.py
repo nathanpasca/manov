@@ -1,6 +1,7 @@
 """Reusable async CRUD operations."""
 
-from sqlalchemy import func
+from sqlalchemy import func, or_
+from sqlalchemy import update as sa_update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 from sqlmodel import select
@@ -12,8 +13,11 @@ from app.models import (
     Genre,
     History,
     Library,
+    Notification,
     Novel,
+    NovelGenreLink,
     Rating,
+    Review,
     User,
 )
 
@@ -30,7 +34,107 @@ async def get_novel_by_id(session: AsyncSession, novel_id: int) -> Novel | None:
 
 
 async def get_novels(
-    session: AsyncSession, skip: int = 0, limit: int = 20
+    session: AsyncSession,
+    skip: int = 0,
+    limit: int = 20,
+    sort_by: str = "updatedAt",
+    sort_order: str = "desc",
+    status: str | None = None,
+    genre_id: int | None = None,
+) -> list[tuple[Novel, int]]:
+    chapter_count_subq = (
+        select(func.count(Chapter.id))
+        .where(Chapter.novelId == Novel.id)
+        .correlate(Novel)
+        .scalar_subquery()
+    )
+
+    query = (
+        select(Novel, chapter_count_subq.label("chapter_count"))
+        .options(selectinload(Novel.genres))
+    )
+
+    # --- Filters ---
+    if status:
+        query = query.where(Novel.status == status)
+
+    if genre_id:
+        query = query.where(
+            Novel.id.in_(
+                select(NovelGenreLink.novel_id).where(
+                    NovelGenreLink.genre_id == genre_id
+                )
+            )
+        )
+
+    # --- Sorting ---
+    sort_column = getattr(Novel, sort_by, Novel.updatedAt)
+    if sort_order == "asc":
+        query = query.order_by(sort_column.asc())
+    else:
+        query = query.order_by(sort_column.desc())
+
+    query = query.offset(skip).limit(limit)
+    result = await session.execute(query)
+    return list(result.all())
+
+
+async def search_novels(
+    session: AsyncSession, query: str, skip: int = 0, limit: int = 20
+) -> list[tuple[Novel, int]]:
+    chapter_count_subq = (
+        select(func.count(Chapter.id))
+        .where(Chapter.novelId == Novel.id)
+        .correlate(Novel)
+        .scalar_subquery()
+    )
+
+    search_pattern = f"%{query}%"
+    result = await session.execute(
+        select(Novel, chapter_count_subq.label("chapter_count"))
+        .options(selectinload(Novel.genres))
+        .where(
+            or_(
+                Novel.title.ilike(search_pattern),
+                Novel.author.ilike(search_pattern),
+                Novel.synopsis.ilike(search_pattern),
+            )
+        )
+        .order_by(Novel.updatedAt.desc())
+        .offset(skip)
+        .limit(limit)
+    )
+    return list(result.all())
+
+
+async def count_search_results(session: AsyncSession, query: str) -> int:
+    search_pattern = f"%{query}%"
+    count = await session.scalar(
+        select(func.count(Novel.id)).where(
+            or_(
+                Novel.title.ilike(search_pattern),
+                Novel.author.ilike(search_pattern),
+                Novel.synopsis.ilike(search_pattern),
+            )
+        )
+    )
+    return count or 0
+
+
+async def count_novels(session: AsyncSession) -> int:
+    count = await session.scalar(select(func.count()).select_from(Novel))
+    return count or 0
+
+
+async def increment_view_count(session: AsyncSession, novel_id: int) -> None:
+    novel = await session.get(Novel, novel_id)
+    if novel:
+        novel.viewCount += 1
+        await session.commit()
+
+
+async def get_trending_novels(
+    session: AsyncSession, limit: int = 10
 ) -> list[tuple[Novel, int]]:
     chapter_count_subq = (
         select(func.count(Chapter.id))
@@ -41,16 +145,10 @@ async def get_novels(
     result = await session.execute(
         select(Novel, chapter_count_subq.label("chapter_count"))
         .options(selectinload(Novel.genres))
-        .order_by(Novel.updatedAt.desc())
-        .offset(skip)
+        .order_by(Novel.viewCount.desc())
         .limit(limit)
     )
     return list(result.all())
-
-
-async def count_novels(session: AsyncSession) -> int:
-    count = await session.scalar(select(func.count()).select_from(Novel))
-    return count or 0
 
 
 async def create_novel(session: AsyncSession, novel: Novel) -> Novel:
@@ -354,9 +452,24 @@ async def get_comment_by_id(session: AsyncSession, comment_id: int) -> Comment |
     return await session.get(Comment, comment_id)
 
 
+async def get_comment_replies(
+    session: AsyncSession, parent_id: int
+) -> list[Comment]:
+    """Get direct replies to a comment."""
+    result = await session.execute(
+        select(Comment)
+        .where(Comment.parentId == parent_id)
+        .options(selectinload(Comment.user))
+        .order_by(Comment.createdAt.asc())
+    )
+    return list(result.scalars().all())
+
+
 async def get_novel_comments(
     session: AsyncSession, novel_id: int, skip: int = 0, limit: int = 10
 ) -> list[Comment]:
+    # Fetch top-level comments first, then their replies in a flat structure
+    # Frontend will reconstruct the tree using parentId
     result = await session.execute(
         select(Comment)
         .where(Comment.novelId == novel_id)
@@ -365,7 +478,19 @@ async def get_novel_comments(
         .offset(skip)
         .limit(limit)
     )
-    return list(result.scalars().all())
+    top_level = list(result.scalars().all())
+
+    # Also fetch all replies for these top-level comments
+    top_ids = [c.id for c in top_level]
+    if top_ids:
+        replies_result = await session.execute(
+            select(Comment)
+            .where(Comment.parentId.in_(top_ids))
+            .options(selectinload(Comment.user))
+            .order_by(Comment.createdAt.asc())
+        )
+        return top_level + list(replies_result.scalars().all())
+    return top_level
 
 
 async def get_chapter_comments(
@@ -379,10 +504,26 @@ async def get_chapter_comments(
         .offset(skip)
         .limit(limit)
     )
-    return list(result.scalars().all())
+    top_level = list(result.scalars().all())
+
+    top_ids = [c.id for c in top_level]
+    if top_ids:
+        replies_result = await session.execute(
+            select(Comment)
+            .where(Comment.parentId.in_(top_ids))
+            .options(selectinload(Comment.user))
+            .order_by(Comment.createdAt.asc())
+        )
+        return top_level + list(replies_result.scalars().all())
+    return top_level
 
 
 async def create_comment(session: AsyncSession, comment: Comment) -> Comment:
+    # Calculate depth from parent
+    if comment.parentId:
+        parent = await get_comment_by_id(session, comment.parentId)
+        if parent:
+            comment.depth = min(parent.depth + 1, 5)  # Max depth 5
     session.add(comment)
     await session.commit()
     await session.refresh(comment)
@@ -394,3 +535,122 @@ async def delete_comment(session: AsyncSession, comment_id: int) -> None:
     if comment:
         await session.delete(comment)
         await session.commit()
+
+
+# ---------------------------------------------------------------------------
+# Review
+# ---------------------------------------------------------------------------
+async def get_review_by_id(session: AsyncSession, review_id: int) -> Review | None:
+    return await session.get(Review, review_id)
+
+
+async def get_review_by_user_and_novel(
+    session: AsyncSession, user_id: int, novel_id: int
+) -> Review | None:
+    return await session.scalar(
+        select(Review).where(
+            Review.userId == user_id, Review.novelId == novel_id
+        )
+    )
+
+
+async def get_reviews_by_novel(
+    session: AsyncSession, novel_id: int, skip: int = 0, limit: int = 10
+) -> list[tuple[Review, str]]:
+    result = await session.execute(
+        select(Review, User.username)
+        .join(User, Review.userId == User.id)
+        .where(Review.novelId == novel_id)
+        .order_by(Review.createdAt.desc())
+        .offset(skip)
+        .limit(limit)
+    )
+    return list(result.all())
+
+
+async def create_review(session: AsyncSession, review: Review) -> Review:
+    session.add(review)
+    await session.commit()
+    await session.refresh(review)
+    return review
+
+
+async def update_review(
+    session: AsyncSession, review: Review, score: int, content: str
+) -> Review:
+    review.score = score
+    review.content = content
+    await session.commit()
+    await session.refresh(review)
+    return review
+
+
+async def delete_review(session: AsyncSession, review_id: int) -> None:
+    review = await session.get(Review, review_id)
+    if review:
+        await session.delete(review)
+        await session.commit()
+
+
+async def get_novel_review_stats(session: AsyncSession, novel_id: int) -> tuple[float, int]:
+    result = await session.execute(
+        select(func.avg(Review.score), func.count(Review.id))
+        .where(Review.novelId == novel_id)
+    )
+    avg, count = result.one()
+    return (float(avg) if avg is not None else 0.0, int(count) if count is not None else 0)
+
+
+# ---------------------------------------------------------------------------
+# Notification
+# ---------------------------------------------------------------------------
+async def create_notification(session: AsyncSession, notification: Notification) -> Notification:
+    session.add(notification)
+    await session.commit()
+    await session.refresh(notification)
+    return notification
+
+
+async def get_user_notifications(
+    session: AsyncSession, user_id: int, skip: int = 0, limit: int = 20
+) -> list[Notification]:
+    result = await session.execute(
+        select(Notification)
+        .where(Notification.userId == user_id)
+        .order_by(Notification.createdAt.desc())
+        .offset(skip)
+        .limit(limit)
+    )
+    return list(result.scalars().all())
+
+
+async def get_unread_notification_count(session: AsyncSession, user_id: int) -> int:
+    count = await session.scalar(
+        select(func.count(Notification.id))
+        .where(Notification.userId == user_id, Notification.isRead == False)  # noqa: E712
+    )
+    return count or 0
+
+
+async def mark_notification_read(
+    session: AsyncSession, notification_id: int, user_id: int
+) -> Notification | None:
+    notification = await session.scalar(
+        select(Notification).where(
+            Notification.id == notification_id, Notification.userId == user_id
+        )
+    )
+    if notification:
+        notification.isRead = True
+        await session.commit()
+        await session.refresh(notification)
+    return notification
+
+
+async def mark_all_notifications_read(session: AsyncSession, user_id: int) -> None:
+    await session.execute(
+        sa_update(Notification)
+        .where(Notification.userId == user_id, Notification.isRead == False)  # noqa: E712
+        .values(isRead=True)
+    )
+    await session.commit()

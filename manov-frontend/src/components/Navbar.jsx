@@ -10,6 +10,7 @@ import {
     X,
     LayoutDashboard,
 } from 'lucide-react';
+import NotificationBell from './NotificationBell';
 
 const Navbar = () => {
     const { user, logout } = useAuth();
@@ -98,6 +99,9 @@ const Navbar = () => {
                         >
                             {isDark ? <Sun size={16} /> : <Moon size={16} />}
                         </button>
+
+                        {/* Notifications */}
+                        <NotificationBell />
 
                         {/* Auth Buttons */}
                         {user ? (

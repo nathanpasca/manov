@@ -15,6 +15,8 @@ const Home = React.lazy(() => import('./pages/Home'));
 const About = React.lazy(() => import('./pages/About'));
 const Login = React.lazy(() => import('./pages/Login'));
 const Register = React.lazy(() => import('./pages/Register'));
+const ForgotPassword = React.lazy(() => import('./pages/ForgotPassword'));
+const ResetPassword = React.lazy(() => import('./pages/ResetPassword'));
 const NovelDetail = React.lazy(() => import('./pages/NovelDetail'));
 const Library = React.lazy(() => import('./pages/Library'));
 const Reader = React.lazy(() => import('./pages/Reader'));
@@ -74,6 +76,10 @@ function App() {
 
                                 {/* Rute Register */}
                                 <Route path="/register" element={<Register />} />
+
+                                {/* Password Reset */}
+                                <Route path="/forgot-password" element={<ForgotPassword />} />
+                                <Route path="/reset-password" element={<ResetPassword />} />
 
                                 {/* Rute Detail Novel */}
                                 <Route

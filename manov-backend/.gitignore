@@ -10,3 +10,5 @@ wheels/
 .venv
 .env
 raw_data/
+*.db
+.env

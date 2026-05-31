@@ -1,4 +1,6 @@
 import hashlib
+import hmac
+import secrets
 from datetime import UTC, datetime, timedelta
 
 import bcrypt
@@ -9,6 +11,7 @@ from app.config import settings
 SECRET_KEY = settings.SECRET_KEY
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
+RESET_TOKEN_EXPIRE_MINUTES = settings.RESET_TOKEN_EXPIRE_MINUTES
 
 
 def get_password_hash(password: str) -> str:
@@ -49,3 +52,30 @@ def create_access_token(data: dict):
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
+
+
+# ---------------------------------------------------------------------------
+# Password Reset Token
+# ---------------------------------------------------------------------------
+def generate_reset_token() -> tuple[str, str]:
+    """Generate a reset token and its SHA-256 hash. Returns (token, hash)."""
+    token = secrets.token_urlsafe(32)
+    token_hash = hashlib.sha256(token.encode()).hexdigest()
+    return token, token_hash
+
+
+def hash_reset_token(token: str) -> str:
+    """Hash a reset token with SHA-256."""
+    return hashlib.sha256(token.encode()).hexdigest()
+
+
+def verify_reset_token(token: str, stored_hash: str) -> bool:
+    """Timing-safe verification of reset token against stored hash."""
+    if not token or not stored_hash:
+        return False
+    return hmac.compare_digest(hash_reset_token(token), stored_hash)
+
+
+def get_reset_token_expiry() -> datetime:
+    """Return the expiry datetime for a reset token."""
+    return datetime.now(UTC) + timedelta(minutes=RESET_TOKEN_EXPIRE_MINUTES)

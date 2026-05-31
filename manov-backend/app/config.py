@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     DATABASE_URL: str
     SECRET_KEY: str
@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     DOCS_PASSWORD: str = "password"
     FRONTEND_URL: str = "https://manov.pascarz.site"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 1 week
+    RESET_TOKEN_EXPIRE_MINUTES: int = 60  # 1 hour
 
 
 settings = Settings()

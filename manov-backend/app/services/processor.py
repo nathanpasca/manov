@@ -149,7 +149,46 @@ class NovelProcessorService:
                     )
                     session.add(translation)
                     await session.commit()
+                    await session.refresh(translation)
                     print(f"   ✅ Saved Ch {chapter_num}.")
+
+                    # Create notifications for users who have this novel in library
+                    await self._notify_users_of_new_chapter(
+                        session, novel.id, novel.title, chapter_num, new_ch.id
+                    )
 
             except Exception as e:
                 print(f"❌ Error Processor: {e}")
+
+    async def _notify_users_of_new_chapter(
+        self, session, novel_id: int, novel_title: str, chapter_num: int, chapter_id: int
+    ):
+        """Create notifications for all users who have this novel in their library."""
+        from app.models import Library, Notification
+
+        try:
+            # Get all users who have this novel in library
+            result = await session.execute(
+                select(Library.userId).where(Library.novelId == novel_id)
+            )
+            user_ids = [row[0] for row in result.all()]
+
+            if not user_ids:
+                return
+
+            # Batch create notifications
+            for user_id in user_ids:
+                notification = Notification(
+                    userId=user_id,
+                    type="NEW_CHAPTER",
+                    message=f"{novel_title} — Chapter {chapter_num} is now available!",
+                    novelId=novel_id,
+                    chapterId=chapter_id,
+                )
+                session.add(notification)
+
+            await session.commit()
+            print(f"   📬 Notifications sent to {len(user_ids)} users.")
+        except Exception as e:
+            print(f"   ⚠️ Notification error: {e}")
+            await session.rollback()
