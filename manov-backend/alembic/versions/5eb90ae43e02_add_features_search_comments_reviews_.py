@@ -55,15 +55,15 @@ def upgrade() -> None:
     op.create_index(op.f('ix_notification_novelId'), 'notification', ['novelId'], unique=False)
     op.create_index(op.f('ix_notification_userId'), 'notification', ['userId'], unique=False)
     op.add_column('comment', sa.Column('parentId', sa.Integer(), nullable=True))
-    op.add_column('comment', sa.Column('depth', sa.Integer(), nullable=False))
+    op.add_column('comment', sa.Column('depth', sa.Integer(), nullable=False, server_default='0'))
     op.create_index(op.f('ix_comment_parentId'), 'comment', ['parentId'], unique=False)
     # SQLite does not support ALTER TABLE ADD CONSTRAINT; FK enforced at app level for SQLite
     conn = op.get_bind()
     if conn.dialect.name != 'sqlite':
         op.create_foreign_key(None, 'comment', 'comment', ['parentId'], ['id'], ondelete='CASCADE')
     op.add_column('history', sa.Column('scrollPosition', sa.Float(), nullable=True))
-    op.add_column('history', sa.Column('progressPercent', sa.Integer(), nullable=False))
-    op.add_column('novel', sa.Column('viewCount', sa.Integer(), nullable=False))
+    op.add_column('history', sa.Column('progressPercent', sa.Integer(), nullable=False, server_default='0'))
+    op.add_column('novel', sa.Column('viewCount', sa.Integer(), nullable=False, server_default='0'))
     op.add_column('user', sa.Column('resetTokenHash', sqlmodel.sql.sqltypes.AutoString(), nullable=True))
     op.add_column('user', sa.Column('resetTokenExpires', sa.DateTime(), nullable=True))
     op.create_index(op.f('ix_user_resetTokenHash'), 'user', ['resetTokenHash'], unique=False)
