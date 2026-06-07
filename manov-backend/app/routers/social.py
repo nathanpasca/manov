@@ -14,9 +14,8 @@ from app.crud import (
     delete_review,
     get_chapter_comments,
     get_comment_by_id,
+    get_novel_combined_rating_stats,
     get_novel_comments,
-    get_novel_rating_stats,
-    get_novel_review_stats,
     get_review_by_id,
     get_review_by_user_and_novel,
     get_reviews_by_novel,
@@ -83,8 +82,8 @@ async def rate_novel(
     # 1. Upsert Rating
     await upsert_rating(session, user["id"], id, req.score)
 
-    # 2. Recalculate Average using SQL aggregates
-    average, count = await get_novel_rating_stats(session, id)
+    # 2. Recalculate Average from both Rating and Review tables
+    average, count = await get_novel_combined_rating_stats(session, id)
 
     # 3. Update Novel Stats
     novel = await session.get(Novel, id)
@@ -270,11 +269,10 @@ async def post_novel_review(
         )
         await create_review(session, review)
 
-    # Update novel average review stats
-    avg, count = await get_novel_review_stats(session, id)
+    # Update novel combined rating stats (includes both quick ratings and reviews)
+    avg, count = await get_novel_combined_rating_stats(session, id)
     novel = await session.get(Novel, id)
     if novel:
-        # Update both rating and review stats (they converge)
         novel.averageRating = avg
         novel.ratingCount = count
         await session.commit()
@@ -284,6 +282,8 @@ async def post_novel_review(
         "id": review.id,
         "score": review.score,
         "content": review.content,
+        "average": avg,
+        "count": count,
     }
 
 
@@ -302,8 +302,8 @@ async def update_review_endpoint(
 
     await update_review(session, review, req.score, nh3.clean(req.content))
 
-    # Update novel stats
-    avg, count = await get_novel_review_stats(session, review.novelId)
+    # Update novel combined rating stats
+    avg, count = await get_novel_combined_rating_stats(session, review.novelId)
     novel = await session.get(Novel, review.novelId)
     if novel:
         novel.averageRating = avg
@@ -326,8 +326,8 @@ async def delete_review_endpoint(
     novel_id = review.novelId
     await delete_review(session, id)
 
-    # Update novel stats
-    avg, count = await get_novel_review_stats(session, novel_id)
+    # Update novel combined rating stats
+    avg, count = await get_novel_combined_rating_stats(session, novel_id)
     novel = await session.get(Novel, novel_id)
     if novel:
         novel.averageRating = avg

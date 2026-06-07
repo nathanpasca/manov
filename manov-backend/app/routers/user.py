@@ -6,6 +6,7 @@ from app.crud import (
     add_to_library,
     get_library_entry,
     get_rating,
+    get_review_by_user_and_novel,
     get_unread_notification_count,
     get_user_histories,
     get_user_library,
@@ -89,12 +90,18 @@ async def check_library_status(
 ):
     exists = await get_library_entry(session, user["id"], novel_id)
 
-    # Cek Rating User
-    rating = await get_rating(session, user["id"], novel_id)
+    # Cek Rating User (prefer Review score since it is the more considered opinion,
+    # fallback to quick Rating if no review exists)
+    review = await get_review_by_user_and_novel(session, user["id"], novel_id)
+    if review:
+        user_rating = review.score
+    else:
+        rating = await get_rating(session, user["id"], novel_id)
+        user_rating = rating.score if rating else 0
 
     return {
         "isBookmarked": bool(exists),
-        "userRating": rating.score if rating else 0,
+        "userRating": user_rating,
     }
 
 

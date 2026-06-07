@@ -444,6 +444,34 @@ async def get_novel_rating_stats(session: AsyncSession, novel_id: int) -> tuple[
     return (float(avg) if avg is not None else 0.0, int(count) if count is not None else 0)
 
 
+async def get_novel_combined_rating_stats(
+    session: AsyncSession, novel_id: int
+) -> tuple[float, int]:
+    """Return combined average/count from both Rating and Review tables.
+
+    If a user has both a Rating and a Review for the same novel, the Review
+    score takes precedence (it is the more considered opinion). Each user
+    is counted only once.
+    """
+    rating_rows = await session.execute(
+        select(Rating.userId, Rating.score).where(Rating.novelId == novel_id)
+    )
+    review_rows = await session.execute(
+        select(Review.userId, Review.score).where(Review.novelId == novel_id)
+    )
+
+    scores_by_user: dict[int, int] = {}
+    for user_id, score in rating_rows.all():
+        scores_by_user[user_id] = score
+    for user_id, score in review_rows.all():
+        scores_by_user[user_id] = score  # Review overrides quick rating
+
+    scores = list(scores_by_user.values())
+    if not scores:
+        return (0.0, 0)
+    return (sum(scores) / len(scores), len(scores))
+
+
 # ---------------------------------------------------------------------------
 # Comment
 # ---------------------------------------------------------------------------
