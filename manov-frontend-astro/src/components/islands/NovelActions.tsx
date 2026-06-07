@@ -38,8 +38,8 @@ export default function NovelActions({
       api
         .getHistory()
         .then((res: any[]) => {
-          // Normalise IDs because the backend may return numbers while props are strings
-          const item = res.find((h) => String(h.novelId) === String(novelId));
+          // History response uses NovelList shape where the novel ID is `id`
+          const item = res.find((h) => String(h.id) === String(novelId));
           if (item) setLastReadChapter(item.lastReadChapter);
         })
         .catch(() => {});

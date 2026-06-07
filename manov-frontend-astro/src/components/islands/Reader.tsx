@@ -153,6 +153,21 @@ export default function Reader({
     };
   }, [novelId, chapterNum, calculateProgress]);
 
+  // Record chapter open immediately so history exists even if the user
+  // navigates away before scrolling enough to trigger the scroll handler.
+  useEffect(() => {
+    if (novelId) {
+      api
+        .updateProgress({
+          novelId,
+          chapterNum,
+          scrollPosition: window.scrollY,
+          progressPercent: 0,
+        })
+        .catch(() => {});
+    }
+  }, [novelId, chapterNum]);
+
   // Save on unload
   useEffect(() => {
     const handleBeforeUnload = () => {
