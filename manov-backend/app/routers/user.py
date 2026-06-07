@@ -27,6 +27,8 @@ class ProgressUpdateRequest(BaseModel):
     chapterNum: int
     scrollPosition: float | None = None
     progressPercent: int = 0
+    lastReadBlockIndex: int | None = None
+    blockOffsetPercent: int = 0
 
 
 # --- GET LIBRARY ---
@@ -151,6 +153,8 @@ async def update_progress(
         entry.chapterNum = req.chapterNum
         entry.scrollPosition = req.scrollPosition
         entry.progressPercent = req.progressPercent
+        entry.lastReadBlockIndex = req.lastReadBlockIndex
+        entry.blockOffsetPercent = req.blockOffsetPercent
         await session.commit()
         await session.refresh(entry)
         return {"message": "Progress updated"}
@@ -162,9 +166,33 @@ async def update_progress(
     if entry:
         entry.scrollPosition = req.scrollPosition
         entry.progressPercent = req.progressPercent
+        entry.lastReadBlockIndex = req.lastReadBlockIndex
+        entry.blockOffsetPercent = req.blockOffsetPercent
         await session.commit()
 
     return {"message": "Progress saved"}
+
+
+@router.get("/history/{novel_id}")
+async def get_history_for_novel(
+    novel_id: int,
+    user: dict = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    from app.crud import get_history_entry
+
+    entry = await get_history_entry(session, user["id"], novel_id)
+    if not entry:
+        raise HTTPException(status_code=404, detail="History not found")
+    return {
+        "novelId": entry.novelId,
+        "chapterNum": entry.chapterNum,
+        "lastReadBlockIndex": entry.lastReadBlockIndex,
+        "blockOffsetPercent": entry.blockOffsetPercent,
+        "scrollPosition": entry.scrollPosition,
+        "progressPercent": entry.progressPercent,
+        "updatedAt": entry.updatedAt,
+    }
 
 
 # --- NOTIFICATIONS ---
