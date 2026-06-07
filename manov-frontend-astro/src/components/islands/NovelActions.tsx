@@ -38,7 +38,8 @@ export default function NovelActions({
       api
         .getHistory()
         .then((res: any[]) => {
-          const item = res.find((h) => h.novelId === novelId);
+          // Normalise IDs because the backend may return numbers while props are strings
+          const item = res.find((h) => String(h.novelId) === String(novelId));
           if (item) setLastReadChapter(item.lastReadChapter);
         })
         .catch(() => {});
@@ -107,8 +108,8 @@ export default function NovelActions({
         {chapterCount === 0
           ? 'No Chapters'
           : lastReadChapter
-            ? `Resume Chapter ${lastReadChapter}`
-            : 'Start Reading'}
+            ? 'Continue Reading'
+            : 'Read Now'}
       </a>
 
       <button
