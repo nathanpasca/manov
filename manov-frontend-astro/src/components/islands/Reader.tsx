@@ -68,6 +68,7 @@ export default function Reader({
   const [showToc, setShowToc] = useState(false);
   const tocRef = useRef<HTMLDivElement>(null);
   const blockRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const lastReadingPos = useRef<{ blockIndex: number; blockOffsetPercent: number } | null>(null);
   const setBlockRef = useCallback(
     (index: number) => (el: HTMLDivElement | null) => {
       blockRefs.current[index] = el;
@@ -173,6 +174,7 @@ export default function Reader({
         if (novelId && Math.abs(progress - lastProgress.current) >= 5) {
           lastProgress.current = progress;
           const readingPos = getCurrentReadingPosition();
+          if (readingPos) lastReadingPos.current = readingPos;
           api
             .updateProgress({
               novelId,
@@ -261,7 +263,12 @@ export default function Reader({
           }
           const rect = el.getBoundingClientRect();
           const blockHeight = rect.height;
-          if (blockHeight <= 0) return;
+          if (blockHeight <= 0) {
+            if (attemptsLeft > 0) {
+              requestAnimationFrame(() => tryRestore(attemptsLeft - 1));
+            }
+            return;
+          }
 
           const offset = Math.min(100, Math.max(0, history.blockOffsetPercent));
           const offsetPx = (offset / 100) * blockHeight;
@@ -286,6 +293,8 @@ export default function Reader({
         const data = JSON.stringify({
           novelId,
           chapterNum,
+          lastReadBlockIndex: lastReadingPos.current?.blockIndex ?? null,
+          blockOffsetPercent: lastReadingPos.current?.blockOffsetPercent ?? 0,
           scrollPosition: window.scrollY,
           progressPercent: progress,
         });
