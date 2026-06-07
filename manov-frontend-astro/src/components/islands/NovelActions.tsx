@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../../lib/auth';
 import { api } from '../../lib/api';
-import StarRating from './StarRating';
 import { Play, Bookmark, Share2, Star } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -25,8 +24,6 @@ export default function NovelActions({
   const [bookmarkLoading, setBookmarkLoading] = useState(false);
   const [userRating, setUserRating] = useState(0);
   const [lastReadChapter, setLastReadChapter] = useState<number | null>(null);
-  const [currentAvg, setCurrentAvg] = useState(averageRating);
-  const [currentCount, setCurrentCount] = useState(ratingCount);
 
   useEffect(() => {
     if (user) {
@@ -71,26 +68,6 @@ export default function NovelActions({
     }
   };
 
-  // DEPRECATED: Quick star ratings without a written review are no longer
-  // supported by the backend. Users should write a review via ReviewSection
-  // instead. Keeping this handler for reference; calling rateNovel will now
-  // return 400 from the API.
-  const handleRate = async (score: number) => {
-    if (!user) {
-      toast.error('Please login to rate');
-      return;
-    }
-    try {
-      const res = await api.rateNovel(novelId, score);
-      setUserRating(score);
-      setCurrentAvg(res.average || averageRating);
-      setCurrentCount(res.count || ratingCount);
-      toast.success('Rating submitted!');
-    } catch (err) {
-      toast.error('Failed to submit rating');
-    }
-  };
-
   const handleShare = async () => {
     const url = `${window.location.origin}/novel/${slug}`;
     if (navigator.share) {
@@ -107,6 +84,10 @@ export default function NovelActions({
         toast.error('Failed to copy link');
       }
     }
+  };
+
+  const scrollToReviews = () => {
+    document.getElementById('reviews-section')?.scrollIntoView({ behavior: 'smooth' });
   };
 
   const targetChapter = lastReadChapter || 1;
@@ -154,16 +135,19 @@ export default function NovelActions({
       <div className="mt-4 flex w-full items-center gap-2 text-white">
         <div className="flex items-center gap-1 rounded-full border border-white/10 bg-black/30 px-3 py-1 font-medium text-yellow-400 backdrop-blur-sm">
           <Star size={14} fill="currentColor" />
-          {currentAvg ? currentAvg.toFixed(1) : '0.0'}
-          <span className="ml-1 text-xs text-gray-400">({currentCount})</span>
+          {averageRating ? averageRating.toFixed(1) : '0.0'}
+          <span className="ml-1 text-xs text-gray-400">({ratingCount})</span>
         </div>
         {user && userRating > 0 && (
           <span className="text-xs text-white/70">Your rating: {userRating}/5</span>
         )}
         {user && (
-          <div className="ml-auto">
-            <StarRating rating={userRating} onRate={handleRate} size={20} />
-          </div>
+          <button
+            onClick={scrollToReviews}
+            className="ml-auto rounded-lg border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-md transition hover:bg-white/20"
+          >
+            {userRating > 0 ? 'Edit Review' : 'Write a Review'}
+          </button>
         )}
       </div>
     </div>
