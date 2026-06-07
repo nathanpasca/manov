@@ -69,9 +69,13 @@ export const api = {
   updateProgress: (data: {
     novelId: string;
     chapterNum: number;
+    lastReadBlockIndex?: number | null;
+    blockOffsetPercent?: number;
     scrollPosition: number;
     progressPercent: number;
   }) => apiClient.post('/user/history/progress', data).then((r) => r.data),
+  getHistoryForNovel: (novelId: string) =>
+    apiClient.get(`/user/history/${novelId}`).then((r) => r.data),
 
   // Notifications
   getNotifications: (skip = 0, limit = 20) =>
