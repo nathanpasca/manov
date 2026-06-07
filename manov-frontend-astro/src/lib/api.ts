@@ -69,7 +69,7 @@ export const api = {
   updateProgress: (data: {
     novelId: string;
     chapterNum: number;
-    lastReadBlockIndex?: number | null;
+    lastReadBlockIndex?: number;
     blockOffsetPercent?: number;
     scrollPosition: number;
     progressPercent: number;
