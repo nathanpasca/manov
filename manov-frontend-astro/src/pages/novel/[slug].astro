@@ -1,0 +1,327 @@
+---
+export const prerender = false;
+
+import Layout from '../../layouts/Layout.astro';
+import SEO from '../../components/astro/SEO.astro';
+import NovelActions from '../../components/islands/NovelActions';
+import SynopsisRenderer from '../../components/islands/SynopsisRenderer';
+import ReviewSection from '../../components/islands/ReviewSection';
+import CommentSection from '../../components/islands/CommentSection';
+import AdminNovelActions from '../../components/islands/AdminNovelActions';
+import { api } from '../../lib/api';
+
+const { slug } = Astro.params;
+const siteUrl = import.meta.env.PUBLIC_FRONTEND_URL || 'https://manov.pascarz.site';
+
+if (!slug) {
+  return Astro.redirect('/404');
+}
+
+let novel: any = null;
+try {
+  novel = await api.getNovel(slug);
+  // Track view (fire and forget)
+  api.trackView(slug).catch(() => {});
+} catch (err) {
+  console.error('Failed to fetch novel:', err);
+}
+
+if (!novel) {
+  return Astro.redirect('/404');
+}
+
+const statusColor = (status: string) => {
+  switch (status) {
+    case 'ONGOING': return 'bg-emerald-600 text-white';
+    case 'COMPLETED': return 'bg-blue-600 text-white';
+    case 'HIATUS': return 'bg-amber-500 text-white';
+    default: return 'bg-stone-800 text-white';
+  }
+};
+
+const bookJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Book',
+  name: novel.title,
+  url: `${siteUrl}/novel/${novel.slug}`,
+  author: {
+    '@type': 'Person',
+    name: novel.author || 'Unknown',
+  },
+  description: novel.synopsis?.slice(0, 300),
+  image: novel.coverUrl,
+  genre: novel.genres?.map((g: any) => g.name).join(', ') || undefined,
+  inLanguage: 'en',
+  aggregateRating: novel.averageRating
+    ? {
+        '@type': 'AggregateRating',
+        ratingValue: novel.averageRating,
+        ratingCount: novel.ratingCount || 1,
+        bestRating: '5',
+        worstRating: '1',
+      }
+    : undefined,
+};
+
+const breadcrumbJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: siteUrl },
+    { '@type': 'ListItem', position: 2, name: novel.title, item: `${siteUrl}/novel/${novel.slug}` },
+  ],
+};
+
+const chapters = novel.chapters || [];
+---
+
+<Layout
+  title={novel.title}
+  description={novel.synopsis ? novel.synopsis.slice(0, 160) + '...' : 'Read this novel on Manov.'}
+>
+  <SEO
+    title={novel.title}
+    description={novel.synopsis ? novel.synopsis.slice(0, 160) + '...' : 'Read this novel on Manov.'}
+    ogImage={novel.coverUrl}
+    type="book"
+    canonical={`${siteUrl}/novel/${novel.slug}`}
+    author={novel.author || undefined}
+    tags={novel.genres?.map((g: any) => g.name) || []}
+    publishedAt={novel.createdAt}
+    modifiedAt={novel.updatedAt}
+    jsonLd={bookJsonLd}
+  />
+  <script type="application/ld+json" set:html={JSON.stringify(breadcrumbJsonLd)} />
+
+  <div class="min-h-screen bg-[#faf8f5] pt-24 font-sans text-stone-900 transition-colors duration-300 dark:bg-[#1c1917] dark:text-stone-100">
+    {/* --- HERO SECTION --- */}
+    <div class="relative h-[500px] w-full overflow-hidden">
+      <div
+        class="absolute inset-0 scale-110 bg-cover bg-center opacity-50 blur-xl"
+        style={`background-image: url(${novel.coverUrl})`}
+      />
+      <div class="absolute inset-0 bg-gradient-to-b from-black/60 via-stone-900/60 to-[#faf8f5] dark:to-[#1c1917]"></div>
+
+      <div class="relative z-10 mx-auto flex h-full max-w-6xl flex-col items-end gap-8 px-6 pb-16 md:flex-row">
+        {/* Cover Art */}
+        <div class="-mb-20 aspect-[2/3] w-48 flex-shrink-0 overflow-hidden rounded-xl border-4 border-white bg-stone-200 shadow-2xl md:mb-0 md:w-64 dark:border-white/10 dark:bg-stone-800 animate-slide-up">
+          {novel.coverUrl ? (
+            <img src={novel.coverUrl} alt={novel.title} class="h-full w-full object-cover" />
+          ) : (
+            <div class="flex h-full items-center justify-center text-stone-400">
+              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+            </div>
+          )}
+        </div>
+
+        {/* Info */}
+        <div class="flex-1 pb-4 text-white animate-slide-up" style="animation-delay: 0.2s;">
+          <div class="mb-3 flex flex-wrap items-center gap-3">
+            <span class={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${statusColor(novel.status)}`}>
+              {novel.status}
+            </span>
+          </div>
+
+          <h1 class="mb-2 text-4xl font-black leading-tight drop-shadow-lg md:text-5xl lg:text-6xl">
+            {novel.title}
+          </h1>
+
+          <h2 class="mb-6 font-serif text-lg italic text-stone-200 opacity-90 md:text-xl">
+            {novel.originalTitle} • {novel.author}
+          </h2>
+
+          <NovelActions
+            client:load
+            novelId={novel.id}
+            slug={novel.slug}
+            chapterCount={chapters.length}
+            averageRating={novel.averageRating || 0}
+            ratingCount={novel.ratingCount || 0}
+          />
+        </div>
+      </div>
+    </div>
+
+    {/* --- CONTENT --- */}
+    <div class="mx-auto mt-24 grid max-w-6xl grid-cols-1 gap-10 px-6 pb-20 md:mt-12 lg:grid-cols-3">
+      {/* LEFT COLUMN */}
+      <div class="space-y-8 lg:col-span-2">
+        {/* Synopsis */}
+        <div class="rounded-3xl border border-stone-100 bg-white p-6 shadow-sm md:p-8 dark:border-white/10 dark:bg-white/5 animate-slide-up" style="animation-delay: 0.3s;">
+          <h3 class="mb-4 flex items-center gap-2 text-xl font-bold dark:text-white">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-stone-500"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+            Synopsis
+          </h3>
+          <SynopsisRenderer client:idle synopsis={novel.synopsis || ''} />
+        </div>
+
+        {/* Chapter List */}
+        <div class="animate-slide-up" style="animation-delay: 0.4s;">
+          <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+            <h3 class="flex items-center gap-2 text-xl font-bold dark:text-white">
+              Chapters
+              <span class="rounded-full bg-stone-100 px-2 py-1 text-xs text-stone-600 dark:bg-white/10 dark:text-stone-300">
+                {chapters.length}
+              </span>
+            </h3>
+            <div class="relative">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              <input
+                type="text"
+                id="chapter-search"
+                placeholder="Search chapter..."
+                class="w-full rounded-full border border-stone-200 bg-white py-2 pl-9 pr-4 text-sm focus:outline-none focus:ring-1 focus:ring-stone-400 sm:w-64 dark:border-white/10 dark:bg-white/5 dark:text-white dark:placeholder-stone-500"
+              />
+            </div>
+          </div>
+
+          <div class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2" id="chapter-grid">
+            {chapters.map((ch: any) => {
+              const translation = ch.translations?.find((t: any) => t.language === 'EN');
+              const title = translation ? translation.title : `Chapter ${ch.chapterNum}`;
+              const publishedDate = translation?.publishedAt ? new Date(translation.publishedAt) : new Date(0);
+              const isLocked = publishedDate > new Date();
+
+              return (
+                <a
+                  href={isLocked ? '#' : `/novel/${novel.slug}/read/${ch.chapterNum}`}
+                  data-chapter-num={ch.chapterNum}
+                  data-chapter-title={title.toLowerCase()}
+                  class={`group relative rounded-xl border p-4 transition-all duration-300 ${
+                    isLocked
+                      ? 'cursor-not-allowed border-stone-100 bg-stone-50 opacity-70 dark:border-white/5 dark:bg-white/5'
+                      : 'cursor-pointer border-stone-100 bg-white hover:border-stone-300 hover:shadow-md dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10'
+                  }`}
+                  onClick={isLocked ? 'return false;' : undefined}
+                >
+                  <div class="mb-1 flex items-start justify-between">
+                    <span class={`text-xs font-bold uppercase tracking-wider transition-colors ${isLocked ? 'text-stone-400 dark:text-stone-500' : 'text-stone-400 group-hover:text-stone-600 dark:text-stone-400'}`}>
+                      CH {ch.chapterNum}
+                    </span>
+                    {isLocked ? (
+                      <span class="flex items-center gap-1 rounded bg-stone-200 px-1.5 py-0.5 text-[10px] font-medium text-stone-500 dark:bg-white/10 dark:text-stone-400">
+                        🔒 {publishedDate.toLocaleDateString()}
+                      </span>
+                    ) : (
+                      <span class="rounded bg-stone-100 px-1.5 py-0.5 text-[10px] font-medium text-stone-600 dark:bg-white/5 dark:text-stone-400">
+                        Free
+                      </span>
+                    )}
+                  </div>
+                  <h4 class={`line-clamp-1 font-medium transition-colors ${isLocked ? 'text-stone-400 dark:text-stone-500' : 'text-stone-800 group-hover:text-stone-600 dark:text-stone-200 dark:group-hover:text-stone-400'}`}>
+                    {title}
+                  </h4>
+                </a>
+              );
+            })}
+            {chapters.length === 0 && (
+              <div class="col-span-full py-10 text-center italic text-stone-400">
+                No chapters found.
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Reviews */}
+        <div class="border-t border-stone-200 pt-10 dark:border-white/10">
+          <ReviewSection client:idle novelId={novel.id} />
+        </div>
+
+        {/* Comments */}
+        <div class="border-t border-stone-200 pt-10 dark:border-white/10">
+          <CommentSection client:idle targetId={novel.id} type="novel" />
+        </div>
+      </div>
+
+      {/* RIGHT COLUMN: Sidebar */}
+      <div class="space-y-6 lg:col-span-1">
+        <div class="sticky top-24 rounded-3xl border border-stone-100 bg-white p-6 shadow-sm dark:border-white/10 dark:bg-white/5 animate-slide-up" style="animation-delay: 0.5s;">
+          <h3 class="mb-6 border-b border-stone-100 pb-2 font-bold text-stone-900 dark:border-white/10 dark:text-white">
+            Information
+          </h3>
+
+          <div class="space-y-4">
+            <div class="flex items-center justify-between">
+              <span class="flex items-center gap-2 text-sm text-stone-500 dark:text-stone-400">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                Author
+              </span>
+              <span class="text-right text-sm font-medium text-stone-900 dark:text-stone-200">
+                {novel.author || 'Unknown'}
+              </span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="flex items-center gap-2 text-sm text-stone-500 dark:text-stone-400">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"/><path d="M7 7h.01"/></svg>
+                Status
+              </span>
+              <span class="text-sm font-medium text-stone-900 dark:text-stone-200">
+                {novel.status}
+              </span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="flex items-center gap-2 text-sm text-stone-500 dark:text-stone-400">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                Updated
+              </span>
+              <span class="text-sm font-medium text-stone-900 dark:text-stone-200">
+                {novel.updatedAt ? new Date(novel.updatedAt).toLocaleDateString() : 'N/A'}
+              </span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="flex items-center gap-2 text-sm text-stone-500 dark:text-stone-400">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                Chapters
+              </span>
+              <span class="text-sm font-medium text-stone-900 dark:text-stone-200">
+                {chapters.length}
+              </span>
+            </div>
+          </div>
+
+          {/* Genres */}
+          <div class="mt-8 border-t border-stone-100 pt-6 dark:border-white/10">
+            <h4 class="mb-3 text-xs font-bold uppercase tracking-wider text-stone-400">
+              Genres
+            </h4>
+            <div class="flex flex-wrap gap-2">
+              {novel.genres && novel.genres.length > 0 ? (
+                novel.genres.map((genre: any) => (
+                  <a
+                    href={`/?genre=${encodeURIComponent(genre.name)}`}
+                    class="rounded-lg bg-stone-100 px-3 py-1 text-xs text-stone-600 transition hover:bg-stone-200 dark:bg-white/10 dark:text-stone-300 dark:hover:bg-white/20"
+                  >
+                    {genre.name}
+                  </a>
+                ))
+              ) : (
+                <span class="text-xs italic text-stone-400">No genres</span>
+              )}
+            </div>
+          </div>
+
+          {/* Admin Actions */}
+          <AdminNovelActions client:load novelId={novel.id} slug={novel.slug} />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {/* Chapter search script */}
+  <script>
+    const searchInput = document.getElementById('chapter-search');
+    const chapterGrid = document.getElementById('chapter-grid');
+    if (searchInput && chapterGrid) {
+      searchInput.addEventListener('input', (e) => {
+        const term = (e.target as HTMLInputElement).value.toLowerCase();
+        const items = chapterGrid.querySelectorAll('[data-chapter-num]');
+        items.forEach((item) => {
+          const num = item.getAttribute('data-chapter-num') || '';
+          const title = item.getAttribute('data-chapter-title') || '';
+          const match = num.includes(term) || title.includes(term);
+          (item as HTMLElement).style.display = match ? '' : 'none';
+        });
+      });
+    }
+  </script>
+</Layout>

@@ -1,0 +1,108 @@
+---
+export const prerender = false;
+
+import Layout from '../layouts/Layout.astro';
+import SEO from '../components/astro/SEO.astro';
+import HeroSection from '../components/astro/HeroSection.astro';
+import HomeIsland from '../components/islands/HomeIsland';
+import { api } from '../lib/api';
+
+const siteUrl = import.meta.env.PUBLIC_FRONTEND_URL || 'https://manov.pascarz.site';
+
+// SSR: Fetch initial data
+let initialNovels: any[] = [];
+let initialTrending: any[] = [];
+let genres: any[] = [];
+let initialHasMore = true;
+let featuredNovel: any = null;
+
+try {
+  const [novelsRes, trendingRes, genresRes] = await Promise.all([
+    api.getNovels({ skip: 0, limit: 12, sort_by: 'updatedAt', sort_order: 'desc' }),
+    api.getTrending(),
+    api.getGenres(),
+  ]);
+
+  initialNovels = Array.isArray(novelsRes) ? novelsRes : novelsRes.data || [];
+  initialTrending = Array.isArray(trendingRes) ? trendingRes : trendingRes.data || [];
+  genres = Array.isArray(genresRes) ? genresRes : genresRes.data || [];
+  initialHasMore = initialNovels.length >= 12;
+
+  // Use first novel as featured, or first trending if no novels
+  featuredNovel = initialNovels[0] || initialTrending[0] || null;
+} catch (err) {
+  console.error('Failed to fetch home data:', err);
+}
+
+// JSON-LD structured data
+const websiteJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'Manov',
+  url: siteUrl,
+  description: 'Read translated web novels. Free, unlimited chapters.',
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: {
+      '@type': 'EntryPoint',
+      urlTemplate: `${siteUrl}/?search={search_term_string}`,
+    },
+    'query-input': 'required name=search_term_string',
+  },
+};
+
+const itemListJsonLd = initialNovels.length > 0
+  ? {
+      '@context': 'https://schema.org',
+      '@type': 'ItemList',
+      itemListElement: initialNovels.slice(0, 10).map((novel, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        item: {
+          '@type': 'Book',
+          name: novel.title,
+          url: `${siteUrl}/novel/${novel.slug}`,
+          image: novel.coverUrl,
+          author: {
+            '@type': 'Person',
+            name: novel.author || 'Unknown',
+          },
+        },
+      })),
+    }
+  : null;
+---
+
+<Layout
+  title="Read Translated Web Novels"
+  description="Manov — Read translated web novels. Free, unlimited chapters. Discover trending stories updated daily."
+>
+  <SEO
+    title="Read Translated Web Novels"
+    description="Manov — Read translated web novels. Free, unlimited chapters. Discover trending stories updated daily."
+    canonical={siteUrl}
+    jsonLd={websiteJsonLd}
+  />
+  {itemListJsonLd && (
+    <script type="application/ld+json" set:html={JSON.stringify(itemListJsonLd)} />
+  )}
+
+  <div class="min-h-screen bg-[#faf8f5] pb-20 pt-24 font-sans text-stone-900 transition-colors duration-300 dark:bg-[#1c1917] dark:text-stone-100">
+    <HeroSection featured={featuredNovel} />
+
+    <!-- Landing context for first-timers -->
+    <div class="mx-auto max-w-2xl px-6 pt-10 text-center">
+      <p class="text-sm leading-relaxed text-stone-500 dark:text-stone-400">
+        Manov is a place to read translated web novels. Chapters are translated automatically and available for free. No paywalls, just stories.
+      </p>
+    </div>
+
+    <HomeIsland
+      client:idle
+      initialNovels={initialNovels}
+      initialTrending={initialTrending}
+      genres={genres}
+      initialHasMore={initialHasMore}
+    />
+  </div>
+</Layout>

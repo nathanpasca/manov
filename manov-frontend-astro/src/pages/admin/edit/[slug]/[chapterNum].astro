@@ -1,0 +1,15 @@
+---
+export const prerender = false;
+
+import Layout from '../../../../layouts/Layout.astro';
+import EditChapter from '../../../../components/islands/EditChapter';
+
+const { slug, chapterNum } = Astro.params;
+if (!slug || !chapterNum) {
+  return Astro.redirect('/admin');
+}
+---
+
+<Layout title="Edit Chapter" description="Edit chapter content" hideNavbar={true}>
+  <EditChapter slug={slug} chapterNum={chapterNum} client:load />
+</Layout>

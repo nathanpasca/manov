@@ -1,0 +1,67 @@
+---
+interface Props {
+  chapters: Array<{
+    chapterNum: number;
+    translations: Array<{
+      language: string;
+      title: string;
+      publishedAt: string;
+    }>;
+  }>;
+  slug: string;
+}
+
+const { chapters, slug } = Astro.props;
+
+const now = new Date();
+---
+
+<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+  {chapters.length > 0 ? (
+    chapters.map((ch) => {
+      const translation = ch.translations.find((t) => t.language === 'EN');
+      const title = translation ? translation.title : `Chapter ${ch.chapterNum}`;
+      const publishedDate = translation?.publishedAt ? new Date(translation.publishedAt) : new Date(0);
+      const isLocked = publishedDate > now;
+
+      return (
+        <a
+          href={isLocked ? undefined : `/novel/${slug}/read/${ch.chapterNum}`}
+          class={`group relative rounded-xl border p-4 transition-all duration-300 ${
+            isLocked
+              ? 'cursor-not-allowed border-gray-100 bg-gray-50 opacity-70 dark:border-white/5 dark:bg-white/5'
+              : 'cursor-pointer border-gray-100 bg-white hover:border-stone-300 hover:shadow-md dark:border-white/10 dark:bg-white/5 dark:hover:bg-white/10'
+          }`}
+        >
+          <div class="mb-1 flex items-start justify-between">
+            <span class={`text-xs font-bold uppercase tracking-wider transition-colors ${
+              isLocked ? 'text-gray-400 dark:text-gray-500' : 'text-gray-400 group-hover:text-stone-600 dark:text-gray-400'
+            }`}>
+              CH {ch.chapterNum}
+            </span>
+
+            {isLocked ? (
+              <span class="flex items-center gap-1 rounded bg-gray-200 px-1.5 py-0.5 text-[10px] font-medium text-gray-500 dark:bg-white/10 dark:text-gray-400">
+                🔒 {publishedDate.toLocaleDateString()}
+              </span>
+            ) : (
+              <span class="rounded bg-stone-100 px-1.5 py-0.5 text-[10px] font-medium text-stone-600 dark:bg-white/5 dark:text-stone-400">
+                Free
+              </span>
+            )}
+          </div>
+
+          <h4 class={`line-clamp-1 font-medium transition-colors ${
+            isLocked ? 'text-gray-400 dark:text-gray-500' : 'text-gray-800 group-hover:text-stone-600 dark:text-gray-200 dark:group-hover:text-stone-400'
+          }`}>
+            {title}
+          </h4>
+        </a>
+      );
+    })
+  ) : (
+    <div class="col-span-full py-10 text-center italic text-gray-400">
+      No chapters found.
+    </div>
+  )}
+</div>

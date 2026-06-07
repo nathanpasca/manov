@@ -1,0 +1,114 @@
+---
+export const prerender = false;
+
+import Layout from '../../../../layouts/Layout.astro';
+import SEO from '../../../../components/astro/SEO.astro';
+import Reader from '../../../../components/islands/Reader';
+import { api } from '../../../../lib/api';
+
+const { slug, chapterNum: chapterNumStr } = Astro.params;
+const siteUrl = import.meta.env.PUBLIC_FRONTEND_URL || 'https://manov.pascarz.site';
+
+if (!slug || !chapterNumStr) {
+  return Astro.redirect('/404');
+}
+
+const chapterNum = parseInt(chapterNumStr);
+if (isNaN(chapterNum)) {
+  return Astro.redirect('/404');
+}
+
+let chapterData: any = null;
+let novelData: any = null;
+
+try {
+  [chapterData, novelData] = await Promise.all([
+    api.getChapter(slug, chapterNum),
+    api.getNovel(slug),
+  ]);
+} catch (err) {
+  console.error('Failed to fetch chapter:', err);
+}
+
+if (!chapterData || !novelData) {
+  return Astro.redirect('/404');
+}
+
+const articleJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  headline: `${chapterData.title} — Chapter ${chapterNum}`,
+  description: `Read Chapter ${chapterNum} of ${chapterData.novelTitle || novelData.title} on Manov.`,
+  image: chapterData.coverUrl || novelData.coverUrl,
+  author: {
+    '@type': 'Person',
+    name: chapterData.novelAuthor || novelData.author || 'Unknown',
+  },
+  publisher: {
+    '@type': 'Organization',
+    name: 'Manov',
+    logo: {
+      '@type': 'ImageObject',
+      url: `${siteUrl}/android-chrome-192x192.png`,
+    },
+  },
+  url: `${siteUrl}/novel/${slug}/read/${chapterNum}`,
+  isPartOf: {
+    '@type': 'Book',
+    name: novelData.title,
+    url: `${siteUrl}/novel/${slug}`,
+  },
+  articleSection: 'Web Novel',
+  inLanguage: 'en',
+};
+
+const breadcrumbJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: siteUrl },
+    { '@type': 'ListItem', position: 2, name: novelData.title, item: `${siteUrl}/novel/${slug}` },
+    { '@type': 'ListItem', position: 3, name: `Chapter ${chapterNum}: ${chapterData.title}`, item: `${siteUrl}/novel/${slug}/read/${chapterNum}` },
+  ],
+};
+
+// Construct chapter object for the island
+const chapter = {
+  id: chapterData.id,
+  chapterId: chapterData.chapterId || chapterData.id,
+  chapterNum,
+  title: chapterData.title,
+  content: chapterData.content,
+  novelTitle: chapterData.novelTitle || novelData.title,
+  novelAuthor: chapterData.novelAuthor || novelData.author,
+  coverUrl: chapterData.coverUrl || novelData.coverUrl,
+  prevChapterNum: chapterData.prevChapterNum ?? null,
+  nextChapterNum: chapterData.nextChapterNum ?? null,
+};
+---
+
+<Layout
+  title={`Chapter ${chapterNum}: ${chapterData.title}`}
+  description={`Read Chapter ${chapterNum} — "${chapterData.title}" of ${novelData.title} on Manov. Free, AI-translated web novel chapter.`}
+  hideNavbar={true}
+>
+  <SEO
+    title={`Chapter ${chapterNum}: ${chapterData.title}`}
+    description={`Read Chapter ${chapterNum} — "${chapterData.title}" of ${novelData.title} on Manov. Free, AI-translated web novel chapter.`}
+    ogImage={chapterData.coverUrl || novelData.coverUrl}
+    type="article"
+    canonical={`${siteUrl}/novel/${slug}/read/${chapterNum}`}
+    author={novelData.author || undefined}
+    jsonLd={articleJsonLd}
+  />
+  <script type="application/ld+json" set:html={JSON.stringify(breadcrumbJsonLd)} />
+
+  <Reader
+    client:only="react"
+    slug={slug}
+    chapterNum={chapterNum}
+    chapter={chapter}
+    novelChapters={novelData.chapters || []}
+    novelId={novelData.id}
+  />
+</Layout>

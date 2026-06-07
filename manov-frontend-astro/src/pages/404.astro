@@ -1,0 +1,25 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { Home, AlertTriangle } from 'lucide-react';
+---
+
+<Layout title="Page Not Found" description="The page you are looking for could not be found.">
+  <div class="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-6 text-center text-gray-900 dark:bg-[#0a0a0a] dark:text-white">
+    <div class="mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-red-100 text-red-500 dark:bg-red-500/10">
+      <AlertTriangle size={48} />
+    </div>
+
+    <h1 class="mb-2 text-6xl font-black">404</h1>
+    <h2 class="mb-4 text-2xl font-bold">Page Not Found</h2>
+    <p class="mb-8 max-w-md text-gray-500 dark:text-gray-400">
+      The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.
+    </p>
+
+    <a
+      href="/"
+      class="flex items-center gap-2 rounded-full bg-stone-900 px-8 py-3 font-medium text-white transition hover:bg-stone-700"
+    >
+      <Home size={20} /> Back to Home
+    </a>
+  </div>
+</Layout>

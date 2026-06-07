@@ -1,0 +1,15 @@
+---
+export const prerender = false;
+
+import Layout from '../../../layouts/Layout.astro';
+import EditNovelMetadata from '../../../components/islands/EditNovelMetadata';
+
+const { slug } = Astro.params;
+if (!slug) {
+  return Astro.redirect('/admin');
+}
+---
+
+<Layout title="Edit Novel" description="Update novel details and status">
+  <EditNovelMetadata slug={slug} client:load />
+</Layout>

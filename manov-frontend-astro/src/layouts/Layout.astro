@@ -1,0 +1,79 @@
+---
+import GlobalUI from '../components/islands/GlobalUI';
+import Navbar from '../components/astro/Navbar.astro';
+import NavbarAuth from '../components/islands/NavbarAuth';
+import DarkModeToggle from '../components/islands/DarkModeToggle';
+import NotificationBell from '../components/islands/NotificationBell';
+import Footer from '../components/astro/Footer.astro';
+
+interface Props {
+  title?: string;
+  description?: string;
+  hideNavbar?: boolean;
+}
+
+const { title, description, hideNavbar = false } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="theme-color" content="#faf8f5" />
+    {title && <title>{title} | Manov</title>}
+    {!title && <title>Manov</title>}
+    {description && <meta name="description" content={description} />}
+
+    <!-- FOUC Prevention for Dark Mode -->
+    <script is:inline>
+      (function () {
+        const theme = localStorage.getItem('theme') || 'light';
+        if (theme === 'dark') document.documentElement.classList.add('dark');
+      })();
+    </script>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Merriweather:wght@300;400;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="font-sans antialiased">
+    <!-- Global UI (Toaster) -->
+    <GlobalUI client:load />
+
+    <!-- Navbar -->
+    {!hideNavbar && (
+      <Navbar>
+        <NavbarAuth slot="auth" client:load />
+        <DarkModeToggle slot="theme" client:load />
+        <NotificationBell slot="notifications" client:load />
+      </Navbar>
+    )}
+
+    <!-- Main Content -->
+    <main>
+      <slot />
+    </main>
+
+    <!-- Footer -->
+    <Footer />
+  </body>
+</html>
+
+<style>
+  @import '../styles/global.css';
+</style>
+
+<script>
+  // Scroll to top on page navigation (replaces ScrollToTop component)
+  document.addEventListener('astro:page-load', () => {
+    window.scrollTo(0, 0);
+  });
+</script>

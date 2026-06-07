@@ -1,0 +1,84 @@
+---
+interface Props {
+  featured: {
+    title: string;
+    slug: string;
+    synopsis: string;
+    coverUrl: string;
+    averageRating: number;
+    chapterCount: number;
+  } | null;
+}
+
+const { featured } = Astro.props;
+---
+
+{featured ? (
+  <div class="relative mx-auto h-[55vh] w-full max-w-[1920px] overflow-hidden md:h-[420px] animate-fade-in">
+    <!-- Background Image -->
+    <div
+      class="absolute inset-0 bg-cover bg-center"
+      style={`background-image: url(${featured.coverUrl})`}
+    >
+      <div class="absolute inset-0 bg-black/50"></div>
+      <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent"></div>
+    </div>
+
+    <!-- Content Container -->
+    <div class="relative mx-auto flex h-full max-w-6xl flex-col justify-center gap-6 px-6 md:flex-row md:items-center md:justify-start md:gap-10">
+      <!-- Floating Cover Art -->
+      <div class="hidden h-64 w-44 flex-shrink-0 overflow-hidden rounded-lg border border-white/10 shadow-2xl md:block animate-slide-up">
+        <img
+          src={featured.coverUrl}
+          alt="Cover"
+          class="h-full w-full object-cover"
+        />
+      </div>
+
+      <!-- Text Info -->
+      <div class="space-y-3 text-white md:flex-1 animate-slide-up animation-delay-200">
+        <div class="flex items-center gap-2">
+          <span class="rounded bg-amber-700 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white">
+            Trending
+          </span>
+          <div class="flex items-center gap-1 text-sm text-amber-400">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            <span class="font-medium">
+              {featured.averageRating ? featured.averageRating.toFixed(1) : 'N/A'}
+            </span>
+          </div>
+        </div>
+
+        <h1 class="text-3xl font-bold leading-tight tracking-tight md:text-5xl">
+          {featured.title}
+        </h1>
+
+        <p class="line-clamp-2 max-w-lg text-sm leading-relaxed text-stone-300 md:text-base">
+          {featured.synopsis || 'No synopsis available.'}
+        </p>
+
+        <div class="flex items-center gap-3 pt-1">
+          <a
+            href={`/novel/${featured.slug}/read/1`}
+            class={`flex items-center gap-2 rounded-full px-6 py-2.5 text-sm font-medium transition ${
+              !featured.chapterCount || featured.chapterCount === 0
+                ? 'cursor-not-allowed bg-stone-600 text-stone-300'
+                : 'bg-white text-stone-900 hover:bg-stone-100'
+            }`}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg>
+            {!featured.chapterCount || featured.chapterCount === 0 ? 'No Chapters' : 'Read Now'}
+          </a>
+          <a
+            href={`/novel/${featured.slug}`}
+            class="rounded-full border border-white/10 bg-white/5 p-2.5 text-white transition hover:bg-white/10"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+) : (
+  <div class="h-[400px] animate-pulse bg-stone-200 dark:bg-stone-800"></div>
+)}

@@ -1,0 +1,79 @@
+/* Import Font dari Google */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Merriweather:wght@300;400;700&display=swap');
+
+/* Import Tailwind v4 */
+@import 'tailwindcss';
+
+/* Konfigurasi Tema (CSS-first config) */
+@theme {
+  /* Font Configuration */
+  --font-serif: 'Merriweather', serif;
+  --font-sans: 'Inter', sans-serif;
+
+  /* Warm ink & paper palette */
+  --color-ink: #1c1917;
+  --color-paper: #faf8f5;
+  --color-accent: #b45309;
+  --color-accent-light: #d97706;
+}
+
+/* Manual Dark Mode Variant */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Global Styles */
+body {
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  transition:
+    background-color 0.3s,
+    color 0.3s;
+}
+
+/* Style saat class .dark aktif di tag <html> */
+:root.dark body {
+  background-color: var(--color-ink);
+  color: #e7e5e4;
+}
+
+:root {
+  --toast-bg: #ffffff;
+  --toast-text: #1c1917;
+  --toast-border: #e7e5e4;
+}
+
+:root.dark {
+  --toast-bg: #292524;
+  --toast-text: #e7e5e4;
+  --toast-border: rgba(255, 255, 255, 0.08);
+}
+
+/* Custom scrollbar for webkit browsers */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* CSS Animation utilities for Astro components */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out forwards;
+}
+.animate-slide-up {
+  animation: slide-up 0.5s ease-out forwards;
+}
+.animation-delay-100 { animation-delay: 0.1s; }
+.animation-delay-200 { animation-delay: 0.2s; }
+.animation-delay-300 { animation-delay: 0.3s; }
+.animation-delay-400 { animation-delay: 0.4s; }
+.animation-delay-500 { animation-delay: 0.5s; }
+.animation-delay-600 { animation-delay: 0.6s; }

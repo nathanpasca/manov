@@ -1,0 +1,14 @@
+---
+import Layout from '../layouts/Layout.astro';
+import SEO from '../components/astro/SEO.astro';
+import AuthForms from '../components/islands/AuthForms';
+---
+
+<Layout title="Create Account" description="Create a Manov account and start reading translated novels today.">
+  <SEO
+    title="Create Account"
+    description="Create a Manov account and start reading translated novels today."
+    noindex={true}
+  />
+  <AuthForms mode="register" client:idle />
+</Layout>

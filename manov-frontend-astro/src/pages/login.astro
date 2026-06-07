@@ -1,0 +1,14 @@
+---
+import Layout from '../layouts/Layout.astro';
+import SEO from '../components/astro/SEO.astro';
+import AuthForms from '../components/islands/AuthForms';
+---
+
+<Layout title="Sign In" description="Sign in to your Manov account to continue reading.">
+  <SEO
+    title="Sign In"
+    description="Sign in to your Manov account to continue reading."
+    noindex={true}
+  />
+  <AuthForms mode="login" client:idle />
+</Layout>

@@ -1,0 +1,133 @@
+---
+import Layout from '../layouts/Layout.astro';
+import SEO from '../components/astro/SEO.astro';
+
+const siteUrl = import.meta.env.PUBLIC_FRONTEND_URL || 'https://manov.pascarz.site';
+
+const steps = [
+  {
+    id: 'scout',
+    title: 'Scrape',
+    description:
+      'Chapters are pulled from source sites using a browser automation tool.',
+  },
+  {
+    id: 'core',
+    title: 'Store',
+    description:
+      'A FastAPI backend keeps everything in PostgreSQL — novels, chapters, and user data.',
+  },
+  {
+    id: 'brain',
+    title: 'Translate',
+    description:
+      'Raw text is fed through a local language model to produce readable English.',
+  },
+  {
+    id: 'view',
+    title: 'Read',
+    description:
+      'The frontend renders chapters with customizable fonts, themes, and layout.',
+  },
+];
+---
+
+<Layout title="About" description="Learn about Manov — a free web novel reader with AI-translated chapters.">
+  <SEO
+    title="About"
+    description="Learn about Manov — a free web novel reader with AI-translated chapters."
+    canonical={`${siteUrl}/about`}
+  />
+
+  <div class="min-h-screen bg-[#faf8f5] pb-24 pt-28 font-sans text-stone-900 transition-colors duration-300 dark:bg-[#1c1917] dark:text-stone-100">
+    <div class="mx-auto max-w-3xl px-6">
+      <!-- Header -->
+      <div class="mb-16 animate-fade-in">
+        <h1 class="mb-4 font-serif text-4xl font-bold text-stone-900 md:text-5xl dark:text-white">
+          About Manov
+        </h1>
+        <p class="text-lg text-stone-500 dark:text-stone-400">
+          A place to read translated web novels, built by someone who got tired of waiting for the next chapter.
+        </p>
+      </div>
+
+      <!-- Story -->
+      <div class="mb-20 animate-slide-up" style="animation-delay: 0.1s;">
+        <div class="flex flex-col gap-10 md:flex-row md:gap-16">
+          <div class="md:w-2/3">
+            <p class="mb-6 text-lg leading-relaxed text-stone-700 dark:text-stone-300">
+              I started Manov because I was deep into a web novel that had hundreds of raw chapters released in Chinese, but only a handful translated into English. Waiting weeks for each new translation felt unbearable.
+            </p>
+            <p class="mb-6 text-lg leading-relaxed text-stone-700 dark:text-stone-300">
+              So I built a pipeline: scrape the raw text, run it through a translation model, clean it up, and serve it in a reader that actually feels nice to use. No paywalls, no clutter, just the story.
+            </p>
+            <p class="text-lg leading-relaxed text-stone-700 dark:text-stone-300">
+              It started as a personal tool, but I figured other people might find it useful too. If you're here, you probably know the feeling.
+            </p>
+          </div>
+
+          <div class="md:w-1/3">
+            <div class="rounded-xl border border-stone-100 bg-white p-6 dark:border-white/5 dark:bg-white/5">
+              <p class="mb-1 text-sm text-stone-400 dark:text-stone-500">Built with</p>
+              <ul class="space-y-1 text-sm text-stone-700 dark:text-stone-300">
+                <li>FastAPI & SQLModel</li>
+                <li>PostgreSQL</li>
+                <li>React & Tailwind</li>
+                <li>Local LLM inference</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Divider -->
+      <div class="mb-20 border-t border-stone-200 dark:border-white/10"></div>
+
+      <!-- How it works -->
+      <div class="mb-20 animate-slide-up" style="animation-delay: 0.2s;">
+        <h2 class="mb-12 text-center font-serif text-2xl font-bold text-stone-900 dark:text-white">
+          How it works
+        </h2>
+        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {steps.map((step) => (
+            <div
+              key={step.id}
+              class="flex flex-col items-center rounded-xl border border-stone-100 bg-white p-6 text-center dark:border-white/5 dark:bg-white/5"
+            >
+              <div class="mb-4 flex h-10 w-10 items-center justify-center rounded-full bg-stone-100 dark:bg-white/5">
+                {step.id === 'scout' && (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-stone-600 dark:text-stone-300"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                )}
+                {step.id === 'core' && (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-stone-600 dark:text-stone-300"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/></svg>
+                )}
+                {step.id === 'brain' && (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-stone-600 dark:text-stone-300"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"/></svg>
+                )}
+                {step.id === 'view' && (
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-stone-600 dark:text-stone-300"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><line x1="3" x2="21" y1="9" y2="9"/><line x1="9" x2="9" y1="21" y2="9"/></svg>
+                )}
+              </div>
+              <h3 class="mb-2 font-serif text-lg font-bold text-stone-900 dark:text-white">
+                {step.title}
+              </h3>
+              <p class="text-sm leading-relaxed text-stone-500 dark:text-stone-400">
+                {step.description}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <!-- Divider -->
+      <div class="mb-16 border-t border-stone-200 dark:border-white/10"></div>
+
+      <!-- Disclaimer -->
+      <div class="animate-slide-up" style="animation-delay: 0.3s;">
+        <p class="text-sm leading-relaxed text-stone-400 dark:text-stone-500">
+          The translations on this site are generated by AI. They're good enough to follow the story, but you'll probably spot the occasional awkward phrase or odd name. If something reads strangely, just imagine it as the machine's unique interpretation — sometimes it even adds a little accidental poetry.
+        </p>
+      </div>
+    </div>
+  </div>
+</Layout>

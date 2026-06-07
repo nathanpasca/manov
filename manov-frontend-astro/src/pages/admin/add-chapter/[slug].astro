@@ -1,0 +1,15 @@
+---
+export const prerender = false;
+
+import Layout from '../../../layouts/Layout.astro';
+import AddChapter from '../../../components/islands/AddChapter';
+
+const { slug } = Astro.params;
+if (!slug) {
+  return Astro.redirect('/admin');
+}
+---
+
+<Layout title="Add Chapter" description="Add a new chapter to a novel">
+  <AddChapter slug={slug} client:load />
+</Layout>

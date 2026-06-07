@@ -1,0 +1,16 @@
+---
+import Layout from '../layouts/Layout.astro';
+import SEO from '../components/astro/SEO.astro';
+import LibraryIsland from '../components/islands/LibraryIsland';
+---
+
+<Layout title="My Library" description="Your personal library of saved web novels on Manov.">
+  <SEO
+    title="My Library"
+    description="Your personal library of saved web novels on Manov."
+    noindex={true}
+  />
+  <div class="min-h-screen bg-[#faf8f5] px-4 pb-20 pt-24 font-sans transition-colors duration-300 md:px-8 dark:bg-[#1c1917] dark:text-stone-100">
+    <LibraryIsland client:idle />
+  </div>
+</Layout>
