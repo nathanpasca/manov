@@ -299,10 +299,16 @@ export default function Reader({
           progressPercent: progress,
         });
         const apiUrl = import.meta.env.PUBLIC_API_URL || 'http://localhost:8000/api';
-        navigator.sendBeacon?.(
-          `${apiUrl}/user/history/progress`,
-          new Blob([data], { type: 'application/json' })
-        );
+        const token = localStorage.getItem('token');
+        fetch(`${apiUrl}/user/history/progress`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: data,
+          keepalive: true,
+        }).catch(() => {});
       }
     };
     window.addEventListener('beforeunload', handleBeforeUnload);
