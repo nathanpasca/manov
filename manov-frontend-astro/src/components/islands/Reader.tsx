@@ -45,6 +45,16 @@ interface ReaderSettings {
   textAlign: 'text-left' | 'text-justify';
 }
 
+interface ReadingHistory {
+  novelId: number;
+  chapterNum: number;
+  lastReadBlockIndex: number | null;
+  blockOffsetPercent: number;
+  scrollPosition: number | null;
+  progressPercent: number;
+  updatedAt?: string;
+}
+
 export default function Reader({
   slug,
   chapterNum,
@@ -58,6 +68,12 @@ export default function Reader({
   const [showToc, setShowToc] = useState(false);
   const tocRef = useRef<HTMLDivElement>(null);
   const blockRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const setBlockRef = useCallback(
+    (index: number) => (el: HTMLDivElement | null) => {
+      blockRefs.current[index] = el;
+    },
+    []
+  );
 
   const [settings, setSettings] = useState<ReaderSettings>(() => {
     if (typeof window === 'undefined') {
@@ -183,35 +199,47 @@ export default function Reader({
   // Record chapter open immediately so history exists even if the user
   // navigates away before scrolling enough to trigger the scroll handler.
   useEffect(() => {
-    if (novelId) {
-      const readingPos = getCurrentReadingPosition();
-      api
-        .updateProgress({
-          novelId,
-          chapterNum,
-          lastReadBlockIndex: readingPos?.blockIndex,
-          blockOffsetPercent: readingPos?.blockOffsetPercent,
-          scrollPosition: window.scrollY,
-          progressPercent: 0,
-        })
-        .catch(() => {});
-    }
+    if (!novelId) return;
+
+    api
+      .getHistoryForNovel(novelId)
+      .then((history: ReadingHistory | null) => {
+        if (
+          history &&
+          history.chapterNum === chapterNum &&
+          (history.progressPercent ?? 0) > 0
+        ) {
+          return;
+        }
+        const readingPos = getCurrentReadingPosition();
+        api
+          .updateProgress({
+            novelId,
+            chapterNum,
+            lastReadBlockIndex: readingPos?.blockIndex,
+            blockOffsetPercent: readingPos?.blockOffsetPercent,
+            scrollPosition: window.scrollY,
+            progressPercent: 0,
+          })
+          .catch(() => {});
+      })
+      .catch(() => {});
   }, [novelId, chapterNum, getCurrentReadingPosition]);
 
   // Restore saved reading position on return
   useEffect(() => {
-    if (!novelId) return;
+    if (!novelId || window.scrollY > 0) return;
 
     let cancelled = false;
 
     api
       .getHistoryForNovel(novelId)
-      .then((history: any) => {
+      .then((history: ReadingHistory | null) => {
         if (cancelled) return;
         if (!history || history.chapterNum !== chapterNum) return;
         if (history.lastReadBlockIndex == null) return;
 
-        const tryRestore = () => {
+        const tryRestore = (attemptsLeft = 30) => {
           const blockCount = blockRefs.current.length;
           if (blockCount === 0) return;
           const blockIndex = Math.min(
@@ -220,7 +248,9 @@ export default function Reader({
           );
           const el = blockRefs.current[blockIndex];
           if (!el) {
-            requestAnimationFrame(tryRestore);
+            if (attemptsLeft > 0) {
+              requestAnimationFrame(() => tryRestore(attemptsLeft - 1));
+            }
             return;
           }
           const rect = el.getBoundingClientRect();
@@ -233,7 +263,7 @@ export default function Reader({
           window.scrollTo({ top: Math.max(0, targetY), behavior: 'auto' });
         };
 
-        requestAnimationFrame(tryRestore);
+        requestAnimationFrame(() => tryRestore());
       })
       .catch(() => {});
 
@@ -615,9 +645,7 @@ export default function Reader({
           {parsedBlocks.map((block, index) => (
             <div
               key={block.id}
-              ref={(el) => {
-                blockRefs.current[index] = el;
-              }}
+              ref={setBlockRef(index)}
               className="mb-6"
             >
               {block.type === 'header' ? (
