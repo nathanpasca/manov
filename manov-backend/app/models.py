@@ -20,8 +20,8 @@ def utc_now() -> datetime:
 class NovelGenreLink(SQLModel, table=True):
     """Association table linking novels and genres."""
 
-    novel_id: int = Field(foreign_key="novel.id", primary_key=True)
-    genre_id: int = Field(foreign_key="genre.id", primary_key=True)
+    novel_id: int = Field(foreign_key="novel.id", ondelete="CASCADE", primary_key=True)
+    genre_id: int = Field(foreign_key="genre.id", ondelete="CASCADE", primary_key=True)
 
 
 # ---------------------------------------------------------------------------

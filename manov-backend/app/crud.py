@@ -4,7 +4,7 @@ from sqlalchemy import func, or_
 from sqlalchemy import update as sa_update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from sqlmodel import select
+from sqlmodel import delete, select
 
 from app.models import (
     Chapter,
@@ -166,10 +166,12 @@ async def update_novel(session: AsyncSession, novel: Novel) -> Novel:
 
 
 async def delete_novel(session: AsyncSession, novel_id: int) -> None:
-    novel = await session.get(Novel, novel_id)
-    if novel:
-        await session.delete(novel)
-        await session.commit()
+    # Use direct DELETE so the DB handles cascading via ON DELETE CASCADE
+    # without loading every related row into Python memory.
+    # Explicitly delete link rows first for DBs without FK cascade on the link table.
+    await session.execute(delete(NovelGenreLink).where(NovelGenreLink.novel_id == novel_id))
+    await session.execute(delete(Novel).where(Novel.id == novel_id))
+    await session.commit()
 
 
 # ---------------------------------------------------------------------------
@@ -235,10 +237,8 @@ async def update_chapter(session: AsyncSession, chapter: Chapter) -> Chapter:
 
 
 async def delete_chapter(session: AsyncSession, chapter_id: int) -> None:
-    chapter = await session.get(Chapter, chapter_id)
-    if chapter:
-        await session.delete(chapter)
-        await session.commit()
+    await session.execute(delete(Chapter).where(Chapter.id == chapter_id))
+    await session.commit()
 
 
 # ---------------------------------------------------------------------------
@@ -317,10 +317,9 @@ async def create_genre(session: AsyncSession, genre: Genre) -> Genre:
 
 
 async def delete_genre(session: AsyncSession, genre_id: int) -> None:
-    genre = await session.get(Genre, genre_id)
-    if genre:
-        await session.delete(genre)
-        await session.commit()
+    await session.execute(delete(NovelGenreLink).where(NovelGenreLink.genre_id == genre_id))
+    await session.execute(delete(Genre).where(Genre.id == genre_id))
+    await session.commit()
 
 
 # ---------------------------------------------------------------------------
