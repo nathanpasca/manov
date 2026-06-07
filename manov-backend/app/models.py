@@ -181,6 +181,8 @@ class History(SQLModel, table=True):
     chapterNum: int
     scrollPosition: float | None = Field(default=None)
     progressPercent: int = Field(default=0)
+    lastReadBlockIndex: int | None = Field(default=None)
+    blockOffsetPercent: int = Field(default=0)
     updatedAt: datetime = Field(default_factory=utc_now)
 
     user: User | None = Relationship(back_populates="history")
