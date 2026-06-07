@@ -411,6 +411,12 @@ async def get_user_histories(session: AsyncSession, user_id: int) -> list[Histor
 # ---------------------------------------------------------------------------
 # Rating
 # ---------------------------------------------------------------------------
+# DEPRECATED: The quick-rating-without-review feature is no longer supported.
+# These helpers are retained only for backward compatibility (e.g. reading
+# existing Rating rows when computing aggregate stats or showing a user's
+# historical rating). New ratings must be created as Reviews via the review
+# endpoints, and the POST /novels/{id}/rate endpoint now returns 400.
+# ---------------------------------------------------------------------------
 async def get_rating(
     session: AsyncSession, user_id: int, novel_id: int
 ) -> Rating | None:
@@ -424,6 +430,7 @@ async def get_rating(
 async def upsert_rating(
     session: AsyncSession, user_id: int, novel_id: int, score: int
 ) -> Rating:
+    """DEPRECATED: Only kept for potential internal/backfill use. Do not expose to users."""
     rating = await get_rating(session, user_id, novel_id)
     if rating:
         rating.score = score
@@ -436,6 +443,7 @@ async def upsert_rating(
 
 
 async def get_novel_rating_stats(session: AsyncSession, novel_id: int) -> tuple[float, int]:
+    """DEPRECATED: Use get_novel_combined_rating_stats for unified stats."""
     result = await session.execute(
         select(func.avg(Rating.score), func.count(Rating.id))
         .where(Rating.novelId == novel_id)
@@ -452,6 +460,10 @@ async def get_novel_combined_rating_stats(
     If a user has both a Rating and a Review for the same novel, the Review
     score takes precedence (it is the more considered opinion). Each user
     is counted only once.
+
+    NOTE: The Rating table is deprecated. New ratings must be created as
+    Reviews. Rating rows are still included here for backward compatibility
+    until existing data is migrated or removed.
     """
     rating_rows = await session.execute(
         select(Rating.userId, Rating.score).where(Rating.novelId == novel_id)

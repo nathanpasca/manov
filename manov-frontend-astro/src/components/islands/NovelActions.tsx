@@ -71,6 +71,10 @@ export default function NovelActions({
     }
   };
 
+  // DEPRECATED: Quick star ratings without a written review are no longer
+  // supported by the backend. Users should write a review via ReviewSection
+  // instead. Keeping this handler for reference; calling rateNovel will now
+  // return 400 from the API.
   const handleRate = async (score: number) => {
     if (!user) {
       toast.error('Please login to rate');

@@ -210,6 +210,11 @@ class UnlockedChapter(SQLModel, table=True):
 # ---------------------------------------------------------------------------
 # Rating
 # ---------------------------------------------------------------------------
+# DEPRECATED: The quick-rating-without-review feature is no longer supported.
+# New ratings should be created as Reviews (score + content). This table is
+# retained for backward compatibility so existing Rating rows continue to
+# contribute to aggregate stats, but no new rows should be created via the API.
+# ---------------------------------------------------------------------------
 class Rating(SQLModel, table=True):
     __table_args__ = (UniqueConstraint("userId", "novelId"),)
 

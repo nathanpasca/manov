@@ -20,7 +20,6 @@ from app.crud import (
     get_review_by_user_and_novel,
     get_reviews_by_novel,
     update_review,
-    upsert_rating,
 )
 from app.database import get_session
 from app.middleware.rate_limit import limiter
@@ -76,23 +75,17 @@ async def rate_novel(
     user: dict = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    if not 1 <= req.score <= 5:
-        raise HTTPException(status_code=400, detail="Score must be between 1 and 5")
+    """DEPRECATED: Quick star ratings without a review are no longer supported.
 
-    # 1. Upsert Rating
-    await upsert_rating(session, user["id"], id, req.score)
-
-    # 2. Recalculate Average from both Rating and Review tables
-    average, count = await get_novel_combined_rating_stats(session, id)
-
-    # 3. Update Novel Stats
-    novel = await session.get(Novel, id)
-    if novel:
-        novel.averageRating = average
-        novel.ratingCount = count
-        await session.commit()
-
-    return {"message": "Rating submitted", "average": average, "count": count}
+    The product now requires a written review alongside every rating so that
+    scores are accompanied by feedback. Existing Rating rows are still
+    counted in aggregate stats for backward compatibility, but new quick
+    ratings cannot be created through the API.
+    """
+    raise HTTPException(
+        status_code=400,
+        detail="Quick ratings are disabled. Please write a review to rate this novel.",
+    )
 
 
 # --- COMMENTS (NOVEL) ---

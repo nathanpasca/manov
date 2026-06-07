@@ -46,7 +46,8 @@ async def _create_chapter(db_session, novel_id, chapter_num=1):
 
 
 @pytest.mark.anyio
-async def test_rate_novel(client, db_session):
+async def test_rate_novel_is_disabled(client, db_session):
+    """Quick star ratings without a review are no longer accepted."""
     user = await _create_user(db_session)
     novel = await _create_novel(db_session)
     token = create_access_token(data={"sub": str(user.id), "role": user.role})
@@ -57,58 +58,29 @@ async def test_rate_novel(client, db_session):
         headers={"Authorization": f"Bearer {token}"},
     )
 
-    assert response.status_code == 200
+    assert response.status_code == 400
     data = response.json()
-    assert data["average"] == 5.0
-    assert data["count"] == 1
+    assert "disabled" in data["detail"].lower() or "review" in data["detail"].lower()
 
 
 @pytest.mark.anyio
-async def test_rate_novel_update_existing(client, db_session):
-    user = await _create_user(db_session)
+async def test_multiple_reviews_combine_stats(client, db_session):
+    """Multiple written reviews should combine into a single aggregate rating."""
+    user1 = await _create_user(db_session, email="user1@example.com")
+    user2 = await _create_user(db_session, email="user2@example.com")
     novel = await _create_novel(db_session)
-    token = create_access_token(data={"sub": str(user.id), "role": user.role})
+    token1 = create_access_token(data={"sub": str(user1.id), "role": user1.role})
+    token2 = create_access_token(data={"sub": str(user2.id), "role": user2.role})
 
     await client.post(
-        f"/api/novels/{novel.id}/rate",
-        json={"score": 3},
-        headers={"Authorization": f"Bearer {token}"},
+        f"/api/novels/{novel.id}/reviews",
+        json={"score": 3, "content": "It was okay"},
+        headers={"Authorization": f"Bearer {token1}"},
     )
-    response = await client.post(
-        f"/api/novels/{novel.id}/rate",
-        json={"score": 5},
-        headers={"Authorization": f"Bearer {token}"},
-    )
-
-    assert response.status_code == 200
-    data = response.json()
-    assert data["average"] == 5.0
-    assert data["count"] == 1
-
-
-@pytest.mark.anyio
-async def test_rate_and_review_combined_stats(client, db_session):
-    """Quick ratings and written reviews should contribute to the same aggregate stats."""
-    rater = await _create_user(db_session, email="rater@example.com")
-    reviewer = await _create_user(db_session, email="reviewer@example.com")
-    novel = await _create_novel(db_session)
-    rater_token = create_access_token(data={"sub": str(rater.id), "role": rater.role})
-    reviewer_token = create_access_token(
-        data={"sub": str(reviewer.id), "role": reviewer.role}
-    )
-
-    # Rater gives 3 stars (no review)
-    await client.post(
-        f"/api/novels/{novel.id}/rate",
-        json={"score": 3},
-        headers={"Authorization": f"Bearer {rater_token}"},
-    )
-
-    # Reviewer writes a 5-star review
     response = await client.post(
         f"/api/novels/{novel.id}/reviews",
         json={"score": 5, "content": "Loved it!"},
-        headers={"Authorization": f"Bearer {reviewer_token}"},
+        headers={"Authorization": f"Bearer {token2}"},
     )
 
     assert response.status_code == 200
@@ -118,20 +90,12 @@ async def test_rate_and_review_combined_stats(client, db_session):
 
 
 @pytest.mark.anyio
-async def test_review_overrides_user_rating_in_library_status(client, db_session):
-    """check_library_status should prefer the Review score over a quick Rating."""
+async def test_review_returned_in_library_status(client, db_session):
+    """check_library_status should return the user's review score."""
     user = await _create_user(db_session)
     novel = await _create_novel(db_session)
     token = create_access_token(data={"sub": str(user.id), "role": user.role})
 
-    # User quick-rates 2 stars
-    await client.post(
-        f"/api/novels/{novel.id}/rate",
-        json={"score": 2},
-        headers={"Authorization": f"Bearer {token}"},
-    )
-
-    # User then writes a 4-star review
     await client.post(
         f"/api/novels/{novel.id}/reviews",
         json={"score": 4, "content": "Better on reflection"},
@@ -145,22 +109,21 @@ async def test_review_overrides_user_rating_in_library_status(client, db_session
 
     assert response.status_code == 200
     data = response.json()
-    # Review score should be returned, not the outdated quick rating
     assert data["userRating"] == 4
 
 
 @pytest.mark.anyio
-async def test_combined_stats_review_overrides_rating_for_same_user(client, db_session):
-    """If the same user has both a Rating and a Review, only their Review counts once."""
+async def test_combined_stats_review_overrides_legacy_rating(client, db_session):
+    """If a legacy Rating row exists for a user, their Review score takes precedence."""
+    from app.crud import upsert_rating
+
     user = await _create_user(db_session)
     novel = await _create_novel(db_session)
     token = create_access_token(data={"sub": str(user.id), "role": user.role})
 
-    await client.post(
-        f"/api/novels/{novel.id}/rate",
-        json={"score": 1},
-        headers={"Authorization": f"Bearer {token}"},
-    )
+    # Simulate a pre-existing legacy quick rating (no longer creatable via API)
+    await upsert_rating(db_session, user.id, novel.id, 1)
+
     response = await client.post(
         f"/api/novels/{novel.id}/reviews",
         json={"score": 5, "content": "Changed my mind"},
@@ -169,7 +132,7 @@ async def test_combined_stats_review_overrides_rating_for_same_user(client, db_s
 
     assert response.status_code == 200
     data = response.json()
-    # Only one user, using the review score
+    # Only one user, using the review score; legacy rating is overridden
     assert data["average"] == 5.0
     assert data["count"] == 1
 
