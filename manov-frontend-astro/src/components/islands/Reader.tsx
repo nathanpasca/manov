@@ -46,7 +46,7 @@ interface ReaderSettings {
 }
 
 interface ReadingHistory {
-  novelId: number;
+  novelId: string;
   chapterNum: number;
   lastReadBlockIndex: number | null;
   blockOffsetPercent: number;
@@ -240,8 +240,14 @@ export default function Reader({
         if (history.lastReadBlockIndex == null) return;
 
         const tryRestore = (attemptsLeft = 30) => {
+          if (cancelled) return;
           const blockCount = blockRefs.current.length;
-          if (blockCount === 0) return;
+          if (blockCount === 0) {
+            if (attemptsLeft > 0) {
+              requestAnimationFrame(() => tryRestore(attemptsLeft - 1));
+            }
+            return;
+          }
           const blockIndex = Math.min(
             blockCount - 1,
             Math.max(0, history.lastReadBlockIndex)
