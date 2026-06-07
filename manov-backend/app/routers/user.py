@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.crud import (
     add_to_library,
+    get_history_entry,
     get_library_entry,
     get_rating,
     get_review_by_user_and_novel,
@@ -14,6 +15,7 @@ from app.crud import (
     mark_all_notifications_read,
     mark_notification_read,
     remove_from_library,
+    upsert_history,
 )
 from app.database import get_session
 from app.schemas import NovelHistory, NovelList
@@ -146,8 +148,6 @@ async def update_progress(
     user: dict = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    from app.crud import get_history_entry, upsert_history
-
     entry = await get_history_entry(session, user["id"], req.novelId)
     if entry:
         entry.chapterNum = req.chapterNum
@@ -179,8 +179,6 @@ async def get_history_for_novel(
     user: dict = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    from app.crud import get_history_entry
-
     entry = await get_history_entry(session, user["id"], novel_id)
     if not entry:
         raise HTTPException(status_code=404, detail="History not found")
