@@ -57,6 +57,7 @@ export default function Reader({
   const settingsRef = useRef<HTMLDivElement>(null);
   const [showToc, setShowToc] = useState(false);
   const tocRef = useRef<HTMLDivElement>(null);
+  const blockRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const [settings, setSettings] = useState<ReaderSettings>(() => {
     if (typeof window === 'undefined') {
@@ -123,6 +124,29 @@ export default function Reader({
     return Math.min(100, Math.round((scrollTop / docHeight) * 100));
   }, []);
 
+  const getCurrentReadingPosition = useCallback(() => {
+    if (blockRefs.current.length === 0) return null;
+    const viewportTop = window.scrollY + 80; // small buffer below navbar
+
+    for (let i = 0; i < blockRefs.current.length; i++) {
+      const el = blockRefs.current[i];
+      if (!el) continue;
+      const rect = el.getBoundingClientRect();
+      const blockTop = rect.top + window.scrollY;
+      const blockHeight = rect.height;
+      if (blockHeight <= 0) continue;
+
+      if (blockTop <= viewportTop && blockTop + blockHeight > viewportTop) {
+        const offset = Math.min(
+          100,
+          Math.max(0, Math.round(((viewportTop - blockTop) / blockHeight) * 100))
+        );
+        return { blockIndex: i, blockOffsetPercent: offset };
+      }
+    }
+    return null;
+  }, []);
+
   useEffect(() => {
     const handleScroll = () => {
       const progress = calculateProgress();
@@ -132,10 +156,13 @@ export default function Reader({
       saveProgressTimeout.current = setTimeout(() => {
         if (novelId && Math.abs(progress - lastProgress.current) >= 5) {
           lastProgress.current = progress;
+          const readingPos = getCurrentReadingPosition();
           api
             .updateProgress({
               novelId,
               chapterNum,
+              lastReadBlockIndex: readingPos?.blockIndex,
+              blockOffsetPercent: readingPos?.blockOffsetPercent,
               scrollPosition: window.scrollY,
               progressPercent: progress,
             })
@@ -151,21 +178,68 @@ export default function Reader({
         clearTimeout(saveProgressTimeout.current);
       }
     };
-  }, [novelId, chapterNum, calculateProgress]);
+  }, [novelId, chapterNum, calculateProgress, getCurrentReadingPosition]);
 
   // Record chapter open immediately so history exists even if the user
   // navigates away before scrolling enough to trigger the scroll handler.
   useEffect(() => {
     if (novelId) {
+      const readingPos = getCurrentReadingPosition();
       api
         .updateProgress({
           novelId,
           chapterNum,
+          lastReadBlockIndex: readingPos?.blockIndex,
+          blockOffsetPercent: readingPos?.blockOffsetPercent,
           scrollPosition: window.scrollY,
           progressPercent: 0,
         })
         .catch(() => {});
     }
+  }, [novelId, chapterNum, getCurrentReadingPosition]);
+
+  // Restore saved reading position on return
+  useEffect(() => {
+    if (!novelId) return;
+
+    let cancelled = false;
+
+    api
+      .getHistoryForNovel(novelId)
+      .then((history: any) => {
+        if (cancelled) return;
+        if (!history || history.chapterNum !== chapterNum) return;
+        if (history.lastReadBlockIndex == null) return;
+
+        const tryRestore = () => {
+          const blockCount = blockRefs.current.length;
+          if (blockCount === 0) return;
+          const blockIndex = Math.min(
+            blockCount - 1,
+            Math.max(0, history.lastReadBlockIndex)
+          );
+          const el = blockRefs.current[blockIndex];
+          if (!el) {
+            requestAnimationFrame(tryRestore);
+            return;
+          }
+          const rect = el.getBoundingClientRect();
+          const blockHeight = rect.height;
+          if (blockHeight <= 0) return;
+
+          const offset = Math.min(100, Math.max(0, history.blockOffsetPercent));
+          const offsetPx = (offset / 100) * blockHeight;
+          const targetY = el.offsetTop + offsetPx - 80;
+          window.scrollTo({ top: Math.max(0, targetY), behavior: 'auto' });
+        };
+
+        requestAnimationFrame(tryRestore);
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
   }, [novelId, chapterNum]);
 
   // Save on unload
@@ -538,8 +612,14 @@ export default function Reader({
             lineHeight: settings.lineHeight,
           }}
         >
-          {parsedBlocks.map((block) => (
-            <div key={block.id} className="mb-6">
+          {parsedBlocks.map((block, index) => (
+            <div
+              key={block.id}
+              ref={(el) => {
+                blockRefs.current[index] = el;
+              }}
+              className="mb-6"
+            >
               {block.type === 'header' ? (
                 <h3 className="mb-8 mt-16 text-center text-2xl font-bold leading-tight opacity-90 sm:text-3xl">
                   {block.content}
