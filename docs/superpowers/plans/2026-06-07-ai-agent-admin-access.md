@@ -8,6 +8,8 @@
 
 **Tech Stack:** FastAPI + SQLModel + Alembic + bcrypt (backend); React + Vite (frontend); `fastapi-mcp` for MCP server generation.
 
+**Important Constraint — Scraping / Crawler Access:** The existing `POST /admin/scrape` endpoint and its underlying `NovelCrawler` are **not exposed to agents** in this plan. The crawler is currently a local-development-only script (`headless=False`, hardcoded 69shuba.com selectors, sync Playwright, filesystem writes to `raw_data/`). Agents create and manage novels by providing finished content directly through the composite endpoints. A separate future workstream should harden the crawler before exposing it to agents.
+
 ---
 
 ## File Map

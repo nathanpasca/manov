@@ -246,6 +246,7 @@ Bulk endpoints accept an optional `idempotencyKey` header. If provided, the serv
 - Real-time collaboration / locking.
 - Non-admin agent access (this spec is admin-only).
 - MCP prompts and resources (Phase 2; we start with tools only).
+- **Scraping / crawler access for agents.** The existing `POST /admin/scrape` endpoint triggers `NovelCrawler`, which is currently a local-development-only script (`headless=False`, hardcoded 69shuba.com selectors, sync Playwright, filesystem writes). It is intentionally **not exposed to agents** via MCP or composite endpoints. Agents create novels by providing finished content directly through `POST /admin/novels/with-chapters`. A future workstream can make the crawler production-ready and then expose it to agents.
 
 ## Files to Create / Modify
 
