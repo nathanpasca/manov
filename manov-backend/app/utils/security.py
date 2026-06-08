@@ -80,9 +80,23 @@ def get_reset_token_expiry() -> datetime:
     """Return the expiry datetime for a reset token."""
     return datetime.now(UTC) + timedelta(minutes=RESET_TOKEN_EXPIRE_MINUTES)
 
-
+# ---------------------------------------------------------------------------
+# API Key
+# ---------------------------------------------------------------------------
 def generate_api_key() -> tuple[str, str]:
-    """Generate a random API key and its SHA-256 hash. Returns (full_key, hash)."""
-    full_key = secrets.token_urlsafe(32)
+    """Generate a random API key. Returns (full_key, key_hash)."""
+    full_key = "manov_" + secrets.token_urlsafe(32)
     key_hash = hashlib.sha256(full_key.encode()).hexdigest()
     return full_key, key_hash
+
+
+def hash_api_key(key: str) -> str:
+    """Hash an API key with SHA-256."""
+    return hashlib.sha256(key.encode()).hexdigest()
+
+
+def verify_api_key(key: str, stored_hash: str) -> bool:
+    """Timing-safe verification of an API key against its stored hash."""
+    if not key or not stored_hash:
+        return False
+    return hmac.compare_digest(hash_api_key(key), stored_hash)

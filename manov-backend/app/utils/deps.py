@@ -1,8 +1,14 @@
-from fastapi import Depends, HTTPException, status
+from datetime import UTC, datetime
+
+from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer, OAuth2PasswordBearer
 from jose import JWTError, jwt
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlmodel import select
 
-from app.utils.security import ALGORITHM, SECRET_KEY
+from app.database import AsyncSessionLocal, get_session
+from app.models import ApiKey, User
+from app.utils.security import ALGORITHM, SECRET_KEY, verify_api_key
 
 # Ini memberitahu FastAPI: "Kalau butuh token, ambil dari Header Authorization: Bearer ..."
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
@@ -62,3 +68,33 @@ async def get_current_admin(user: dict = Depends(get_current_user)):
             detail="You do not have permission to access this resource (Admin only)",
         )
     return user
+
+
+async def get_current_user_from_api_key(
+    x_api_key: str | None = Header(None, alias="X-API-Key"),
+    session: AsyncSession = Depends(get_session),
+) -> dict | None:
+    if not x_api_key:
+        return None
+
+    prefix = x_api_key[:8]
+    result = await session.execute(
+        select(ApiKey, User)
+        .join(User, ApiKey.userId == User.id)
+        .where(ApiKey.isActive, ApiKey.keyPrefix == prefix)
+    )
+    rows = result.all()
+
+    for api_key_row, user in rows:
+        if verify_api_key(x_api_key, api_key_row.keyHash):
+            async with AsyncSessionLocal() as side_session:
+                api_key_row.lastUsedAt = datetime.now(UTC).replace(tzinfo=None)
+                await side_session.merge(api_key_row)
+                await side_session.commit()
+            return {
+                "id": user.id,
+                "email": user.email,
+                "role": user.role,
+                "username": user.username,
+            }
+    return None
