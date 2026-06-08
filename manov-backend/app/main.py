@@ -13,7 +13,7 @@ from slowapi.middleware import SlowAPIMiddleware
 from app.config import settings
 from app.database import engine
 from app.middleware.rate_limit import limiter
-from app.routers import admin, auth, genres, novels, sitemap, social, user
+from app.routers import admin, admin_api_keys, auth, genres, novels, sitemap, social, user
 
 
 # --- LIFESPAN MANAGER ---
@@ -93,6 +93,7 @@ app.add_middleware(
 # --- REGISTER ROUTER ---
 app.include_router(novels.router, prefix="/api", tags=["Novels"])
 app.include_router(admin.router, prefix="/api/admin", tags=["Admin"])
+app.include_router(admin_api_keys.router, prefix="/api/admin", tags=["Admin API Keys"])
 app.include_router(auth.router, prefix="/api/auth", tags=["Auth"])
 app.include_router(user.router, prefix="/api/user", tags=["User"])
 app.include_router(genres.router, prefix="/api", tags=["Genres"])

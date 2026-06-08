@@ -79,3 +79,10 @@ def verify_reset_token(token: str, stored_hash: str) -> bool:
 def get_reset_token_expiry() -> datetime:
     """Return the expiry datetime for a reset token."""
     return datetime.now(UTC) + timedelta(minutes=RESET_TOKEN_EXPIRE_MINUTES)
+
+
+def generate_api_key() -> tuple[str, str]:
+    """Generate a random API key and its SHA-256 hash. Returns (full_key, hash)."""
+    full_key = secrets.token_urlsafe(32)
+    key_hash = hashlib.sha256(full_key.encode()).hexdigest()
+    return full_key, key_hash
