@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 
-from fastapi import Depends, Header, HTTPException, status
+from fastapi import Depends, Header, HTTPException, Query, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer, OAuth2PasswordBearer
 from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -58,26 +58,16 @@ async def get_current_user_optional(
         return None
 
 
-async def get_current_admin(user: dict = Depends(get_current_user)):
-    """
-    Tugas: Memastikan user yang login adalah ADMIN.
-    """
-    if user["role"] != "ADMIN":
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to access this resource (Admin only)",
-        )
-    return user
-
-
 async def get_current_user_from_api_key(
     x_api_key: str | None = Header(None, alias="X-API-Key"),
+    api_key: str | None = Query(None),
     session: AsyncSession = Depends(get_session),
 ) -> dict | None:
-    if not x_api_key:
+    key = x_api_key or api_key
+    if not key:
         return None
 
-    prefix = x_api_key[:8]
+    prefix = key[:8]
     result = await session.execute(
         select(ApiKey, User)
         .join(User, ApiKey.userId == User.id)
@@ -86,7 +76,7 @@ async def get_current_user_from_api_key(
     rows = result.all()
 
     for api_key_row, user in rows:
-        if verify_api_key(x_api_key, api_key_row.keyHash):
+        if verify_api_key(key, api_key_row.keyHash):
             async with AsyncSessionLocal() as side_session:
                 api_key_row.lastUsedAt = datetime.now(UTC).replace(tzinfo=None)
                 await side_session.merge(api_key_row)
@@ -98,3 +88,25 @@ async def get_current_user_from_api_key(
                 "username": user.username,
             }
     return None
+
+
+async def get_current_admin(
+    user: dict = Depends(get_current_user),
+    api_user: dict | None = Depends(get_current_user_from_api_key),
+):
+    """
+    Tugas: Memastikan user yang login adalah ADMIN.
+    Supports both JWT (Bearer token) and API key (header or query param).
+    """
+    resolved = user if user else api_user
+    if not resolved:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required",
+        )
+    if resolved.get("role") != "ADMIN":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to access this resource (Admin only)",
+        )
+    return resolved
