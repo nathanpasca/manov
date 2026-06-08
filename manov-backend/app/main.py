@@ -102,6 +102,37 @@ app.include_router(genres.router, prefix="/api", tags=["Genres"])
 app.include_router(social.router, prefix="/api", tags=["Social"])
 app.include_router(sitemap.router)
 
+# --- OPENAPI SCHEMA FIX for Moonshot / MCP compatibility ---
+# Pydantic v2 generates `anyOf` + parent `type` for Optional fields,
+# which Moonshot's JSON schema validator rejects. We strip the parent
+# `type` when `anyOf` is present.
+def _fix_anyof_schema(obj):
+    if isinstance(obj, dict):
+        if "anyOf" in obj and "type" in obj:
+            del obj["type"]
+        for v in obj.values():
+            _fix_anyof_schema(v)
+    elif isinstance(obj, list):
+        for item in obj:
+            _fix_anyof_schema(item)
+
+
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+    schema = get_openapi(
+        title=app.title,
+        version="0.1.0",
+        description="Manov API",
+        routes=app.routes,
+    )
+    _fix_anyof_schema(schema)
+    app.openapi_schema = schema
+    return schema
+
+
+app.openapi = custom_openapi
+
 # --- MCP SERVER ---
 mcp = FastApiMCP(
     app,

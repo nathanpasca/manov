@@ -39,8 +39,8 @@ async def get_novels(
     limit: int = 20,
     sort_by: str = "updatedAt",
     sort_order: str = "desc",
-    status: str | None = None,
-    genre_id: int | None = None,
+    status: str = "",
+    genre_id: int = 0,
 ) -> list[tuple[Novel, int]]:
     chapter_count_subq = (
         select(func.count(Chapter.id))

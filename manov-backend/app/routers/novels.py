@@ -38,17 +38,17 @@ async def get_all_genres(session: AsyncSession = Depends(get_session)):
 
 @router.get("/novels", response_model=list[NovelList])
 async def get_all_novels(
-    q: str | None = None,
+    q: str = "",
     skip: int = 0,
     limit: int = 20,
     sort_by: str = "updatedAt",
     sort_order: str = "desc",
-    status: str | None = None,
-    genre_id: int | None = None,
+    status: str = "",
+    genre_id: int = 0,
     session: AsyncSession = Depends(get_session),
 ):
     # --- Search mode ---
-    if q and len(q.strip()) >= 2:
+    if q.strip() and len(q.strip()) >= 2:
         novels = await search_novels(session, query=q.strip(), skip=skip, limit=limit)
     else:
         novels = await get_novels(
