@@ -10,6 +10,8 @@ from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
+from fastapi_mcp import FastApiMCP
+
 from app.config import settings
 from app.database import engine
 from app.middleware.rate_limit import limiter
@@ -99,6 +101,14 @@ app.include_router(user.router, prefix="/api/user", tags=["User"])
 app.include_router(genres.router, prefix="/api", tags=["Genres"])
 app.include_router(social.router, prefix="/api", tags=["Social"])
 app.include_router(sitemap.router)
+
+# --- MCP SERVER ---
+mcp = FastApiMCP(
+    app,
+    name="manov-admin",
+    description="MCP tools for managing novels and chapters in Manov.",
+)
+mcp.mount_http()
 
 
 @app.get("/")
