@@ -152,6 +152,8 @@ class User(SQLModel, table=True):
     comments: list["Comment"] = Relationship(back_populates="user")
     reviews: list["Review"] = Relationship(back_populates="user")
     notifications: list["Notification"] = Relationship(back_populates="user")
+    apiKeys: list["ApiKey"] = Relationship(back_populates="user")
+    auditLogs: list["AdminAuditLog"] = Relationship(back_populates="user")
 
 
 # ---------------------------------------------------------------------------
@@ -187,6 +189,39 @@ class History(SQLModel, table=True):
 
     user: User | None = Relationship(back_populates="history")
     novel: Novel | None = Relationship(back_populates="histories")
+
+
+# ---------------------------------------------------------------------------
+# ApiKey
+# ---------------------------------------------------------------------------
+class ApiKey(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    userId: int = Field(foreign_key="user.id", ondelete="CASCADE", index=True)
+    name: str
+    keyHash: str = Field(index=True)
+    keyPrefix: str
+    role: str = Field(default="ADMIN")
+    isActive: bool = Field(default=True)
+    lastUsedAt: datetime | None = None
+    createdAt: datetime = Field(default_factory=utc_now)
+
+    user: User | None = Relationship(back_populates="apiKeys")
+
+
+# ---------------------------------------------------------------------------
+# AdminAuditLog
+# ---------------------------------------------------------------------------
+class AdminAuditLog(SQLModel, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    userId: int = Field(foreign_key="user.id", ondelete="CASCADE", index=True)
+    action: str
+    entityType: str
+    entityId: int
+    payloadSnapshot: str | None = Field(default=None, sa_column=Column(Text))
+    ipAddress: str | None = None
+    createdAt: datetime = Field(default_factory=utc_now)
+
+    user: User | None = Relationship(back_populates="auditLogs")
 
 
 # ---------------------------------------------------------------------------
