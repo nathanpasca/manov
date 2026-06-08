@@ -99,6 +99,23 @@ export interface ReaderChapter {
   nextChapterNum: number | null;
 }
 
+export interface ApiKey {
+  id: number;
+  name: string;
+  keyPrefix: string;
+  isActive: boolean;
+  lastUsedAt: string | null;
+  createdAt: string;
+}
+
+export interface ApiKeyCreateResponse {
+  id: number;
+  name: string;
+  key: string;
+  keyPrefix: string;
+  createdAt: string;
+}
+
 export interface AuthResponse {
   access_token: string;
   user: User;

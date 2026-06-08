@@ -105,6 +105,13 @@ export const api = {
   deleteReview: (reviewId: string) =>
     apiClient.delete(`/reviews/${reviewId}`).then((r) => r.data),
 
+  // Admin API Keys
+  listApiKeys: () => apiClient.get('/admin/api-keys').then((r) => r.data),
+  createApiKey: (name: string) =>
+    apiClient.post('/admin/api-keys', { name }).then((r) => r.data),
+  revokeApiKey: (id: number) =>
+    apiClient.delete(`/admin/api-keys/${id}`).then((r) => r.data),
+
   // Admin
   createNovel: (data: any) =>
     apiClient.post('/admin/novels', data).then((r) => r.data),
