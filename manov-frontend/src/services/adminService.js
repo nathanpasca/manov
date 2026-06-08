@@ -16,4 +16,7 @@ export const adminService = {
     getGenres: () => api.get('/genres'),
     createGenre: (name) => api.post('/admin/genres', { name }),
     deleteGenre: (id) => api.delete(`/admin/genres/${id}`),
+    getApiKeys: () => api.get('/admin/api-keys'),
+    createApiKey: (name) => api.post('/admin/api-keys', { name }),
+    revokeApiKey: (id) => api.delete(`/admin/api-keys/${id}`),
 };

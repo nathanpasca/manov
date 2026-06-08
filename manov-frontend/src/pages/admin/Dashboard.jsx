@@ -12,6 +12,7 @@ import {
     Search,
     LayoutDashboard,
     Database,
+    Key,
     ChevronLeft,
     ChevronRight,
 } from 'lucide-react';
@@ -132,6 +133,12 @@ const AdminDashboard = () => {
                             className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-6 py-3 font-bold text-gray-900 shadow-sm transition hover:bg-gray-50 dark:border-white/10 dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
                         >
                             <Database size={20} /> Manage Genres
+                        </button>
+                        <button
+                            onClick={() => navigate('/admin/api-keys')}
+                            className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-6 py-3 font-bold text-gray-900 shadow-sm transition hover:bg-gray-50 dark:border-white/10 dark:bg-white/10 dark:text-white dark:hover:bg-white/20"
+                        >
+                            <Key size={20} /> API Keys
                         </button>
                     </div>
                 </div>

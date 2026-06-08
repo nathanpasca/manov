@@ -31,6 +31,7 @@ const EditNovelMetadata = React.lazy(
     () => import('./pages/admin/EditNovelMetadata')
 );
 const EditChapter = React.lazy(() => import('./pages/admin/EditChapter'));
+const ApiKeys = React.lazy(() => import('./pages/admin/ApiKeys'));
 
 function App() {
     return (
@@ -123,6 +124,10 @@ function App() {
                                     <Route
                                         path="/admin/edit/:slug/:chapterNum"
                                         element={<EditChapter />}
+                                    />
+                                    <Route
+                                        path="/admin/api-keys"
+                                        element={<ApiKeys />}
                                     />
                                 </Route>
 
