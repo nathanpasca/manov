@@ -103,18 +103,27 @@ app.include_router(social.router, prefix="/api", tags=["Social"])
 app.include_router(sitemap.router)
 
 # --- OPENAPI SCHEMA FIX for Moonshot / MCP compatibility ---
-# Pydantic v2 generates `anyOf` + parent `type` for Optional fields,
-# which Moonshot's JSON schema validator rejects. We strip the parent
-# `type` when `anyOf` is present.
-def _fix_anyof_schema(obj):
+# Pydantic v2 generates `anyOf: [{type: "X"}, {type: "null"}]` for Optional
+# fields. Moonshot (and Claude API) reject anyOf in tool schemas entirely.
+# We unwrap these into just `{type: "X"}` (optional fields don't need null
+# in LLM tool schemas — the LLM can simply omit them).
+def _unwrap_optional_anyof(obj):
     if isinstance(obj, dict):
-        if "anyOf" in obj and "type" in obj:
-            del obj["type"]
-        for v in obj.values():
-            _fix_anyof_schema(v)
+        if "anyOf" in obj and len(obj["anyOf"]) == 2:
+            non_null_items = [item for item in obj["anyOf"] if item.get("type") != "null"]
+            null_items = [item for item in obj["anyOf"] if item.get("type") == "null"]
+            if len(non_null_items) == 1 and len(null_items) == 1:
+                # Unwrap: replace anyOf with the non-null type, keep siblings
+                anyof = obj.pop("anyOf")
+                # Merge non-null schema properties into parent
+                for k, v in non_null_items[0].items():
+                    if k not in obj:
+                        obj[k] = v
+        for v in list(obj.values()):
+            _unwrap_optional_anyof(v)
     elif isinstance(obj, list):
         for item in obj:
-            _fix_anyof_schema(item)
+            _unwrap_optional_anyof(item)
 
 
 def custom_openapi():
@@ -126,7 +135,7 @@ def custom_openapi():
         description="Manov API",
         routes=app.routes,
     )
-    _fix_anyof_schema(schema)
+    _unwrap_optional_anyof(schema)
     app.openapi_schema = schema
     return schema
 

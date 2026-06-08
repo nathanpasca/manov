@@ -36,7 +36,7 @@ class RatingRequest(BaseModel):
 
 class CommentRequest(BaseModel):
     content: str = Field(..., max_length=5000)
-    parentId: int | None = None
+    parentId: int = 0
 
 
 class CommentResponse(BaseModel):
@@ -45,7 +45,7 @@ class CommentResponse(BaseModel):
     username: str
     content: str
     createdAt: datetime
-    parentId: int | None = None
+    parentId: int = 0
     depth: int = 0
 
 
@@ -122,7 +122,7 @@ async def post_novel_comment(
 ):
     clean_content = nh3.clean(req.content)
     comment = Comment(
-        userId=user["id"], novelId=id, content=clean_content, parentId=req.parentId
+        userId=user["id"], novelId=id, content=clean_content, parentId=req.parentId or None
     )
     await create_comment(session, comment)
     # Eager load user for response
@@ -176,7 +176,7 @@ async def post_chapter_comment(
 ):
     clean_content = nh3.clean(req.content)
     comment = Comment(
-        userId=user["id"], chapterId=id, content=clean_content, parentId=req.parentId
+        userId=user["id"], chapterId=id, content=clean_content, parentId=req.parentId or None
     )
     await create_comment(session, comment)
     # Eager load user for response

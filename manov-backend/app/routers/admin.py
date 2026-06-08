@@ -22,8 +22,8 @@ processor = NovelProcessorService()
 # --- SCHEMA REQUEST ---
 class ScrapeRequest(BaseModel):
     slug: str
-    url: str | None = None  # Boleh kosong kalau mau Resume
-    title: str | None = None  # Boleh kosong kalau novel sudah ada
+    url: str = ""  # Boleh kosong kalau mau Resume
+    title: str = ""  # Boleh kosong kalau novel sudah ada
 
 
 class UpdateNovelRequest(BaseModel):
@@ -63,7 +63,7 @@ class AgentChapterInput(BaseModel):
     title: str = Field(..., max_length=500)
     content: str = Field(..., max_length=500000)
     language: str = Field(default="EN", max_length=10)
-    publishedAt: datetime | None = None
+    publishedAt: str = ""  # ISO datetime string, empty = use current time
 
 
 class CreateNovelWithChaptersRequest(BaseModel):
@@ -262,7 +262,7 @@ async def create_novel_with_chapters(
             language=ch.language,
             title=ch.title,
             content=ch.content,
-            publishedAt=ch.publishedAt or utc_now(),
+            publishedAt=datetime.fromisoformat(ch.publishedAt) if ch.publishedAt else utc_now(),
         )
         session.add(translation)
         await session.flush()
@@ -329,7 +329,7 @@ async def bulk_add_chapters(
             language=ch.language,
             title=ch.title,
             content=ch.content,
-            publishedAt=ch.publishedAt or utc_now(),
+            publishedAt=datetime.fromisoformat(ch.publishedAt) if ch.publishedAt else utc_now(),
         )
         session.add(translation)
         await session.flush()

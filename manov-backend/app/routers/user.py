@@ -27,9 +27,9 @@ router = APIRouter()
 class ProgressUpdateRequest(BaseModel):
     novelId: int
     chapterNum: int
-    scrollPosition: float | None = None
+    scrollPosition: float = 0.0
     progressPercent: int = 0
-    lastReadBlockIndex: int | None = None
+    lastReadBlockIndex: int = 0
     blockOffsetPercent: int = 0
 
 
