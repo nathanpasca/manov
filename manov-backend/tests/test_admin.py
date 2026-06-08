@@ -1,11 +1,11 @@
-"""Tests for admin router including CORS and novel deletion."""
+"""Tests for admin router including CORS, novel deletion, and composite agent endpoints."""
 
 import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlmodel import select
 
 from app.main import app
-from app.models import Genre, Novel, NovelGenreLink
+from app.models import Chapter, ChapterTranslation, Genre, Novel, NovelGenreLink
 from app.utils.security import create_access_token
 
 
@@ -106,3 +106,151 @@ class TestAdminDeleteNovel:
             select(NovelGenreLink).where(NovelGenreLink.novel_id == novel.id)
         )
         assert result.scalar_one_or_none() is None
+
+
+class TestCompositeAgentEndpoints:
+    """Tests for the composite agent endpoints: novel+chapters creation, bulk chapters, and translation update."""
+
+    async def test_create_novel_with_chapters(self, admin_client, db_session):
+        """POST /admin/novels/with-chapters should create a novel and its chapters."""
+        payload = {
+            "title": "Agent Novel",
+            "originalTitle": "Original Agent Novel",
+            "author": "Agent Author",
+            "coverUrl": "https://example.com/cover.jpg",
+            "synopsis": "A novel created by an agent.",
+            "status": "ONGOING",
+            "chapters": [
+                {"chapterNum": 1, "title": "Chapter 1", "content": "Content of chapter 1."},
+                {"chapterNum": 2, "title": "Chapter 2", "content": "Content of chapter 2."},
+            ],
+        }
+
+        response = await admin_client.post("/api/admin/novels/with-chapters", json=payload)
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["novelId"] is not None
+        assert data["slug"] == "agent-novel"
+        assert data["chaptersCreated"] == 2
+        assert len(data["translationIds"]) == 2
+
+        # Verify chapters were created with rawTitle and rawContent
+        result = await db_session.execute(
+            select(Chapter).where(Chapter.novelId == data["novelId"])
+        )
+        chapters = result.scalars().all()
+        assert len(chapters) == 2
+        for ch in chapters:
+            assert ch.rawTitle is not None
+            assert ch.rawContent is not None
+
+    async def test_bulk_add_chapters(self, admin_client, db_session):
+        """POST /admin/novels/{id}/chapters/bulk should add multiple chapters."""
+        novel = Novel(
+            slug="bulk-novel",
+            title="Bulk Novel",
+            originalTitle="Original Bulk Novel",
+            author="Author",
+        )
+        db_session.add(novel)
+        await db_session.commit()
+        await db_session.refresh(novel)
+
+        payload = {
+            "chapters": [
+                {"chapterNum": 1, "title": "Bulk Ch 1", "content": "Bulk content 1."},
+                {"chapterNum": 2, "title": "Bulk Ch 2", "content": "Bulk content 2."},
+            ]
+        }
+
+        response = await admin_client.post(f"/api/admin/novels/{novel.id}/chapters/bulk", json=payload)
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["novelId"] == novel.id
+        assert data["chaptersAdded"] == 2
+        assert len(data["translationIds"]) == 2
+
+        # Verify raw fields
+        result = await db_session.execute(
+            select(Chapter).where(Chapter.novelId == novel.id)
+        )
+        chapters = result.scalars().all()
+        assert len(chapters) == 2
+        for ch in chapters:
+            assert ch.rawTitle is not None
+            assert ch.rawContent is not None
+
+    async def test_bulk_add_chapters_conflict(self, admin_client, db_session):
+        """POST /admin/novels/{id}/chapters/bulk should return 409 if a chapter number already exists."""
+        novel = Novel(
+            slug="conflict-novel",
+            title="Conflict Novel",
+            originalTitle="Original Conflict Novel",
+            author="Author",
+        )
+        db_session.add(novel)
+        await db_session.commit()
+        await db_session.refresh(novel)
+
+        # Pre-create chapter 1
+        chapter = Chapter(novelId=novel.id, chapterNum=1, rawTitle="Existing", rawContent="Existing content.")
+        db_session.add(chapter)
+        await db_session.commit()
+        await db_session.refresh(chapter)
+
+        payload = {
+            "chapters": [
+                {"chapterNum": 1, "title": "New Ch 1", "content": "New content 1."},
+            ]
+        }
+
+        response = await admin_client.post(f"/api/admin/novels/{novel.id}/chapters/bulk", json=payload)
+        assert response.status_code == 409
+        assert "already exists" in response.json()["detail"]
+
+    async def test_update_chapter_translation_content(self, admin_client, db_session):
+        """PUT /admin/chapters/{translation_id}/content should update a translation."""
+        novel = Novel(
+            slug="update-novel",
+            title="Update Novel",
+            originalTitle="Original Update Novel",
+            author="Author",
+        )
+        db_session.add(novel)
+        await db_session.commit()
+        await db_session.refresh(novel)
+
+        chapter = Chapter(
+            novelId=novel.id,
+            chapterNum=1,
+            rawTitle="Old Title",
+            rawContent="Old content.",
+        )
+        db_session.add(chapter)
+        await db_session.commit()
+        await db_session.refresh(chapter)
+
+        translation = ChapterTranslation(
+            chapterId=chapter.id,
+            language="EN",
+            title="Old Title",
+            content="Old content.",
+        )
+        db_session.add(translation)
+        await db_session.commit()
+        await db_session.refresh(translation)
+
+        payload = {"title": "Updated Title", "content": "Updated content."}
+        response = await admin_client.put(f"/api/admin/chapters/{translation.id}/content", json=payload)
+        assert response.status_code == 200
+
+        data = response.json()
+        assert data["message"] == "Chapter updated"
+        assert data["translationId"] == translation.id
+
+        # Verify DB state (refresh cached object to force re-read from DB)
+        await db_session.refresh(translation)
+        assert translation.title == "Updated Title"
+        assert translation.content == "Updated content."

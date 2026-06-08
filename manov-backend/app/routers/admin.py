@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,8 +9,9 @@ from sqlmodel import select
 from app.crud import create_chapter, create_novel, delete_chapter, delete_novel
 from app.database import get_session
 from app.middleware.rate_limit import limiter
-from app.models import Chapter, ChapterTranslation, Genre, Novel
+from app.models import Chapter, ChapterTranslation, Genre, Novel, utc_now
 from app.services.processor import NovelProcessorService
+from app.utils.audit import log_admin_action
 from app.utils.deps import get_current_admin
 from app.utils.slug import generate_slug
 
@@ -51,6 +54,34 @@ class CreateNovelRequest(BaseModel):
 
 class CreateChapterRequest(BaseModel):
     chapterNum: int
+    title: str = Field(..., max_length=500)
+    content: str = Field(..., max_length=500000)
+
+
+class AgentChapterInput(BaseModel):
+    chapterNum: int
+    title: str = Field(..., max_length=500)
+    content: str = Field(..., max_length=500000)
+    language: str = Field(default="EN", max_length=10)
+    publishedAt: datetime | None = None
+
+
+class CreateNovelWithChaptersRequest(BaseModel):
+    title: str = Field(..., max_length=255)
+    originalTitle: str = Field(..., max_length=255)
+    author: str = Field(..., max_length=255)
+    coverUrl: str = Field(..., max_length=500)
+    synopsis: str = Field(..., max_length=10000)
+    status: str = Field(..., max_length=50)
+    genreNames: list[str] = []
+    chapters: list[AgentChapterInput] = []
+
+
+class BulkAddChaptersRequest(BaseModel):
+    chapters: list[AgentChapterInput]
+
+
+class UpdateChapterContentRequest(BaseModel):
     title: str = Field(..., max_length=500)
     content: str = Field(..., max_length=500000)
 
@@ -183,3 +214,171 @@ async def delete_existing_novel(id: int, session: AsyncSession = Depends(get_ses
     """Delete a novel and ALL related data (cascaded at DB level)."""
     await delete_novel(session, id)
     return {"message": "Novel deleted successfully"}
+
+
+@router.post(
+    "/novels/with-chapters",
+    summary="Create a novel and optionally its first chapters in a single call.",
+)
+async def create_novel_with_chapters(
+    req: CreateNovelWithChaptersRequest,
+    user: dict = Depends(get_current_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    slug = await generate_slug(req.title, session)
+
+    novel = Novel(
+        slug=slug,
+        title=req.title,
+        originalTitle=req.originalTitle,
+        author=req.author,
+        coverUrl=req.coverUrl,
+        synopsis=req.synopsis,
+        status=req.status,
+    )
+
+    if req.genreNames:
+        genres = await session.scalars(
+            select(Genre).where(Genre.name.in_(req.genreNames))
+        )
+        novel.genres.extend(genres)
+
+    session.add(novel)
+    await session.flush()  # assign novel.id
+
+    translation_ids = []
+    for ch in req.chapters:
+        chapter = Chapter(
+            novelId=novel.id,
+            chapterNum=ch.chapterNum,
+            rawTitle=ch.title,
+            rawContent=ch.content,
+        )
+        session.add(chapter)
+        await session.flush()
+
+        translation = ChapterTranslation(
+            chapterId=chapter.id,
+            language=ch.language,
+            title=ch.title,
+            content=ch.content,
+            publishedAt=ch.publishedAt or utc_now(),
+        )
+        session.add(translation)
+        await session.flush()
+        translation_ids.append(translation.id)
+
+    await session.commit()
+    await session.refresh(novel)
+
+    await log_admin_action(
+        session,
+        user_id=user["id"],
+        action="CREATE_NOVEL_WITH_CHAPTERS",
+        entity_type="novel",
+        entity_id=novel.id,
+        payload={"title": req.title, "chaptersCreated": len(req.chapters)},
+    )
+
+    return {
+        "novelId": novel.id,
+        "slug": novel.slug,
+        "chaptersCreated": len(req.chapters),
+        "translationIds": translation_ids,
+    }
+
+
+@router.post(
+    "/novels/{novel_id}/chapters/bulk",
+    summary="Add multiple chapters to an existing novel.",
+)
+async def bulk_add_chapters(
+    novel_id: int,
+    req: BulkAddChaptersRequest,
+    user: dict = Depends(get_current_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    novel = await session.get(Novel, novel_id)
+    if not novel:
+        raise HTTPException(status_code=404, detail="Novel not found")
+
+    translation_ids = []
+    for ch in req.chapters:
+        existing = await session.scalar(
+            select(Chapter).where(
+                Chapter.novelId == novel_id, Chapter.chapterNum == ch.chapterNum
+            )
+        )
+        if existing:
+            raise HTTPException(
+                status_code=409,
+                detail=f"Chapter {ch.chapterNum} already exists. Use PUT /admin/chapters/{existing.id}/content to update.",
+            )
+
+        chapter = Chapter(
+            novelId=novel_id,
+            chapterNum=ch.chapterNum,
+            rawTitle=ch.title,
+            rawContent=ch.content,
+        )
+        session.add(chapter)
+        await session.flush()
+
+        translation = ChapterTranslation(
+            chapterId=chapter.id,
+            language=ch.language,
+            title=ch.title,
+            content=ch.content,
+            publishedAt=ch.publishedAt or utc_now(),
+        )
+        session.add(translation)
+        await session.flush()
+        translation_ids.append(translation.id)
+
+    await session.commit()
+
+    await log_admin_action(
+        session,
+        user_id=user["id"],
+        action="BULK_ADD_CHAPTERS",
+        entity_type="novel",
+        entity_id=novel_id,
+        payload={"chaptersAdded": len(req.chapters)},
+    )
+
+    return {
+        "novelId": novel_id,
+        "chaptersAdded": len(req.chapters),
+        "translationIds": translation_ids,
+    }
+
+
+@router.put(
+    "/chapters/{translation_id}/content",
+    summary="Update the title and content of a chapter translation.",
+)
+async def update_chapter_translation_content(
+    translation_id: int,
+    req: UpdateChapterContentRequest,
+    user: dict = Depends(get_current_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    translation = await session.get(ChapterTranslation, translation_id)
+    if not translation:
+        raise HTTPException(status_code=404, detail="Translation not found")
+
+    translation.title = req.title
+    translation.content = req.content
+    await session.commit()
+    await session.refresh(translation)
+
+    await log_admin_action(
+        session,
+        user_id=user["id"],
+        action="UPDATE_CHAPTER_CONTENT",
+        entity_type="translation",
+        entity_id=translation_id,
+        payload={"title": req.title},
+    )
+
+    return {"message": "Chapter updated", "translationId": translation_id}
