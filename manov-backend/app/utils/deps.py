@@ -61,9 +61,10 @@ async def get_current_user_optional(
 async def get_current_user_from_api_key(
     request: Request,
     x_api_key: str | None = Header(None, alias="X-API-Key"),
+    api_key: str | None = Query(None),
     session: AsyncSession = Depends(get_session),
 ) -> dict | None:
-    key = x_api_key or request.query_params.get("api_key")
+    key = x_api_key or api_key or request.query_params.get("api_key")
     if not key:
         return None
 
