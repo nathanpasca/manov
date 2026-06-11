@@ -15,7 +15,7 @@ import {
   ChevronRight,
   Key,
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+
 
 export default function AdminDashboard() {
   const [novels, setNovels] = useState<Novel[]>([]);
@@ -124,11 +124,7 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="relative mb-12 overflow-hidden rounded-3xl border border-gray-100 bg-white p-6 shadow-sm md:p-8 dark:border-white/10 dark:bg-white/5"
-        >
+        <div className="animate-fade-up relative mb-12 overflow-hidden rounded-3xl border border-gray-100 bg-white p-6 shadow-sm md:p-8 dark:border-white/10 dark:bg-white/5">
           <div className="pointer-events-none absolute right-0 top-0 -mr-16 -mt-16 h-64 w-64 rounded-full bg-stone-500/5 blur-3xl"></div>
 
           <h2 className="relative z-10 mb-6 flex items-center gap-2 text-xl font-bold">
@@ -180,7 +176,7 @@ export default function AdminDashboard() {
               Start Scraper
             </button>
           </form>
-        </motion.div>
+        </div>
 
         <div className="mb-6 flex items-center justify-between">
           <h2 className="flex items-center gap-2 text-2xl font-bold">
@@ -204,11 +200,8 @@ export default function AdminDashboard() {
           <>
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
               {novels.map((novel, index) => (
-                <motion.div
+                <div
                   key={novel.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
                   className="group rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition hover:shadow-md dark:border-white/10 dark:bg-white/5"
                 >
                   <div className="flex gap-4">
@@ -275,7 +268,7 @@ export default function AdminDashboard() {
                       View Page <ExternalLink size={12} />
                     </a>
                   </div>
-                </motion.div>
+                </div>
               ))}
             </div>
 

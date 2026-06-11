@@ -3,7 +3,7 @@ import { api } from '../../lib/api';
 import type { ReaderChapter } from '../../lib/types';
 import toast from 'react-hot-toast';
 import { Save, ArrowLeft, Loader, Type, FileText } from 'lucide-react';
-import { motion } from 'framer-motion';
+
 
 interface EditChapterProps {
   slug: string;
@@ -66,11 +66,7 @@ export default function EditChapter({ slug, chapterNum }: EditChapterProps) {
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans text-gray-900 transition-colors duration-300 dark:bg-[#0a0a0a] dark:text-gray-100">
-      <motion.div
-        initial={{ y: -50, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        className="fixed top-0 z-50 flex w-full items-center justify-between border-b border-gray-200 bg-white/80 px-6 py-4 backdrop-blur-md transition-colors duration-300 dark:border-white/10 dark:bg-black/80"
-      >
+      <div className="animate-fade-in fixed top-0 z-50 flex w-full items-center justify-between border-b border-gray-200 bg-white/80 px-6 py-4 backdrop-blur-md transition-colors duration-300 dark:border-white/10 dark:bg-black/80">
         <div className="flex items-center gap-4">
           <button
             onClick={() => window.history.back()}
@@ -100,15 +96,10 @@ export default function EditChapter({ slug, chapterNum }: EditChapterProps) {
           )}
           <span className="hidden sm:inline">Save Changes</span>
         </button>
-      </motion.div>
+      </div>
 
       <div className="mx-auto max-w-4xl px-6 pb-20 pt-28">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="mb-8"
-        >
+        <div className="animate-fade-up mb-8">
           <input
             type="text"
             value={title}
@@ -116,14 +107,9 @@ export default function EditChapter({ slug, chapterNum }: EditChapterProps) {
             placeholder="Chapter Title"
             className="w-full border-none bg-transparent p-0 text-3xl font-black placeholder-gray-300 outline-none focus:ring-0 md:text-4xl dark:placeholder-gray-700"
           />
-        </motion.div>
+        </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="relative"
-        >
+        <div className="animate-fade-up relative">
           <div className="absolute -left-8 top-0 hidden text-gray-300 md:block dark:text-gray-700">
             <Type size={20} />
           </div>
@@ -134,7 +120,7 @@ export default function EditChapter({ slug, chapterNum }: EditChapterProps) {
             className="min-h-[70vh] w-full resize-none border-none bg-transparent font-serif text-lg leading-relaxed placeholder-gray-300 outline-none focus:ring-0 dark:placeholder-gray-700"
             spellCheck={false}
           />
-        </motion.div>
+        </div>
       </div>
     </div>
   );

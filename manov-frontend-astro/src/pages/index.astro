@@ -83,6 +83,9 @@ const itemListJsonLd = initialNovels.length > 0
     canonical={siteUrl}
     jsonLd={websiteJsonLd}
   />
+  {featuredNovel?.coverUrl && (
+    <link rel="preload" as="image" href={featuredNovel.coverUrl} />
+  )}
   {itemListJsonLd && (
     <script type="application/ld+json" set:html={JSON.stringify(itemListJsonLd)} />
   )}

@@ -3,7 +3,7 @@ import { api } from '../../lib/api';
 import type { Novel } from '../../lib/types';
 import toast from 'react-hot-toast';
 import { Save, ArrowLeft, Loader, FileText } from 'lucide-react';
-import { motion } from 'framer-motion';
+
 
 interface AddChapterProps {
   slug: string;
@@ -74,11 +74,7 @@ export default function AddChapter({ slug }: AddChapterProps) {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6 font-sans text-gray-900 transition-colors duration-300 md:p-10 dark:bg-[#0a0a0a] dark:text-gray-100">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mx-auto max-w-4xl"
-      >
+      <div className="animate-fade-up mx-auto max-w-4xl">
         <div className="mb-8 flex items-center gap-4">
           <a
             href={`/admin/edit-novel/${slug}`}
@@ -158,7 +154,7 @@ export default function AddChapter({ slug }: AddChapterProps) {
             </button>
           </form>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

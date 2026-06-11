@@ -3,7 +3,7 @@ import { api } from '../../lib/api';
 import type { Genre } from '../../lib/types';
 import toast from 'react-hot-toast';
 import { Trash2, Plus, Tag, ArrowLeft, Loader } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+
 
 export default function ManageGenres() {
   const [genres, setGenres] = useState<Genre[]>([]);
@@ -58,11 +58,7 @@ export default function ManageGenres() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6 font-sans text-gray-900 transition-colors duration-300 md:p-10 dark:bg-[#0a0a0a] dark:text-gray-100">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mx-auto max-w-4xl"
-      >
+      <div className="animate-fade-up mx-auto max-w-4xl">
         <div className="mb-8 flex items-center gap-4">
           <a
             href="/admin"
@@ -121,15 +117,11 @@ export default function ManageGenres() {
                   </div>
                 ) : (
                   <div className="divide-y divide-gray-100 dark:divide-white/5">
-                    <AnimatePresence>
-                      {genres.map((genre) => (
-                        <motion.div
-                          key={genre.id}
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: 'auto' }}
-                          exit={{ opacity: 0, height: 0 }}
-                          className="flex items-center justify-between p-4 transition hover:bg-gray-50 dark:hover:bg-white/5"
-                        >
+                    {genres.map((genre) => (
+                      <div
+                        key={genre.id}
+                        className="flex items-center justify-between p-4 transition hover:bg-gray-50 dark:hover:bg-white/5"
+                      >
                           <span className="font-medium">{genre.name}</span>
                           <button
                             onClick={() => handleDelete(genre.id)}
@@ -137,16 +129,15 @@ export default function ManageGenres() {
                           >
                             <Trash2 size={18} />
                           </button>
-                        </motion.div>
-                      ))}
-                    </AnimatePresence>
+                        </div>
+                    ))}
                   </div>
                 )}
               </div>
             )}
           </div>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

@@ -11,8 +11,7 @@ import {
   Info,
   Loader,
 } from 'lucide-react';
-import { motion } from 'framer-motion';
-import ReactMarkdown from 'react-markdown';
+import { renderSynopsisMarkdown } from '../../lib/renderMarkdown';
 
 export default function AddNovel() {
   const [loading, setLoading] = useState(false);
@@ -71,11 +70,7 @@ export default function AddNovel() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6 font-sans text-gray-900 transition-colors duration-300 md:p-10 dark:bg-[#0a0a0a] dark:text-gray-100">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mx-auto max-w-4xl"
-      >
+      <div className="animate-fade-up mx-auto max-w-4xl">
         <div className="mb-8 flex items-center gap-4">
           <a
             href="/admin"
@@ -268,21 +263,12 @@ export default function AddNovel() {
                 </p>
                 <div className="line-clamp-4 text-xs leading-relaxed text-gray-600 dark:text-gray-300">
                   {formData.synopsis ? (
-                    <ReactMarkdown
-                      components={{
-                        p: ({ ...props }) => (
-                          <p className="mb-2 leading-relaxed" {...props} />
-                        ),
-                        strong: ({ ...props }) => (
-                          <span className="font-bold" {...props} />
-                        ),
-                        em: ({ ...props }) => (
-                          <span className="italic" {...props} />
-                        ),
+                    <div
+                      className="mb-2 leading-relaxed"
+                      dangerouslySetInnerHTML={{
+                        __html: renderSynopsisMarkdown(formData.synopsis),
                       }}
-                    >
-                      {formData.synopsis}
-                    </ReactMarkdown>
+                    />
                   ) : (
                     <p>Synopsis will appear here...</p>
                   )}
@@ -291,7 +277,7 @@ export default function AddNovel() {
             </div>
           </div>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

@@ -15,8 +15,7 @@ import {
   Edit,
   Link as LinkIcon,
 } from 'lucide-react';
-import { motion } from 'framer-motion';
-import ReactMarkdown from 'react-markdown';
+import { renderSynopsisMarkdown } from '../../lib/renderMarkdown';
 
 interface EditNovelMetadataProps {
   slug: string;
@@ -119,11 +118,7 @@ export default function EditNovelMetadata({ slug }: EditNovelMetadataProps) {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6 font-sans text-gray-900 transition-colors duration-300 md:p-10 dark:bg-[#0a0a0a] dark:text-gray-100">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mx-auto max-w-4xl"
-      >
+      <div className="animate-fade-up mx-auto max-w-4xl">
         <div className="mb-8 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <a
@@ -330,21 +325,12 @@ export default function EditNovelMetadata({ slug }: EditNovelMetadataProps) {
                 </p>
                 <div className="line-clamp-4 text-xs leading-relaxed text-gray-600 dark:text-gray-300">
                   {formData.synopsis ? (
-                    <ReactMarkdown
-                      components={{
-                        p: ({ ...props }) => (
-                          <p className="mb-2 leading-relaxed" {...props} />
-                        ),
-                        strong: ({ ...props }) => (
-                          <span className="font-bold" {...props} />
-                        ),
-                        em: ({ ...props }) => (
-                          <span className="italic" {...props} />
-                        ),
+                    <div
+                      className="mb-2 leading-relaxed"
+                      dangerouslySetInnerHTML={{
+                        __html: renderSynopsisMarkdown(formData.synopsis),
                       }}
-                    >
-                      {formData.synopsis}
-                    </ReactMarkdown>
+                    />
                   ) : (
                     <p>Synopsis will appear here...</p>
                   )}
@@ -418,7 +404,7 @@ export default function EditNovelMetadata({ slug }: EditNovelMetadataProps) {
             </div>
           </div>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

@@ -15,7 +15,7 @@ import {
   Clock,
   AlertTriangle,
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+
 
 export default function ManageApiKeys() {
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
@@ -91,11 +91,7 @@ export default function ManageApiKeys() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6 pt-24 font-sans text-gray-900 transition-colors duration-300 md:p-10 dark:bg-[#0a0a0a] dark:text-gray-100">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="mx-auto max-w-4xl"
-      >
+      <div className="animate-fade-up mx-auto max-w-4xl">
         <div className="mb-8 flex items-center gap-4">
           <a
             href="/admin"
@@ -158,14 +154,8 @@ export default function ManageApiKeys() {
 
           <div className="md:col-span-2">
             {/* Newly created key banner */}
-            <AnimatePresence>
-              {createdKey && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="mb-6 overflow-hidden rounded-2xl border border-emerald-200 bg-emerald-50 p-5 dark:border-emerald-900/30 dark:bg-emerald-950/20"
-                >
+            {createdKey && (
+              <div className="animate-fade-in mb-6 overflow-hidden rounded-2xl border border-emerald-200 bg-emerald-50 p-5 dark:border-emerald-900/30 dark:bg-emerald-950/20">
                   <div className="mb-3 flex items-center gap-2">
                     <AlertTriangle size={16} className="text-emerald-600 dark:text-emerald-400" />
                     <span className="text-sm font-bold text-emerald-800 dark:text-emerald-300">
@@ -197,9 +187,8 @@ export default function ManageApiKeys() {
                   >
                     Dismiss
                   </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                </div>
+            )}
 
             {loading ? (
               <div className="flex justify-center py-10">
@@ -215,15 +204,11 @@ export default function ManageApiKeys() {
                   </div>
                 ) : (
                   <div className="divide-y divide-gray-100 dark:divide-white/5">
-                    <AnimatePresence>
-                      {apiKeys.map((key) => (
-                        <motion.div
-                          key={key.id}
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: 'auto' }}
-                          exit={{ opacity: 0, height: 0 }}
-                          className="p-4 transition hover:bg-gray-50 dark:hover:bg-white/5"
-                        >
+                    {apiKeys.map((key) => (
+                      <div
+                        key={key.id}
+                        className="p-4 transition hover:bg-gray-50 dark:hover:bg-white/5"
+                      >
                           <div className="flex items-start justify-between gap-4">
                             <div className="min-w-0 flex-1">
                               <div className="mb-1 flex items-center gap-2">
@@ -268,16 +253,15 @@ export default function ManageApiKeys() {
                               </button>
                             )}
                           </div>
-                        </motion.div>
-                      ))}
-                    </AnimatePresence>
+                        </div>
+                    ))}
                   </div>
                 )}
               </div>
             )}
           </div>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

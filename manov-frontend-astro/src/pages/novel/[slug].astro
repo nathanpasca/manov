@@ -91,6 +91,7 @@ const chapters = novel.chapters || [];
     modifiedAt={novel.updatedAt}
     jsonLd={bookJsonLd}
   />
+  <link rel="preload" as="image" href={novel.coverUrl} />
   <script type="application/ld+json" set:html={JSON.stringify(breadcrumbJsonLd)} />
 
   <div class="min-h-screen bg-[#faf8f5] pt-24 font-sans text-stone-900 transition-colors duration-300 dark:bg-[#1c1917] dark:text-stone-100">
@@ -106,7 +107,7 @@ const chapters = novel.chapters || [];
         {/* Cover Art */}
         <div class="-mb-20 aspect-[2/3] w-48 flex-shrink-0 overflow-hidden rounded-xl border-4 border-white bg-stone-200 shadow-2xl md:mb-0 md:w-64 dark:border-white/10 dark:bg-stone-800 animate-slide-up">
           {novel.coverUrl ? (
-            <img src={novel.coverUrl} alt={novel.title} class="h-full w-full object-cover" />
+            <img src={novel.coverUrl} alt={novel.title} class="h-full w-full object-cover" fetchpriority="high" />
           ) : (
             <div class="flex h-full items-center justify-center text-stone-400">
               <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
@@ -131,7 +132,7 @@ const chapters = novel.chapters || [];
           </h2>
 
           <NovelActions
-            client:load
+            client:visible
             novelId={novel.id}
             slug={novel.slug}
             chapterCount={chapters.length}
@@ -224,12 +225,12 @@ const chapters = novel.chapters || [];
 
         {/* Reviews */}
         <div class="border-t border-stone-200 pt-10 dark:border-white/10">
-          <ReviewSection client:idle novelId={novel.id} />
+          <ReviewSection client:visible novelId={novel.id} />
         </div>
 
         {/* Comments */}
         <div class="border-t border-stone-200 pt-10 dark:border-white/10">
-          <CommentSection client:idle targetId={novel.id} type="novel" />
+          <CommentSection client:visible targetId={novel.id} type="novel" />
         </div>
       </div>
 
@@ -301,7 +302,7 @@ const chapters = novel.chapters || [];
           </div>
 
           {/* Admin Actions */}
-          <AdminNovelActions client:load novelId={novel.id} slug={novel.slug} />
+          <AdminNovelActions client:visible novelId={novel.id} slug={novel.slug} />
         </div>
       </div>
     </div>

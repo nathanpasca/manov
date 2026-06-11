@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import ReactMarkdown from 'react-markdown';
 import { api } from '../../lib/api';
 import toast from 'react-hot-toast';
 import {
@@ -13,7 +12,7 @@ import {
   List,
   Lock,
 } from 'lucide-react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { renderReaderMarkdown } from '../../lib/renderMarkdown';
 import { smartParser } from '../../lib/smartParser';
 import CommentSection from './CommentSection';
 import type { Chapter } from '../../lib/types';
@@ -433,12 +432,11 @@ export default function Reader({
       </div>
 
       {/* SETTINGS PANEL */}
-      <AnimatePresence>
-        {showSettings && (
-          <div
-            ref={settingsRef}
-            className={`fixed right-3 top-14 z-50 w-72 rounded-2xl border p-5 shadow-xl ${getPanelBg()}`}
-          >
+      {showSettings && (
+        <div
+          ref={settingsRef}
+          className={`animate-fade-in fixed right-3 top-14 z-50 w-72 rounded-2xl border p-5 shadow-xl ${getPanelBg()}`}
+        >
             <div className="mb-5 flex items-center justify-between">
               <h3 className="text-xs font-semibold uppercase tracking-wider opacity-50">
                 Reader Settings
@@ -546,29 +544,22 @@ export default function Reader({
                 <span>Aa</span>
               </div>
             </div>
-          </div>
-        )}
-      </AnimatePresence>
+        </div>
+      )}
 
       {/* TOC DRAWER */}
-      <AnimatePresence>
-        {showToc && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setShowToc(false)}
-              className="fixed inset-0 z-[55] bg-black/30"
-            />
-            <motion.div
-              ref={tocRef}
-              initial={{ x: '-100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '-100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className={`fixed left-0 top-0 z-[60] flex h-full w-full flex-col overflow-hidden border-r shadow-2xl sm:w-80 ${getTocBg()}`}
-            >
+      <div
+        onClick={() => setShowToc(false)}
+        className={`fixed inset-0 z-[55] bg-black/30 transition-opacity duration-200 ${
+          showToc ? 'opacity-100' : 'pointer-events-none opacity-0'
+        }`}
+      />
+      <div
+        ref={tocRef}
+        className={`fixed left-0 top-0 z-[60] flex h-full w-full flex-col overflow-hidden border-r shadow-2xl transition-transform duration-300 ease-out sm:w-80 ${
+          showToc ? 'translate-x-0' : '-translate-x-full'
+        } ${getTocBg()}`}
+      >
               <div
                 className="flex items-center justify-between border-b p-4 backdrop-blur-md"
                 style={{
@@ -649,10 +640,7 @@ export default function Reader({
                   </div>
                 )}
               </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+            </div>
 
       {/* CONTENT AREA */}
       <div className="mx-auto w-full max-w-2xl flex-grow px-5 pb-40 pt-24 sm:px-8">
@@ -674,31 +662,12 @@ export default function Reader({
                   {block.content}
                 </h3>
               ) : (
-                <div className="opacity-90">
-                  <ReactMarkdown
-                    components={{
-                      p: ({ children }) => (
-                        <p className="mb-6 leading-relaxed">{children}</p>
-                      ),
-                      strong: ({ children }) => (
-                        <span className="font-bold opacity-100">{children}</span>
-                      ),
-                      em: ({ children }) => (
-                        <span className="italic opacity-90">{children}</span>
-                      ),
-                      a: ({ children, href }) => (
-                        <a
-                          href={href}
-                          className="text-stone-600 underline decoration-stone-300 underline-offset-4 transition hover:text-stone-900 dark:text-stone-400"
-                        >
-                          {children}
-                        </a>
-                      ),
-                    }}
-                  >
-                    {block.content}
-                  </ReactMarkdown>
-                </div>
+                <div
+                  className="opacity-90"
+                  dangerouslySetInnerHTML={{
+                    __html: renderReaderMarkdown(block.content),
+                  }}
+                />
               )}
             </div>
           ))}
