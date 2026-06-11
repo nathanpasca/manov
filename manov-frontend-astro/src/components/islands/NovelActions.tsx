@@ -87,10 +87,6 @@ export default function NovelActions({
     }
   };
 
-  const scrollToReviews = () => {
-    document.getElementById('reviews-section')?.scrollIntoView({ behavior: 'smooth' });
-  };
-
   const targetChapter = lastReadChapter || 1;
 
   return (
@@ -142,14 +138,7 @@ export default function NovelActions({
         {user && userRating > 0 && (
           <span className="text-xs text-white/70">Your rating: {userRating}/5</span>
         )}
-        {user && (
-          <button
-            onClick={scrollToReviews}
-            className="ml-auto rounded-lg border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-md transition hover:bg-white/20"
-          >
-            {userRating > 0 ? 'Edit Review' : 'Write a Review'}
-          </button>
-        )}
+
       </div>
     </div>
   );
